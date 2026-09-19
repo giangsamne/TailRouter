@@ -1,13 +1,13 @@
 #!/bin/bash
 # ==============================================================================
-# stop.sh - Dừng Tailscale Port Router trên cổng 65534
+# stop.sh - Dừng TailRouter trên cổng 65534
 # ==============================================================================
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PID_FILE="$DIR/server.pid"
 PORT=65534
 
-echo "🛑 Đang kiểm tra tiến trình Tailscale Port Router..."
+echo "🛑 Đang kiểm tra tiến trình TailRouter..."
 
 STOPPED=0
 
@@ -43,7 +43,7 @@ if [ -n "$PORT_PID" ]; then
 fi
 
 if [ $STOPPED -eq 1 ]; then
-    echo "✅ Đã dừng thành công dịch vụ Tailscale Port Router!"
+    echo "✅ Đã dừng thành công dịch vụ TailRouter!"
 else
     echo "ℹ️  Không có tiến trình nào đang chạy trên cổng $PORT."
 fi

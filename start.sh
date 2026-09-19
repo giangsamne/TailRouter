@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# start.sh - Khởi động Tailscale Port Router trên cổng 65534
+# start.sh - Khởi động TailRouter trên cổng 65534
 # ==============================================================================
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,13 +22,13 @@ fi
 
 # Chạy foreground nếu có tham số -f hoặc --foreground
 if [ "$1" = "-f" ] || [ "$1" = "--foreground" ]; then
-    echo "🚀 Đang khởi động Tailscale Port Router ở chế độ Foreground (Port $PORT)..."
+    echo "🚀 Đang khởi động TailRouter ở chế độ Foreground (Port $PORT)..."
     python3 "$DIR/server.py"
     exit $?
 fi
 
 # Chạy ngầm (Daemon / Background) với setsid để tách biệt hoàn toàn khỏi terminal session
-echo "🚀 Đang khởi động Tailscale Port Router chạy nền trên cổng $PORT..."
+echo "🚀 Đang khởi động TailRouter chạy nền trên cổng $PORT..."
 setsid python3 "$DIR/server.py" </dev/null > "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 echo "$SERVER_PID" > "$PID_FILE"

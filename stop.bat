@@ -1,11 +1,11 @@
 @echo off
 REM ============================================================================
-REM Tailscale Port Router - Windows Stop Script
+REM TailRouter - Windows Stop Script
 REM ============================================================================
 cd /d "%~dp0"
 set PORT=65534
 
-echo Stopping Tailscale Port Router on port %PORT%...
+echo Stopping TailRouter on port %PORT%...
 
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%PORT% " ^| findstr "LISTENING"') do (
     echo Terminating PID: %%a

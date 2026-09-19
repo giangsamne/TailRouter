@@ -1,5 +1,5 @@
 """
-server.py - Tailscale Port Router & Gateway (Port 65534)
+server.py - TailRouter & Gateway (Port 65534)
 Hệ thống Gateway điều phối Reverse-Proxy và Dashboard quản lý trên cổng 65534
 """
 
@@ -364,7 +364,7 @@ async def handle_reverse_proxy(
         add_log(req.method, req.full_path, 502, f"{target_host}:{target_port}", latency)
         error_html = f"""<!DOCTYPE html>
 <html lang="vi">
-<head><meta charset="utf-8"><title>502 Bad Gateway - Tailscale Port Router</title>
+<head><meta charset="utf-8"><title>502 Bad Gateway - TailRouter</title>
 <style>
 body {{ font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }}
 .card {{ background: #1e293b; padding: 2.5rem; border-radius: 1rem; max-width: 520px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); border: 1px solid #334155; }}
@@ -375,7 +375,7 @@ code {{ background: #0f172a; padding: 0.2rem 0.4rem; border-radius: 0.25rem; col
 </style></head>
 <body><div class="card">
 <h1>⚠️ 502 Bad Gateway</h1>
-<p>Tailscale Port Router không thể kết nối tới dịch vụ đích tại <code>{target_host}:{target_port}</code> cho route <code>{matched_route.get('path')}</code>.</p>
+<p>TailRouter không thể kết nối tới dịch vụ đích tại <code>{target_host}:{target_port}</code> cho route <code>{matched_route.get('path')}</code>.</p>
 <p><strong>Nguyên nhân:</strong> Dịch vụ chưa khởi động hoặc cổng bị chặn (Lỗi: {e}).</p>
 <a href="/router" class="btn">👉 Mở Bảng Quản Trị /router</a>
 </div></body></html>"""
@@ -634,7 +634,7 @@ async def main() -> None:
     server = await asyncio.start_server(handle_client, HOST, PORT, reuse_address=True)
     addrs = ", ".join(str(sock.getsockname()) for sock in server.sockets)
     logger.info(f"============================================================")
-    logger.info(f"🚀 Tailscale Port Router & Gateway đang chạy trên cổng {PORT}!")
+    logger.info(f"🚀 TailRouter & Gateway đang chạy trên cổng {PORT}!")
     logger.info(f"👉 Giao diện quản trị máy chủ: http://localhost:{PORT}/router")
     
     ts_info = get_tailscale_info()
@@ -677,4 +677,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n[Tailscale Port Router] Đã dừng máy chủ.")
+        print("\n[TailRouter] Đã dừng máy chủ.")

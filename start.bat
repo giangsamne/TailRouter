@@ -1,12 +1,12 @@
 @echo off
 REM ============================================================================
-REM Tailscale Port Router - Windows Launcher (Port 65534)
+REM TailRouter - Windows Launcher (Port 65534)
 REM ============================================================================
-title Tailscale Port Router (Port 65534)
+title TailRouter (Port 65534)
 cd /d "%~dp0"
 
 echo ============================================================
-echo   Tailscale Port Router ^& Gateway (Port 65534)
+echo   TailRouter ^& Gateway (Port 65534)
 echo   Windows Edition
 echo ============================================================
 
@@ -18,7 +18,7 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-echo Starting Tailscale Port Router...
+echo Starting TailRouter...
 echo Access Web Dashboard: http://localhost:65534/router
 echo.
 python server.py

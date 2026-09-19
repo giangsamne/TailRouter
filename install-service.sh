@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# install-service.sh - Cài đặt Tailscale Port Router thành systemd service
+# install-service.sh - Cài đặt TailRouter thành systemd service
 # Tự động khởi động cùng hệ thống máy chủ thật
 # ==============================================================================
 
@@ -16,7 +16,7 @@ mkdir -p "$SYSTEMD_USER_DIR"
 
 cat << EOF > "$SERVICE_FILE"
 [Unit]
-Description=Tailscale Port Router & Gateway (Port 65534)
+Description=TailRouter & Gateway (Port 65534)
 After=network.target tailscaled.service
 
 [Service]

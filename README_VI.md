@@ -1,11 +1,11 @@
 <div align="center">
 
-# ⚡ Tailscale Port Router (Cổng 65534)
+# ⚡ TailRouter (Cổng 65534)
 
 **Hệ thống Gateway điều phối Reverse-Proxy & Web Dashboard siêu nhẹ, zero-dependency, chạy trực tiếp trên máy vật lý kết hợp Tailscale Serve & Funnel.**
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giang610/tailscale-port-router)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giang610/TailRouter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg)](https://tailscale.com)
 [![Dependencies](https://img.shields.io/badge/dependencies-0%20(Pure%20Stdlib)-success.svg)](https://docs.python.org/3/library/asyncio.html)
@@ -19,7 +19,7 @@
 
 ## 💡 Giới Thiệu Dự Án
 
-**Tailscale Port Router** là giải pháp gateway chạy trực tiếp trên máy vật lý (bare-metal) tại cổng **65534**, giúp bạn gom và mở tất cả các cổng, ứng dụng nội bộ (máy in 3D Bambu Timelapse, NoMachine, Home Assistant, Docker container, Next.js, camera, v.v.) ra ngoài mạng **Tailscale** hoặc **Internet công cộng** một cách dễ dàng và an toàn.
+**TailRouter** là giải pháp gateway chạy trực tiếp trên máy vật lý (bare-metal) tại cổng **65534**, giúp bạn gom và mở tất cả các cổng, ứng dụng nội bộ (máy in 3D Bambu Timelapse, NoMachine, Home Assistant, Docker container, Next.js, camera, v.v.) ra ngoài mạng **Tailscale** hoặc **Internet công cộng** một cách dễ dàng và an toàn.
 
 Không cần cài máy ảo, không cần cấu hình phức tạp như Nginx/Traefik/NPM!
 
@@ -55,8 +55,8 @@ Không cần cài máy ảo, không cần cấu hình phức tạp như Nginx/Tr
 
 1. **Tải mã nguồn về máy**:
    ```bash
-   git clone https://github.com/giang610/tailscale-port-router.git
-   cd tailscale-port-router
+   git clone https://github.com/giang610/TailRouter.git
+   cd TailRouter
    ```
 
 2. **Khởi động**:
@@ -85,8 +85,8 @@ Không cần cài máy ảo, không cần cấu hình phức tạp như Nginx/Tr
 
 1. **Tải mã nguồn**:
    ```cmd
-   git clone https://github.com/giang610/tailscale-port-router.git
-   cd tailscale-port-router
+   git clone https://github.com/giang610/TailRouter.git
+   cd TailRouter
    ```
 
 2. **Khởi động**:
@@ -149,7 +149,7 @@ Sau khi khởi động, bạn mở trình duyệt và truy cập:
 ## 📁 Cấu Trúc Thư Mục
 
 ```
-tailscale-port-router/
+TailRouter/
 ├── server.py              # Server chính xử lý Reverse-Proxy & REST API cổng 65534
 ├── port_scanner.py        # Module quét cổng TCP đa nền tảng & Docker
 ├── routes_manager.py      # Module quản lý danh sách route & lưu file JSON

@@ -1,11 +1,11 @@
 <div align="center">
 
-# ⚡ Tailscale Port Router
+# ⚡ TailRouter
 
 **High-performance, zero-dependency bare-metal gateway & web manager for Tailscale Serve and Funnel.**
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giang610/tailscale-port-router)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giang610/TailRouter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg)](https://tailscale.com)
 [![Dependencies](https://img.shields.io/badge/dependencies-0%20(Pure%20Stdlib)-success.svg)](https://docs.python.org/3/library/asyncio.html)
@@ -17,9 +17,9 @@
 
 ---
 
-## 💡 What is Tailscale Port Router?
+## 💡 What is TailRouter?
 
-**Tailscale Port Router** is a lightweight, bare-metal gateway running directly on port **65534** on your host machine. It eliminates the need for heavy virtual machines or complex reverse-proxy setups (Nginx, Traefik, NPM) to expose local homelab services (3D printers, home automation, web apps, media servers, Docker containers) to your Tailnet or the public Internet.
+**TailRouter** is a lightweight, bare-metal gateway running directly on port **65534** on your host machine. It eliminates the need for heavy virtual machines or complex reverse-proxy setups (Nginx, Traefik, NPM) to expose local homelab services (3D printers, home automation, web apps, media servers, Docker containers) to your Tailnet or the public Internet.
 
 ### 🌟 Key Highlights
 - 🪶 **Zero External Dependencies**: Built entirely with Python 3's standard library (`asyncio`, `urllib`, `json`, `subprocess`). No `pip install`, no virtualenv, no node_modules. Uses ~15MB RAM and starts in under 50ms.
@@ -50,7 +50,7 @@ Internet / Tailnet
                ┌───────────────┴───────────────┐
                ▼ (Serve / Funnel)              ▼ (/router Web UI)
 ┌──────────────────────────────────────┐       │
-│ Tailscale Port Router (Port 65534)   │◄──────┘
+│ TailRouter (Port 65534)   │◄──────┘
 │  - Async reverse proxy               │
 │  - REST API & Web Dashboard          │
 │  - Auto Port & Container Scanner     │
@@ -76,8 +76,8 @@ Port 8080   Port 3000                Port 4000
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/giang610/tailscale-port-router.git
-   cd tailscale-port-router
+   git clone https://github.com/giang610/TailRouter.git
+   cd TailRouter
    ```
 
 2. **Start the gateway**:
@@ -106,8 +106,8 @@ Port 8080   Port 3000                Port 4000
 
 1. **Clone or download the repo**:
    ```cmd
-   git clone https://github.com/giang610/tailscale-port-router.git
-   cd tailscale-port-router
+   git clone https://github.com/giang610/TailRouter.git
+   cd TailRouter
    ```
 
 2. **Start the gateway**:
@@ -177,7 +177,7 @@ Once started, open your browser and navigate to:
 ## 📁 Repository Structure
 
 ```
-tailscale-port-router/
+TailRouter/
 ├── server.py              # Main async HTTP reverse-proxy & REST API server
 ├── port_scanner.py        # Cross-platform TCP port & Docker container scanner
 ├── routes_manager.py      # Route state persistence & health checker
@@ -204,7 +204,7 @@ tailscale-port-router/
 ## 🤝 Contributing
 
 Contributions, issues, and feature requests are welcome!
-Feel free to check [issues page](https://github.com/giang610/tailscale-port-router/issues).
+Feel free to check [issues page](https://github.com/giang610/TailRouter/issues).
 
 ---
 
