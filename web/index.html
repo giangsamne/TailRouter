@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tailscale Port Router (Port 65534) - Giang3DLab HomeLab</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #131b2e;
+      --card-border: #1e293b;
+      --card-hover: #1e2942;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --primary-glow: rgba(59, 130, 246, 0.2);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.2);
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.2);
+      --ts-color: #4f46e5;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding-bottom: 3rem;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+    .brand-title h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .brand-title p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .port-badge {
+      background: #1e3a8a;
+      color: #93c5fd;
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .ts-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #182238;
+      border: 1px solid #2a3b5c;
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ts-pill:hover {
+      background: #202d4a;
+      border-color: var(--primary);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+    .dot.offline { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+    /* Navigation Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .tab-btn {
+      padding: 0.65rem 1.25rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 500;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+    .tab-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: rgba(59, 130, 246, 0.08);
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .stat-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 10px var(--primary-glow);
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+    .btn-secondary {
+      background: #1e293b;
+      color: var(--text);
+      border: 1px solid #334155;
+    }
+    .btn-secondary:hover {
+      background: #334155;
+    }
+    .btn-success {
+      background: #059669;
+      color: #fff;
+    }
+    .btn-success:hover {
+      background: #047857;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: #fff;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    .btn-sm {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.8rem;
+    }
+
+    /* Routes List */
+    .route-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: center;
+      transition: border-color 0.2s;
+    }
+    .route-card:hover {
+      border-color: #334155;
+    }
+    .route-card.disabled {
+      opacity: 0.6;
+      background: rgba(19, 27, 46, 0.5);
+    }
+    .route-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .route-header-line {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .route-name {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .route-path-badge {
+      background: #1e293b;
+      color: #38bdf8;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      border: 1px solid #334155;
+    }
+    .route-target {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .route-target code {
+      color: #a5b4fc;
+      background: #1e1b4b;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+    }
+    .route-stats {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+    .route-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Switch toggle */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #334155;
+      transition: .2s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute; content: "";
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Scan Table */
+    .scan-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .table-responsive {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+    th {
+      background: #182238;
+      color: var(--text-muted);
+      padding: 0.85rem 1rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+    }
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .badge-http { background: #064e3b; color: #6ee7b7; border: 1px solid #059669; }
+    .badge-docker { background: #1e3a8a; color: #93c5fd; border: 1px solid #2563eb; }
+    .badge-tcp { background: #374151; color: #d1d5db; }
+    .badge-configured { background: #065f46; color: #a7f3d0; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal {
+      background: #131c30;
+      border: 1px solid #26354f;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 { font-size: 1.15rem; color: #fff; }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-body {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      background: #0f172a;
+    }
+
+    /* Form */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .form-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .form-input {
+      background: #0b0f19;
+      border: 1px solid #2a3b5c;
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus {
+      border-color: var(--primary);
+    }
+    .form-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .form-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      z-index: 1000;
+    }
+    .toast {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      animation: slideIn 0.3s ease;
+    }
+    .toast.success { border-color: var(--success); color: #6ee7b7; }
+    .toast.error { border-color: var(--danger); color: #fca5a5; }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Code block */
+    pre.code-block {
+      background: #0b0f19;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 0.85rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #38bdf8;
+      overflow-x: auto;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-title">
+        <h1>Tailscale Port Router <span class="port-badge">Port 65534</span></h1>
+        <p id="sub-title">Gateway điều phối cổng & định tuyến dịch vụ Homelab</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <select id="lang-select" onchange="changeLanguage(this.value)" style="background:#182238; color:#fff; border:1px solid #2a3b5c; border-radius:8px; padding:0.4rem 0.6rem; font-size:0.85rem; cursor:pointer; outline:none;">
+        <option value="vi">🇻🇳 Tiếng Việt</option>
+        <option value="en">🇺🇸 English</option>
+        <option value="zh">🇨🇳 中文</option>
+        <option value="ja">🇯🇵 日本語</option>
+      </select>
+      <div class="ts-pill" id="ts-status-pill" onclick="copyTailnetUrl()" title="Nhấp để sao chép địa chỉ Tailscale">
+        <div class="dot" id="ts-dot"></div>
+        <span id="ts-ip-text">Đang tải Tailscale...</span>
+        <span style="font-size: 0.75rem; color: #64748b;">📋</span>
+      </div>
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <span id="btn-add-router-text">+ Thêm Router</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- REMOTE CONTROL & TAILSCALE SERVE BANNER -->
+  <div id="ts-serve-banner" style="background: #182238; border: 1px solid #2a3b5c; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 0.85rem;">
+      <div style="font-size: 1.8rem;" id="serve-icon">🌐</div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <strong style="font-size: 1rem; color: #fff;">Điều Khiển Từ Xa (Tailscale Serve):</strong>
+          <span id="serve-status-badge" class="badge" style="background: #1e293b; color: #94a3b8;">Đang kiểm tra...</span>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;" id="serve-url-line">
+          Truy cập từ xa trực tiếp qua: <a href="#" id="serve-remote-link" target="_blank" style="color: #38bdf8; font-weight: 600; text-decoration: none;">...</a>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+      <button class="btn btn-primary btn-sm" onclick="triggerServe('serve_router')">
+        <span>⚡ Bật Serve Cho /router</span>
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="triggerServe('serve_all')" title="Ánh xạ toàn bộ cổng 65534 vào HTTPS">
+        <span>🌐 Ánh Xạ Toàn Bộ Gateway</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- OPERATOR PERMISSION WARNING BANNER -->
+  <div id="operator-warning-banner" style="display:none; background: #2e1d0f; border: 1px solid #f59e0b; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
+    <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+      <span style="font-size: 1.5rem;">⚠️</span>
+      <div style="flex: 1;">
+        <strong style="color: #f59e0b; font-size: 0.95rem;">Cần cấp quyền Operator cho Tailscale (1 lần duy nhất) để tự động hóa:</strong>
+        <p style="font-size: 0.85rem; color: #cbd5e1; margin: 0.3rem 0 0.6rem;">
+          Để gateway có thể tự động bật/tắt <code>tailscale serve</code> cho <code>/router</code> từ xa khi máy khởi động mà không cần gõ mật khẩu root, hãy chạy lệnh sau một lần trên terminal máy thật:
+        </p>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <code style="background: #0b0f19; color: #38bdf8; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid #334155; font-size: 0.9rem;">sudo tailscale set --operator=$USER</code>
+          <button class="btn btn-secondary btn-sm" onclick="copyOperatorCmd()">📋 Sao Chép Lệnh</button>
+          <button class="btn btn-success btn-sm" onclick="triggerServe('serve_router')">🔄 Tôi Đã Chạy - Kích Hoạt Ngay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('routes')">
+      <span>📌 Danh Sách Router</span>
+      <span id="badge-routes-count" style="background:#1e293b; padding:0.1rem 0.4rem; border-radius:10px; font-size:0.75rem;">1</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('scanner')">
+      <span>🔍 Quét Cổng Tự Động (Auto-Scan)</span>
+      <span id="badge-scan-count" style="background:#064e3b; color:#6ee7b7; padding:0.1rem 0.4rem; border-radius:10px; font-size:0.75rem;">...</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('tailscale')">
+      <span>🌐 Tailscale Serve & Funnel</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('logs')">
+      <span>📋 Nhật Ký Proxy (Live Logs)</span>
+    </button>
+  </div>
+
+  <!-- TAB 1: ROUTES -->
+  <div id="tab-routes">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Tổng Số Route</span>
+        <span class="stat-value" id="stat-total-routes">0</span>
+        <span class="stat-sub" id="stat-active-routes">0 đang hoạt động</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Tổng Lượt Truy Cập (Hits)</span>
+        <span class="stat-value" id="stat-total-hits">0</span>
+        <span class="stat-sub">Điều phối qua cổng 65534</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Node Tailscale</span>
+        <span class="stat-value" style="font-size: 1.25rem;" id="stat-node-name">Homelab</span>
+        <span class="stat-sub" id="stat-ts-ip">100.100.1.3</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Thời Gian Hoạt Động (Uptime)</span>
+        <span class="stat-value" style="font-size: 1.25rem;" id="stat-uptime">0s</span>
+        <span class="stat-sub">Máy thật bare-metal</span>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">
+        <span>Các Tuyến Đường Đang Quản Lý</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="refreshRoutes()">
+        <span>🔄 Làm Mới & Test Ping</span>
+      </button>
+    </div>
+
+    <!-- Routes Container -->
+    <div id="routes-list-container">
+      <div class="empty-state">
+        <p>Đang tải danh sách router...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: PORT SCANNER -->
+  <div id="tab-scanner" style="display: none;">
+    <div class="section-header">
+      <div>
+        <div class="section-title">🔍 Cổng & Dịch Vụ Đang Mở Trên Máy Thật</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          Tự động dò quét từ hệ thống (<code>ss -tulpn</code>) và Docker Containers. Bấm <strong>+ Thêm vào Router</strong> để public tức thì.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="runPortScan()">
+        <span>🔄 Quét Lại Ngay</span>
+      </button>
+    </div>
+
+    <div class="scan-card">
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Cổng (Port)</th>
+              <th>Dịch Vụ / Tiến Trình</th>
+              <th>Docker / Container</th>
+              <th>Giao Thức & Tiêu Đề</th>
+              <th>Độ Trễ</th>
+              <th>Trạng Thái</th>
+              <th style="text-align: right;">Hành Động</th>
+            </tr>
+          </thead>
+          <tbody id="scan-table-body">
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                Đang quét các cổng trên máy...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: TAILSCALE SERVE & FUNNEL -->
+  <div id="tab-tailscale" style="display: none;">
+    <div class="stat-card" style="margin-bottom: 1.5rem;">
+      <h3 style="margin-bottom: 0.5rem; color: #fff;">🌐 Tích Hợp Mạng Tailscale</h3>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Cổng 65534 đang nhận diện và tương thích trực tiếp với các thiết bị trong mạng Tailnet của bạn.
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+        <div style="background:#0b0f19; padding: 1rem; border-radius: 8px; border: 1px solid #1e293b;">
+          <div style="font-size: 0.8rem; color: #94a3b8;">IP NỘI BỘ TAILSCALE</div>
+          <div style="font-size: 1.1rem; font-weight: 600; color: #38bdf8;" id="info-ts-ip">100.100.1.3</div>
+        </div>
+        <div style="background:#0b0f19; padding: 1rem; border-radius: 8px; border: 1px solid #1e293b;">
+          <div style="font-size: 0.8rem; color: #94a3b8;">TÊN MIỀN MAGICDNS (FQDN)</div>
+          <div style="font-size: 1rem; font-weight: 600; color: #a5b4fc; word-break: break-all;" id="info-ts-fqdn">Loading...</div>
+        </div>
+      </div>
+
+      <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: #fff;">💡 Cách dùng nhanh từ iPhone / MacBook trong Tailnet:</h4>
+      <p style="font-size: 0.875rem; color: #94a3b8; margin-bottom: 0.5rem;">
+        Mở trình duyệt trên máy cùng mạng Tailscale và truy cập trực tiếp:
+      </p>
+      <pre class="code-block" id="example-links">http://100.100.1.3:65534/router
+http://100.100.1.3:65534/bambu</pre>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: #fff;">🚀 Nâng Cấp: Chạy qua Tailscale Serve (Port 443 HTTPS không cần gõ :65534)</h4>
+      <p style="font-size: 0.875rem; color: #94a3b8; margin-bottom: 0.75rem;">
+        Nếu bạn muốn truy cập qua giao thức HTTPS chuẩn (cổng 443) bằng tên miền MagicDNS của Tailscale, chỉ cần bấm nút bên dưới:
+      </p>
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="setupTailscaleServe()">
+          <span>⚡ Bật Tailscale Serve cho cổng 65534</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: LIVE LOGS -->
+  <div id="tab-logs" style="display: none;">
+    <div class="section-header">
+      <div class="section-title">📋 Nhật Ký Điều Phối Proxy Gần Nhất</div>
+      <button class="btn btn-secondary btn-sm" onclick="fetchStatus()"><span>🔄 Cập Nhật</span></button>
+    </div>
+    <div class="scan-card">
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Thời Gian</th>
+              <th>Phương Thức</th>
+              <th>Đường Dẫn (Path)</th>
+              <th>Dịch Vụ Đích</th>
+              <th>Mã Phản Hồi</th>
+              <th>Độ Trễ</th>
+            </tr>
+          </thead>
+          <tbody id="logs-table-body">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">Chưa có nhật ký truy cập.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL THÊM / SỬA ROUTE -->
+<div class="modal-overlay" id="route-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Thêm Tuyến Đường (Route) Mới</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="form-route-id">
+      
+      <div class="form-group">
+        <label class="form-label">Tên Gợi Nhớ (Friendly Name)</label>
+        <input type="text" class="form-input" id="form-name" placeholder="Ví dụ: Bambu 3D Camera, Node Web App...">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Đường Dẫn Public (URL Path)</label>
+        <input type="text" class="form-input" id="form-path" placeholder="Ví dụ: /bambu hoặc /app1">
+        <span class="form-hint">Đường dẫn người dùng sẽ truy cập qua cổng 65534 (ví dụ: http://100.100.1.3:65534/bambu).</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Địa Chỉ Đích (Host)</label>
+          <input type="text" class="form-input" id="form-host" value="127.0.0.1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cổng Đích (Target Port)</label>
+          <input type="number" class="form-input" id="form-port" placeholder="8080" min="1" max="65535">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Chế Độ Phát Hành (Publish Mode)</label>
+        <select class="form-input" id="form-mode" style="font-weight: 500;">
+          <option value="serve">🔒 Serve (Nội bộ Tailnet) - Chỉ các thiết bị của bạn truy cập</option>
+          <option value="funnel">🌐 Funnel (Public Internet) - Mở công khai toàn thế giới qua HTTPS</option>
+        </select>
+        <span class="form-hint">
+          URL dự kiến: <strong style="color:#38bdf8;" id="preview-url-text">https://giang3dlab-homelab.tailaf2792.ts.net/...</strong>
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-checkbox">
+          <input type="checkbox" id="form-strip-prefix">
+          <span><strong>Bỏ tiền tố đường dẫn khi gửi tới dịch vụ đích (Strip Prefix)</strong></span>
+        </label>
+        <span class="form-hint" style="margin-left: 1.5rem;">
+          Nếu bật: khi gọi <code>/bambu/api/info</code> sẽ chuyển thành <code>/api/info</code> tới cổng đích.
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ghi Chú (Tùy chọn)</label>
+        <input type="text" class="form-input" id="form-notes" placeholder="Mô tả ứng dụng...">
+      </div>
+
+      <div class="form-group">
+        <label class="form-checkbox">
+          <input type="checkbox" id="form-enabled" checked>
+          <span>Kích hoạt route ngay lập tức</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+      <button class="btn btn-primary" onclick="saveRoute()">Lưu Tuyến Đường</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  let currentRoutes = [];
+  let tailscaleIp = "127.0.0.1";
+  let tailscaleFqdn = "";
+  const PORT = 65534;
+
+  // I18n Multi-language Dictionary
+  const i18n = {
+    vi: {
+      sub_title: "Gateway điều phối cổng & định tuyến dịch vụ Homelab",
+      btn_add_router: "+ Thêm Router",
+    },
+    en: {
+      sub_title: "Homelab Port Router & Reverse Proxy Gateway",
+      btn_add_router: "+ Add Route",
+    },
+    zh: {
+      sub_title: "家庭实验室端口网关与反向代理服务",
+      btn_add_router: "+ 添加路由",
+    },
+    ja: {
+      sub_title: "ホームラボポートルーター＆リバースプロキシ",
+      btn_add_router: "+ ルート追加",
+    }
+  };
+
+  let currentLang = localStorage.getItem('ts_router_lang') || 'vi';
+
+  function changeLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('ts_router_lang', lang);
+    if (document.getElementById('lang-select')) document.getElementById('lang-select').value = lang;
+    const t = i18n[lang] || i18n.en;
+    if (document.getElementById('sub-title')) document.getElementById('sub-title').textContent = t.sub_title;
+    if (document.getElementById('btn-add-router-text')) document.getElementById('btn-add-router-text').textContent = t.btn_add_router;
+    showToast(`Language: ${lang.toUpperCase()}`);
+  }
+
+  // Toast Notification
+  function showToast(msg, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span> <span>${msg}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+
+  // Switch Tab
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    ['routes', 'scanner', 'tailscale', 'logs'].forEach(id => {
+      const el = document.getElementById(`tab-${id}`);
+      if (el) el.style.display = (id === tabId) ? 'block' : 'none';
+    });
+
+    if (tabId === 'scanner') {
+      runPortScan();
+    }
+  }
+
+  // Format Uptime
+  function formatUptime(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+
+  // Fetch Status
+  async function fetchStatus() {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+
+      if (data.tailscale) {
+        tailscaleIp = data.tailscale.ipv4 || "127.0.0.1";
+        tailscaleFqdn = data.tailscale.fqdn || "";
+        
+        document.getElementById('ts-ip-text').textContent = `${data.tailscale.node_name || 'Homelab'} (${tailscaleIp})`;
+        document.getElementById('stat-node-name').textContent = data.tailscale.node_name || "Homelab";
+        document.getElementById('stat-ts-ip').textContent = tailscaleIp;
+        document.getElementById('info-ts-ip').textContent = tailscaleIp;
+        document.getElementById('info-ts-fqdn').textContent = tailscaleFqdn || "Chưa có MagicDNS";
+
+        const dot = document.getElementById('ts-dot');
+        if (data.tailscale.running) {
+          dot.className = "dot";
+        } else {
+          dot.className = "dot offline";
+        }
+
+        // Example links
+        document.getElementById('example-links').textContent = 
+          `http://${tailscaleIp}:${PORT}/router\nhttp://${tailscaleIp}:${PORT}/bambu`;
+
+        // Update Remote Serve Status Banner
+        const serveBadge = document.getElementById('serve-status-badge');
+        const serveLink = document.getElementById('serve-remote-link');
+        const opWarning = document.getElementById('operator-warning-banner');
+
+        if (data.tailscale.serve_configured) {
+          serveBadge.style.background = '#064e3b';
+          serveBadge.style.color = '#6ee7b7';
+          serveBadge.textContent = '🟢 Đang Kích Hoạt HTTPS';
+          const remoteUrl = data.tailscale.remote_router_url || `https://${tailscaleFqdn}/router`;
+          serveLink.href = remoteUrl;
+          serveLink.textContent = remoteUrl + ' ↗';
+          if (opWarning) opWarning.style.display = 'none';
+        } else if (data.tailscale.needs_operator) {
+          serveBadge.style.background = '#451a03';
+          serveBadge.style.color = '#fcd34d';
+          serveBadge.textContent = '⚠️ Cần Cấp Quyền Operator';
+          serveLink.href = `http://${tailscaleIp}:${PORT}/router`;
+          serveLink.textContent = `http://${tailscaleIp}:${PORT}/router (Đang chạy trực tiếp cổng 65534)`;
+          if (opWarning) opWarning.style.display = 'block';
+        } else {
+          serveBadge.style.background = '#1e293b';
+          serveBadge.style.color = '#94a3b8';
+          serveBadge.textContent = 'Chưa Kích Hoạt';
+          if (tailscaleFqdn) {
+            serveLink.href = `https://${tailscaleFqdn}/router`;
+            serveLink.textContent = `https://${tailscaleFqdn}/router`;
+          }
+        }
+      }
+
+      document.getElementById('stat-total-routes').textContent = data.total_routes;
+      document.getElementById('stat-active-routes').textContent = `${data.active_routes} đang hoạt động`;
+      document.getElementById('stat-uptime').textContent = formatUptime(data.uptime_seconds);
+      document.getElementById('badge-routes-count').textContent = data.total_routes;
+
+      let totalHits = 0;
+      if (data.routes) {
+        data.routes.forEach(r => totalHits += (r.hits || 0));
+        currentRoutes = data.routes;
+        renderRoutes(data.routes);
+      }
+      document.getElementById('stat-total-hits').textContent = totalHits.toLocaleString();
+
+      if (data.logs) {
+        renderLogs(data.logs);
+      }
+    } catch (e) {
+      console.error("Lỗi fetch status:", e);
+    }
+  }
+
+  function copyOperatorCmd() {
+    const cmd = "sudo tailscale set --operator=$USER";
+    navigator.clipboard.writeText(cmd).then(() => {
+      showToast("Đã sao chép: " + cmd);
+    }).catch(() => {
+      prompt("Sao chép lệnh:", cmd);
+    });
+  }
+
+  async function triggerServe(action = 'serve_router') {
+    showToast("Đang thực hiện cấu hình Tailscale Serve...");
+    try {
+      const res = await fetch('/api/tailscale/serve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action, port: PORT })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("✅ " + (data.message || "Đã cấu hình Tailscale Serve thành công!"));
+      } else {
+        showToast("⚠️ " + (data.error || "Không thể cấu hình Tailscale Serve"), "error");
+      }
+      fetchStatus();
+    } catch (e) {
+      showToast("Lỗi: " + e, "error");
+    }
+  }
+
+  // Copy Tailnet URL
+  function copyTailnetUrl() {
+    const url = `http://${tailscaleIp}:${PORT}/router`;
+    navigator.clipboard.writeText(url).then(() => {
+      showToast(`Đã sao chép link: ${url}`);
+    }).catch(() => {
+      prompt("Sao chép link tại đây:", url);
+    });
+  }
+
+  // Render Routes
+  function renderRoutes(routes) {
+    const container = document.getElementById('routes-list-container');
+    if (!routes || routes.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <p>Chưa có route nào được cấu hình.</p>
+          <button class="btn btn-primary" style="margin-top:1rem;" onclick="openAddModal()">+ Thêm Route Đầu Tiên</button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = routes.map(r => {
+      const isOnline = r.last_status === 'online';
+      const statusBadge = isOnline 
+        ? `<span class="badge" style="background:#064e3b; color:#6ee7b7;">🟢 Online ${r.last_latency_ms ? `(${r.last_latency_ms}ms)` : ''}</span>`
+        : `<span class="badge" style="background:#450a0a; color:#fca5a5;">🔴 Offline</span>`;
+
+      const isFunnel = r.mode === 'funnel';
+      const modeBadge = isFunnel
+        ? `<span class="badge" style="background:#581c87; color:#f3e8ff; border:1px solid #9333ea; font-weight:600;">🌐 Funnel (Public Internet)</span>`
+        : `<span class="badge" style="background:#064e3b; color:#6ee7b7; border:1px solid #059669; font-weight:600;">🔒 Serve (Nội Bộ Tailnet)</span>`;
+
+      const tailscaleHttpsUrl = tailscaleFqdn ? `https://${tailscaleFqdn}${r.path}` : `http://${tailscaleIp}:${PORT}${r.path}`;
+      const directPortUrl = `http://${tailscaleIp}:${PORT}${r.path}`;
+
+      return `
+        <div class="route-card ${r.enabled ? '' : 'disabled'}" id="card-${r.id}">
+          <div class="route-info">
+            <div class="route-header-line">
+              <span class="route-name">${r.name}</span>
+              <span class="route-path-badge">${r.path}</span>
+              ${modeBadge}
+              ${r.strip_prefix ? '<span class="badge" style="background:#1e293b; color:#cbd5e1;">Strip Prefix</span>' : ''}
+              ${statusBadge}
+            </div>
+            <div class="route-target">
+              <span>Cổng máy thật:</span>
+              <code>${r.target_host}:${r.target_port}</code>
+              ${r.notes ? `<span style="color:#64748b;">• ${r.notes}</span>` : ''}
+            </div>
+            <div class="route-stats" style="flex-wrap: wrap; gap: 0.75rem; margin-top: 0.4rem;">
+              <span>🌐 <strong>URL Truy Cập:</strong> <a href="${tailscaleHttpsUrl}" target="_blank" style="color:#38bdf8; font-weight:600; text-decoration:none;">${tailscaleHttpsUrl} ↗</a></span>
+              <button class="btn btn-secondary btn-sm" style="padding:0.15rem 0.5rem; font-size:0.75rem;" onclick="navigator.clipboard.writeText('${tailscaleHttpsUrl}').then(()=>showToast('Đã chép link: ${tailscaleHttpsUrl}'))">📋 Chép Link</button>
+              <span style="color:#64748b;">(Hits: ${r.hits || 0})</span>
+            </div>
+          </div>
+          <div class="route-actions">
+            <label class="switch" title="Bật / Tắt route">
+              <input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="toggleRoute('${r.id}')">
+              <span class="slider"></span>
+            </label>
+            <button class="btn btn-secondary btn-sm" onclick="toggleRouteMode('${r.id}')" title="Chuyển đổi giữa Serve (Nội bộ) và Funnel (Công khai)">
+              ${isFunnel ? '🔒 Đổi sang Serve' : '🌐 Đổi sang Funnel'}
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="pingRoute('${r.id}')" title="Test Ping kết nối">⚡ Ping</button>
+            <button class="btn btn-secondary btn-sm" onclick='openEditModal(${JSON.stringify(r)})'>✏️ Sửa</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteRoute('${r.id}', '${r.name}')">🗑️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Render Logs
+  function renderLogs(logs) {
+    const tbody = document.getElementById('logs-table-body');
+    if (!logs || logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">Chưa có nhật ký truy cập.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = logs.slice().reverse().map(l => {
+      let statusColor = "#10b981";
+      if (l.status >= 400 && l.status < 500) statusColor = "#f59e0b";
+      if (l.status >= 500) statusColor = "#ef4444";
+
+      return `
+        <tr>
+          <td style="color: #64748b; font-family: monospace;">${l.time}</td>
+          <td><strong>${l.method}</strong></td>
+          <td><code>${l.path}</code></td>
+          <td style="color: #94a3b8;">${l.target}</td>
+          <td><span style="font-weight:600; color:${statusColor}">${l.status}</span></td>
+          <td style="color: #64748b;">${l.latency_ms} ms</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Refresh Routes
+  async function refreshRoutes() {
+    showToast("Đang kiểm tra kết nối các route...");
+    try {
+      const res = await fetch('/api/routes');
+      const data = await res.json();
+      currentRoutes = data.routes || [];
+      renderRoutes(currentRoutes);
+      showToast("Đã cập nhật trạng thái route!");
+    } catch (e) {
+      showToast("Lỗi khi tải routes: " + e, "error");
+    }
+  }
+
+  // Toggle Route
+  async function toggleRoute(id) {
+    try {
+      const res = await fetch(`/api/routes/${id}/toggle`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message);
+        fetchStatus();
+      }
+    } catch (e) {
+      showToast("Lỗi: " + e, "error");
+    }
+  }
+
+  // Ping Route
+  async function pingRoute(id) {
+    showToast("Đang ping tới đích...");
+    try {
+      const res = await fetch(`/api/routes/${id}/ping`, { method: 'POST' });
+      const data = await res.json();
+      if (data.online) {
+        showToast(`🟢 Dịch vụ ONLINE! Độ trễ: ${data.latency_ms} ms`);
+      } else {
+        showToast(`🔴 Dịch vụ OFFLINE! Không phản hồi kết nối.`, "error");
+      }
+      refreshRoutes();
+    } catch (e) {
+      showToast("Lỗi ping: " + e, "error");
+    }
+  }
+
+  // Delete Route
+  async function deleteRoute(id, name) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa route "${name}" không?`)) return;
+    try {
+      const res = await fetch(`/api/routes/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showToast("Đã xóa route thành công!");
+        fetchStatus();
+      } else {
+        showToast(data.message, "error");
+      }
+    } catch (e) {
+      showToast("Lỗi: " + e, "error");
+    }
+  }
+
+  // Auto Scan Ports
+  async function runPortScan() {
+    const tbody = document.getElementById('scan-table-body');
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">
+      <span style="display:inline-block; animation: spin 1s linear infinite;">⏳</span> Đang dò quét toàn bộ cổng trên máy chủ...
+    </td></tr>`;
+
+    try {
+      const res = await fetch('/api/scan');
+      const data = await res.json();
+      const ports = data.ports || [];
+      document.getElementById('badge-scan-count').textContent = `${ports.length} cổng`;
+
+      if (ports.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Không tìm thấy cổng nào đang mở.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = ports.map(p => {
+        let typeBadge = p.is_http ? '<span class="badge badge-http">HTTP</span>' : '<span class="badge badge-tcp">TCP</span>';
+        if (p.is_docker) typeBadge += ' <span class="badge badge-docker">Docker</span>';
+
+        const configuredBadge = p.is_configured 
+          ? '<span class="badge badge-configured">✓ Đã gán route</span>'
+          : '<span class="badge" style="background:#1e293b; color:#94a3b8;">Chưa gán</span>';
+
+        const btnAdd = p.is_configured
+          ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.5;">Đã thêm</button>`
+          : `<button class="btn btn-primary btn-sm" onclick='prefillFromScan(${JSON.stringify(p)})'>+ Thêm vào Router</button>`;
+
+        return `
+          <tr>
+            <td><strong style="color:#38bdf8; font-size:1rem;">${p.port}</strong></td>
+            <td>
+              <div style="font-weight:500; color:#fff;">${p.service_name}</div>
+              <div style="font-size:0.75rem; color:#64748b;">Process: ${p.process} | Bind: ${p.ip}</div>
+            </td>
+            <td>${p.docker_container ? `<span style="color:#a5b4fc;">${p.docker_container}</span>` : '<span style="color:#64748b;">Host Local</span>'}</td>
+            <td>
+              <div>${typeBadge}</div>
+              ${p.title ? `<div style="font-size:0.8rem; color:#cbd5e1; margin-top:2px;">"${p.title}"</div>` : ''}
+              ${p.server ? `<div style="font-size:0.75rem; color:#64748b;">Server: ${p.server}</div>` : ''}
+            </td>
+            <td style="color:#94a3b8;">${p.latency_ms ? `${p.latency_ms} ms` : '-'}</td>
+            <td>${configuredBadge}</td>
+            <td style="text-align: right;">${btnAdd}</td>
+          </tr>
+        `;
+      }).join('');
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#ef4444;">Lỗi khi quét cổng: ${e}</td></tr>`;
+    }
+  }
+
+  // Prefill from Scan
+  function prefillFromScan(portData) {
+    document.getElementById('modal-title').textContent = `Thêm Route cho Cổng ${portData.port}`;
+    document.getElementById('form-route-id').value = "";
+    document.getElementById('form-name').value = portData.title || portData.service_name || `Dịch vụ cổng ${portData.port}`;
+    document.getElementById('form-path').value = portData.suggested_path || `/port-${portData.port}`;
+    document.getElementById('form-host').value = "127.0.0.1";
+    document.getElementById('form-port').value = portData.port;
+    document.getElementById('form-mode').value = "serve";
+    document.getElementById('form-strip-prefix').checked = false;
+    document.getElementById('form-notes').value = portData.docker_container ? `Container: ${portData.docker_container}` : `Process: ${portData.process}`;
+    document.getElementById('form-enabled').checked = true;
+
+    document.getElementById('preview-url-text').textContent = `https://${tailscaleFqdn}${portData.suggested_path || `/port-${portData.port}`}`;
+    document.getElementById('route-modal').classList.add('active');
+  }
+
+  // Modal Open / Close
+  function openAddModal() {
+    document.getElementById('modal-title').textContent = "Thêm Tuyến Đường Mới";
+    document.getElementById('form-route-id').value = "";
+    document.getElementById('form-name').value = "";
+    document.getElementById('form-path').value = "";
+    document.getElementById('form-host').value = "127.0.0.1";
+    document.getElementById('form-port').value = "";
+    document.getElementById('form-mode').value = "serve";
+    document.getElementById('form-strip-prefix').checked = false;
+    document.getElementById('form-notes').value = "";
+    document.getElementById('form-enabled').checked = true;
+    document.getElementById('preview-url-text').textContent = `https://${tailscaleFqdn}/...`;
+
+    document.getElementById('route-modal').classList.add('active');
+  }
+
+  function openEditModal(route) {
+    document.getElementById('modal-title').textContent = "Chỉnh Sửa Route: " + route.name;
+    document.getElementById('form-route-id').value = route.id;
+    document.getElementById('form-name').value = route.name || "";
+    document.getElementById('form-path').value = route.path || "";
+    document.getElementById('form-host').value = route.target_host || "127.0.0.1";
+    document.getElementById('form-port').value = route.target_port || "";
+    document.getElementById('form-mode').value = route.mode || "serve";
+    document.getElementById('form-strip-prefix').checked = Boolean(route.strip_prefix);
+    document.getElementById('form-notes').value = route.notes || "";
+    document.getElementById('form-enabled').checked = Boolean(route.enabled);
+    document.getElementById('preview-url-text').textContent = `https://${tailscaleFqdn}${route.path}`;
+
+    document.getElementById('route-modal').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('route-modal').classList.remove('active');
+  }
+
+  // Chuyển đổi giữa chế độ Serve và Funnel
+  async function toggleRouteMode(id) {
+    showToast("Đang chuyển đổi chế độ Serve ↔ Funnel...");
+    try {
+      const res = await fetch(`/api/routes/${id}/toggle-mode`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message);
+        fetchStatus();
+      } else {
+        showToast(data.message || "Không thể chuyển chế độ", "error");
+      }
+    } catch (e) {
+      showToast("Lỗi: " + e, "error");
+    }
+  }
+
+  // Save Route (Add / Edit)
+  async function saveRoute() {
+    const routeId = document.getElementById('form-route-id').value;
+    const name = document.getElementById('form-name').value.trim();
+    const path = document.getElementById('form-path').value.trim();
+    const host = document.getElementById('form-host').value.trim();
+    const port = parseInt(document.getElementById('form-port').value);
+    const mode = document.getElementById('form-mode').value;
+    const stripPrefix = document.getElementById('form-strip-prefix').checked;
+    const notes = document.getElementById('form-notes').value.trim();
+    const enabled = document.getElementById('form-enabled').checked;
+
+    if (!path) {
+      showToast("Vui lòng nhập đường dẫn (ví dụ /bambu)", "error");
+      return;
+    }
+    if (!port || port < 1 || port > 65535) {
+      showToast("Cổng đích phải từ 1 - 65535", "error");
+      return;
+    }
+
+    const payload = {
+      name,
+      path,
+      target_host: host,
+      target_port: port,
+      mode,
+      strip_prefix: stripPrefix,
+      notes,
+      enabled,
+    };
+
+    try {
+      let res;
+      if (routeId) {
+        res = await fetch(`/api/routes/${routeId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await fetch('/api/routes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message);
+        closeModal();
+        fetchStatus();
+      } else {
+        showToast(data.message, "error");
+      }
+    } catch (e) {
+      showToast("Lỗi khi lưu route: " + e, "error");
+    }
+  }
+
+  // Setup Tailscale Serve
+  async function setupTailscaleServe() {
+    showToast("Đang kích hoạt Tailscale Serve trên máy...");
+    try {
+      const res = await fetch('/api/tailscale/serve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ port: PORT })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("✅ Đã bật Tailscale Serve thành công!");
+      } else {
+        showToast("⚠️ Lỗi Tailscale Serve: " + (data.error || "Cần quyền operator"), "error");
+      }
+    } catch (e) {
+      showToast("Lỗi: " + e, "error");
+    }
+  }
+
+  // Init
+  fetchStatus();
+  setInterval(fetchStatus, 8000);
+</script>
+
+</body>
+</html>

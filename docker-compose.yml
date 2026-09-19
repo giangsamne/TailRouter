@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  tailscale-port-router:
+    build: .
+    container_name: tailscale-port-router
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - PYTHONUNBUFFERED=1

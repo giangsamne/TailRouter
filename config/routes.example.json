@@ -1,0 +1,24 @@
+[
+  {
+    "id": "demo-bambu-timelapse",
+    "name": "Bambu 3D Printer Timelapse",
+    "path": "/bambu",
+    "target_host": "127.0.0.1",
+    "target_port": 8080,
+    "strip_prefix": false,
+    "active": true,
+    "mode": "serve",
+    "created_at": "2026-09-19T20:00:00.000000"
+  },
+  {
+    "id": "demo-public-web",
+    "name": "Public Showcase Site",
+    "path": "/showcase",
+    "target_host": "127.0.0.1",
+    "target_port": 3000,
+    "strip_prefix": true,
+    "active": true,
+    "mode": "funnel",
+    "created_at": "2026-09-19T20:00:00.000000"
+  }
+]
