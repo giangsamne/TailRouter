@@ -5,7 +5,7 @@
 **High-performance, zero-dependency bare-metal gateway & web manager for Tailscale Serve and Funnel.**
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giang610/TailRouter)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg)](https://tailscale.com)
 [![Dependencies](https://img.shields.io/badge/dependencies-0%20(Pure%20Stdlib)-success.svg)](https://docs.python.org/3/library/asyncio.html)
@@ -76,7 +76,7 @@ Port 8080   Port 3000                Port 4000
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/giang610/TailRouter.git
+   git clone https://github.com/giangsamne/TailRouter.git
    cd TailRouter
    ```
 
@@ -106,7 +106,7 @@ Port 8080   Port 3000                Port 4000
 
 1. **Clone or download the repo**:
    ```cmd
-   git clone https://github.com/giang610/TailRouter.git
+   git clone https://github.com/giangsamne/TailRouter.git
    cd TailRouter
    ```
 
@@ -204,7 +204,7 @@ TailRouter/
 ## 🤝 Contributing
 
 Contributions, issues, and feature requests are welcome!
-Feel free to check [issues page](https://github.com/giang610/TailRouter/issues).
+Feel free to check [issues page](https://github.com/giangsamne/TailRouter/issues).
 
 ---
 

@@ -5,7 +5,7 @@
 **Hệ thống Gateway điều phối Reverse-Proxy & Web Dashboard siêu nhẹ, zero-dependency, chạy trực tiếp trên máy vật lý kết hợp Tailscale Serve & Funnel.**
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giang610/TailRouter)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg)](https://tailscale.com)
 [![Dependencies](https://img.shields.io/badge/dependencies-0%20(Pure%20Stdlib)-success.svg)](https://docs.python.org/3/library/asyncio.html)
@@ -55,7 +55,7 @@ Không cần cài máy ảo, không cần cấu hình phức tạp như Nginx/Tr
 
 1. **Tải mã nguồn về máy**:
    ```bash
-   git clone https://github.com/giang610/TailRouter.git
+   git clone https://github.com/giangsamne/TailRouter.git
    cd TailRouter
    ```
 
@@ -85,7 +85,7 @@ Không cần cài máy ảo, không cần cấu hình phức tạp như Nginx/Tr
 
 1. **Tải mã nguồn**:
    ```cmd
-   git clone https://github.com/giang610/TailRouter.git
+   git clone https://github.com/giangsamne/TailRouter.git
    cd TailRouter
    ```
 
