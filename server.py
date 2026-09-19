@@ -197,15 +197,24 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
         routes = routes_mgr.list_routes()
         uptime_sec = int(time.time() - START_TIME)
 
+        total_hits = sum(r.get("hits", 0) for r in routes)
+        active_cnt = sum(1 for r in routes if r.get("enabled", True))
         data = {
             "version": "1.0.0",
             "uptime_seconds": uptime_sec,
             "port": PORT,
             "tailscale": ts_info,
             "total_routes": len(routes),
-            "active_routes": sum(1 for r in routes if r.get("enabled", True)),
+            "active_routes": active_cnt,
+            "stats": {
+                "total_routes": len(routes),
+                "active_routes": active_cnt,
+                "total_hits": total_hits,
+                "uptime_seconds": uptime_sec,
+            },
             "routes": routes,
             "logs": recent_logs[-20:],
+            "recent_logs": recent_logs[-20:],
         }
         await send_json_response(writer, 200, data)
         return True

@@ -1508,19 +1508,31 @@ http://${tailscaleIp}:${PORT}/bambu`;
         }
       }
 
-      // Stats
-      document.getElementById('stat-total-routes').textContent = data.stats.total_routes;
-      document.getElementById('stat-active-routes').textContent = `${data.stats.active_routes} ${t('stat_active_suffix')}`;
-      document.getElementById('stat-total-hits').textContent = data.stats.total_hits.toLocaleString();
-      document.getElementById('stat-uptime').textContent = formatUptime(data.stats.uptime_seconds);
-      document.getElementById('badge-routes-count').textContent = data.stats.total_routes;
+      // Stats (Safe extraction)
+      const st = data.stats || {};
+      const routesList = data.routes || [];
+      const totalRoutes = data.total_routes ?? st.total_routes ?? routesList.length;
+      const activeRoutes = data.active_routes ?? st.active_routes ?? routesList.filter(r => r.enabled).length;
+      const totalHits = st.total_hits ?? routesList.reduce((acc, r) => acc + (r.hits || 0), 0);
+      const uptimeSec = data.uptime_seconds ?? st.uptime_seconds ?? 0;
+
+      const elTotal = document.getElementById('stat-total-routes');
+      if (elTotal) elTotal.textContent = totalRoutes;
+      const elActive = document.getElementById('stat-active-routes');
+      if (elActive) elActive.textContent = `${activeRoutes} ${t('stat_active_suffix')}`;
+      const elHits = document.getElementById('stat-total-hits');
+      if (elHits) elHits.textContent = totalHits.toLocaleString();
+      const elUptime = document.getElementById('stat-uptime');
+      if (elUptime) elUptime.textContent = formatUptime(uptimeSec);
+      const elBadgeCount = document.getElementById('badge-routes-count');
+      if (elBadgeCount) elBadgeCount.textContent = totalRoutes;
 
       // Routes
-      currentRoutes = data.routes || [];
+      currentRoutes = routesList;
       renderRoutes(currentRoutes);
 
       // Logs
-      renderLogs(data.recent_logs || []);
+      renderLogs(data.logs || data.recent_logs || []);
 
     } catch (e) {
       console.error("fetchStatus error", e);
