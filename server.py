@@ -19,6 +19,7 @@ from routes_manager import RoutesManager
 from tailscale_helper import (
     apply_route_tailscale,
     get_tailscale_info,
+    get_tailscale_serve_routes,
     remove_route_tailscale,
     run_tailscale_cmd,
     sync_all_routes_tailscale,
@@ -193,6 +194,11 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
 
     # 1. API Trạng thái tổng quan
     if path == "/api/status" and method == "GET":
+        # Tự động đồng bộ các route đang mở từ lệnh Tailscale CLI
+        cli_routes = get_tailscale_serve_routes()
+        if cli_routes:
+            routes_mgr.sync_from_tailscale(cli_routes)
+
         ts_info = get_tailscale_info()
         routes = routes_mgr.list_routes()
         uptime_sec = int(time.time() - START_TIME)
@@ -221,14 +227,42 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
 
     # 2. API Quét cổng tự động (Auto Scan)
     if path == "/api/scan" and method == "GET":
+        # Tự động cập nhật các route Tailscale trước khi quét
+        cli_routes = get_tailscale_serve_routes()
+        if cli_routes:
+            routes_mgr.sync_from_tailscale(cli_routes)
+
         configured_ports = routes_mgr.get_configured_ports()
         scan_results = await scan_active_ports(configured_ports)
         await send_json_response(writer, 200, {"ports": scan_results, "count": len(scan_results)})
         return True
 
+    # 2.5. API Đồng bộ thủ công toàn bộ router từ Tailscale CLI
+    if path == "/api/routes/sync-tailscale" and method == "POST":
+        cli_routes = get_tailscale_serve_routes()
+        new_added = routes_mgr.sync_from_tailscale(cli_routes)
+        await routes_mgr.check_all_health()
+        msg = f"Đã đồng bộ {len(cli_routes)} router từ Tailscale CLI"
+        if new_added:
+            msg += f" (phát hiện {len(new_added)} router mới: {', '.join(r['path'] for r in new_added)})"
+        else:
+            msg += " (tất cả router đã được cập nhật)"
+        await send_json_response(writer, 200, {
+            "success": True,
+            "message": msg,
+            "discovered_count": len(cli_routes),
+            "added_count": len(new_added),
+            "new_routes": new_added,
+            "routes": routes_mgr.list_routes(),
+        })
+        return True
+
     # 3. API Quản lý Routes (Lấy danh sách / Thêm mới)
     if path == "/api/routes":
         if method == "GET":
+            cli_routes = get_tailscale_serve_routes()
+            if cli_routes:
+                routes_mgr.sync_from_tailscale(cli_routes)
             await routes_mgr.check_all_health()
             await send_json_response(writer, 200, {"routes": routes_mgr.list_routes()})
             return True
@@ -652,6 +686,12 @@ async def main() -> None:
         logger.info(f"🌐 Tailnet IP trực tiếp:     http://{ts_info['ipv4']}:{PORT}/router")
     if fqdn:
         logger.info(f"🔗 Tên miền MagicDNS FQDN:   https://{fqdn}/router")
+
+    # TỰ ĐỘNG PHÁT HIỆN ROUTE TỪ TAILSCALE CLI VÀ ĐỒNG BỘ
+    cli_routes = get_tailscale_serve_routes()
+    if cli_routes:
+        new_routes = routes_mgr.sync_from_tailscale(cli_routes)
+        logger.info(f"🔍 Tự động phát hiện {len(cli_routes)} router đang mở từ lệnh Tailscale CLI ({len(new_routes)} router mới)")
 
     # TỰ ĐỘNG ĐỒNG BỘ TAILSCALE SERVE & FUNNEL CHO TẤT CẢ ROUTERS
     logger.info(f"⚙️  Đang tự động đồng bộ Tailscale Serve & Funnel cho các router...")

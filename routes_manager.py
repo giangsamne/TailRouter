@@ -288,3 +288,63 @@ class RoutesManager:
             else:
                 r["last_status"] = "offline"
                 r["last_latency_ms"] = None
+
+    def sync_from_tailscale(self, discovered_routes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Đồng bộ các routes đang mở trên Tailscale Serve / Funnel vào routes_manager:
+        - Nếu route chưa có trong cấu hình: tự động thêm mới vào _routes.
+        - Nếu route đã có: cập nhật mode ('serve' / 'funnel') nếu khác.
+        Trả về danh sách các route mới được thêm.
+        """
+        new_added = []
+        modified = False
+
+        path_map = {r["path"].lower(): r for r in self._routes.values()}
+
+        for disc in discovered_routes:
+            d_path = disc.get("path", "").strip()
+            if not d_path or d_path == "/router":
+                continue
+
+            clean_path = "/" + d_path.lstrip("/").rstrip("/")
+            target_host = disc.get("target_host", "127.0.0.1")
+            target_port = disc.get("target_port", 80)
+            mode = disc.get("mode", "serve")
+
+            if clean_path.lower() in path_map:
+                existing = path_map[clean_path.lower()]
+                if existing.get("mode") != mode:
+                    existing["mode"] = mode
+                    modified = True
+                if not existing.get("enabled", True):
+                    existing["enabled"] = True
+                    modified = True
+            else:
+                route_id = f"route_ts_{int(time.time())}_{target_port}_{abs(hash(clean_path)) % 10000}"
+                clean_name = clean_path.lstrip("/").replace("-", " ").title()
+                suggested_name = f"⚡ {clean_name}"
+                new_route = {
+                    "id": route_id,
+                    "name": suggested_name,
+                    "path": clean_path,
+                    "target_host": target_host,
+                    "target_port": target_port,
+                    "strip_prefix": False,
+                    "mode": mode,
+                    "enabled": True,
+                    "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "hits": 0,
+                    "last_status": "online",
+                    "last_latency_ms": None,
+                    "notes": "Tự động phát hiện từ lệnh Tailscale CLI",
+                }
+                self._routes[route_id] = new_route
+                path_map[clean_path.lower()] = new_route
+                new_added.append(new_route)
+                modified = True
+
+        if modified:
+            self.save()
+
+        return new_added
+

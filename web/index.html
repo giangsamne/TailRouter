@@ -738,9 +738,14 @@
       <div class="section-title">
         <span data-i18n="section_routes_title">Các Tuyến Đường Đang Quản Lý</span>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="refreshRoutes()">
-        <span data-i18n="btn_refresh_ping">🔄 Làm Mới & Test Ping</span>
-      </button>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button class="btn btn-primary btn-sm" onclick="syncFromTailscaleCli()" title="Tự động quét và nạp toàn bộ các route đã mở bằng lệnh tailscale CLI">
+          <span data-i18n="btn_sync_cli">⚡ Quét Từ Lệnh Tailscale</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="refreshRoutes()">
+          <span data-i18n="btn_refresh_ping">🔄 Làm Mới & Test Ping</span>
+        </button>
+      </div>
     </div>
 
     <!-- Routes Container -->
@@ -760,9 +765,14 @@
           Tự động dò quét từ hệ thống (ss -tulpn) và Docker Containers. Bấm + Thêm vào Router để public tức thì.
         </p>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="runPortScan()">
-        <span data-i18n="btn_rescan">🔄 Quét Lại Ngay</span>
-      </button>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+        <button class="btn btn-secondary btn-sm" onclick="syncFromTailscaleCli()" title="Quét các route mở từ lệnh Tailscale CLI">
+          <span data-i18n="btn_sync_cli">⚡ Quét Từ Lệnh Tailscale</span>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="runPortScan()">
+          <span data-i18n="btn_rescan">🔄 Quét Lại Ngay</span>
+        </button>
+      </div>
     </div>
 
     <div class="scan-card">
@@ -968,6 +978,8 @@ http://100.100.1.3:65534/bambu</pre>
       stat_uptime: "Thời Gian Hoạt Động (Uptime)",
       stat_uptime_sub: "Máy thật bare-metal",
       section_routes_title: "Các Tuyến Đường Đang Quản Lý",
+      btn_sync_cli: "⚡ Đồng Bộ Lệnh Tailscale",
+      toast_syncing_cli: "Đang quét các router mở từ lệnh Tailscale CLI...",
       btn_refresh_ping: "🔄 Làm Mới & Test Ping",
       loading_routes: "Đang tải danh sách router...",
       no_routes: "Chưa có route nào được cấu hình.",
@@ -1072,6 +1084,8 @@ http://100.100.1.3:65534/bambu</pre>
       stat_uptime: "Uptime",
       stat_uptime_sub: "Bare-metal host",
       section_routes_title: "Active Managed Routes",
+      btn_sync_cli: "⚡ Sync from Tailscale CLI",
+      toast_syncing_cli: "Scanning active routes from Tailscale CLI...",
       btn_refresh_ping: "🔄 Refresh & Test Ping",
       loading_routes: "Loading routes...",
       no_routes: "No routes configured yet.",
@@ -1176,6 +1190,8 @@ http://100.100.1.3:65534/bambu</pre>
       stat_uptime: "运行时间 (Uptime)",
       stat_uptime_sub: "裸机运行",
       section_routes_title: "当前管理的路由",
+      btn_sync_cli: "⚡ 从 Tailscale CLI 同步",
+      toast_syncing_cli: "正在从 Tailscale CLI 扫描开启的路由...",
       btn_refresh_ping: "🔄 刷新并测试 Ping",
       loading_routes: "正在加载路由列表...",
       no_routes: "尚未配置任何路由。",
@@ -1280,6 +1296,8 @@ http://100.100.1.3:65534/bambu</pre>
       stat_uptime: "稼働時間 (Uptime)",
       stat_uptime_sub: "ベアメタル動作",
       section_routes_title: "管理中のルート一覧",
+      btn_sync_cli: "⚡ Tailscale CLI から同期",
+      toast_syncing_cli: "Tailscale CLI から開いているルートをスキャン中...",
       btn_refresh_ping: "🔄 更新 & Ping テスト",
       loading_routes: "ルートを読み込み中...",
       no_routes: "ルートはまだ設定されていません。",
@@ -1672,6 +1690,25 @@ http://${tailscaleIp}:${PORT}/bambu`;
     }
   }
 
+  // Sync Routes from Tailscale CLI
+  async function syncFromTailscaleCli() {
+    showToast(t('toast_syncing_cli') || "Đang quét các router mở từ lệnh Tailscale CLI...");
+    try {
+      const res = await fetch('/api/routes/sync-tailscale', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast("✅ " + data.message);
+        currentRoutes = data.routes || [];
+        renderRoutes(currentRoutes);
+        fetchStatus();
+      } else {
+        showToast(data.message || "Lỗi đồng bộ", "error");
+      }
+    } catch (e) {
+      showToast("Lỗi: " + e, "error");
+    }
+  }
+
   // Toggle Route
   async function toggleRoute(id) {
     try {
@@ -1732,12 +1769,18 @@ http://${tailscaleIp}:${PORT}/bambu`;
       let typeBadge = p.is_http ? '<span class="badge badge-http">HTTP</span>' : '<span class="badge badge-tcp">TCP</span>';
       if (p.is_docker) typeBadge += ' <span class="badge badge-docker">Docker</span>';
 
+      const hasTs = p.tailscale_routes && p.tailscale_routes.length > 0;
+      let tsBadge = '';
+      if (hasTs) {
+        tsBadge = `<div style="margin-top:4px;"><span class="badge" style="background:#581c87; color:#f3e8ff; border:1px solid #9333ea; font-size:0.75rem;">⚡ Tailscale: ${p.tailscale_routes.join(', ')}</span></div>`;
+      }
+
       const configuredBadge = p.is_configured 
         ? `<span class="badge badge-configured">${t('badge_assigned')}</span>`
         : `<span class="badge" style="background:#1e293b; color:#94a3b8;">${t('badge_unassigned')}</span>`;
 
       const btnAdd = p.is_configured
-        ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.5;">${t('btn_added')}</button>`
+        ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.6;">${t('btn_added')}</button>`
         : `<button class="btn btn-primary btn-sm" onclick='prefillFromScan(${JSON.stringify(p)})'>${t('btn_add_to_router')}</button>`;
 
       return `
@@ -1754,7 +1797,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
             ${p.server ? `<div style="font-size:0.75rem; color:#64748b;">Server: ${p.server}</div>` : ''}
           </td>
           <td style="color:#94a3b8;">${p.latency_ms ? `${p.latency_ms} ms` : '-'}</td>
-          <td>${configuredBadge}</td>
+          <td>${configuredBadge}${tsBadge}</td>
           <td style="text-align: right;">${btnAdd}</td>
         </tr>
       `;

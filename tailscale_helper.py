@@ -239,5 +239,48 @@ def get_tailscale_info() -> Dict[str, Any]:
     return info
 
 
+def get_tailscale_serve_routes() -> List[Dict[str, Any]]:
+    """
+    Quét trực tiếp từ 'tailscale serve status --json' để lấy toàn bộ các route
+    đang mở bằng lệnh CLI (serve hoặc funnel).
+    """
+    import urllib.parse
+    tailscale_bin = get_tailscale_bin()
+    try:
+        res = subprocess.run([tailscale_bin, "serve", "status", "--json"], capture_output=True, text=True, timeout=4.0)
+        if res.returncode != 0 or not res.stdout.strip():
+            return []
+
+        data = json.loads(res.stdout)
+        web = data.get("Web", {})
+        allow_funnel = data.get("AllowFunnel", {})
+
+        routes = []
+        for host_port, cfg in web.items():
+            is_funnel = bool(allow_funnel.get(host_port, False))
+            handlers = cfg.get("Handlers", {})
+            for path, h in handlers.items():
+                if path == "/router":
+                    continue
+                proxy_url = h.get("Proxy", "")
+                if proxy_url:
+                    parsed = urllib.parse.urlparse(proxy_url)
+                    host = parsed.hostname or "127.0.0.1"
+                    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+                    routes.append({
+                        "path": path,
+                        "target_host": host,
+                        "target_port": port,
+                        "mode": "funnel" if is_funnel else "serve",
+                        "raw_proxy": proxy_url,
+                    })
+        return routes
+    except Exception as e:
+        logger.warning(f"Lỗi quét route từ Tailscale CLI: {e}")
+        return []
+
+
 if __name__ == "__main__":
     print(json.dumps(get_tailscale_info(), indent=2, ensure_ascii=False))
+    print("Discovered routes:", json.dumps(get_tailscale_serve_routes(), indent=2))
+

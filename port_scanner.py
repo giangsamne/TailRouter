@@ -276,6 +276,19 @@ async def scan_active_ports(configured_ports: Optional[List[int]] = None) -> Lis
             if title_slug:
                 suggested_path = f"/{title_slug}"
 
+        # Tìm các route Tailscale đang mở trên cổng này
+        ts_routes = []
+        try:
+            from tailscale_helper import get_tailscale_serve_routes
+            all_ts_routes = get_tailscale_serve_routes()
+            for tr in all_ts_routes:
+                if tr.get("target_port") == p:
+                    ts_routes.append(tr.get("path"))
+        except Exception:
+            pass
+
+        is_conf = (p in configured_ports) or bool(ts_routes)
+
         results.append({
             "port": p,
             "ip": info["ip"],
@@ -287,8 +300,9 @@ async def scan_active_ports(configured_ports: Optional[List[int]] = None) -> Lis
             "title": probe_data.get("title"),
             "server": probe_data.get("server"),
             "latency_ms": probe_data.get("latency_ms"),
-            "suggested_path": suggested_path,
-            "is_configured": p in configured_ports,
+            "suggested_path": ts_routes[0] if ts_routes else suggested_path,
+            "tailscale_routes": ts_routes,
+            "is_configured": is_conf,
         })
 
     return results
