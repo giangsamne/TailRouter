@@ -176,13 +176,15 @@ def enable_autostart() -> Tuple[bool, str]:
             with open(plist_path, "w", encoding="utf-8") as f:
                 f.write(plist_content.strip() + "\n")
 
-            # Load vào launchctl
-            subprocess.run(["launchctl", "unload", "-w", plist_path], capture_output=True, timeout=5)
-            res = subprocess.run(["launchctl", "load", "-w", plist_path], capture_output=True, text=True, timeout=5)
-            if res.returncode == 0:
-                return True, "Đã kích hoạt tự khởi động thành công trên macOS (launchd LaunchAgent)!"
-            else:
-                return False, f"Lỗi nạp launchctl: {res.stderr}"
+            # Nếu chưa có job com.tailrouter.gateway trong launchctl, thử nạp để launchd quản lý
+            try:
+                loaded_check = subprocess.run(["launchctl", "list"], capture_output=True, text=True, timeout=3)
+                if "com.tailrouter.gateway" not in loaded_check.stdout:
+                    subprocess.run(["launchctl", "load", "-w", plist_path], capture_output=True, timeout=5)
+            except Exception:
+                pass
+
+            return True, "Đã kích hoạt tự khởi động thành công trên macOS (launchd LaunchAgent)!"
         except Exception as e:
             return False, f"Lỗi tạo cấu hình macOS: {e}"
 
@@ -249,12 +251,11 @@ def disable_autostart() -> Tuple[bool, str]:
     if plat == "macos":
         plist_path = get_macos_plist_path()
         if os.path.exists(plist_path):
-            subprocess.run(["launchctl", "unload", "-w", plist_path], capture_output=True, timeout=5)
             try:
                 os.remove(plist_path)
-            except Exception:
-                pass
-            return True, "Đã tắt tự khởi động trên macOS (đã gỡ LaunchAgent)."
+            except Exception as e:
+                return False, f"Lỗi gỡ bỏ file LaunchAgent: {e}"
+            return True, "Đã tắt tự khởi động trên macOS (đã gỡ LaunchAgent khỏi thư mục khởi động)."
         return True, "Tự khởi động vốn chưa được bật trên macOS."
 
     elif plat == "linux":
