@@ -25,3 +25,7 @@ Thumbs.db
 
 # Environment variables (if any)
 .env
+
+# User configuration & active routes (do not commit personal homelab routes)
+config/routes.json
+config/*.tmp

@@ -37,30 +37,14 @@ class RoutesManager:
             except Exception as e:
                 print(f"[RoutesManager] Lỗi đọc config: {e}")
         
-        # Mặc định khởi tạo cấu hình mẫu nếu có container Bambu 8080
+        # Khởi tạo danh sách route mới 100% trống cho cài đặt ban đầu
         self._routes = {}
-        self._init_defaults()
         self.save()
 
     def _init_defaults(self) -> None:
-        """Thêm các route gợi ý mặc định nếu có dịch vụ sẵn."""
-        # Kiểm tra xem cổng 8080 có mở không để add mẫu
-        route_id = "route_bambu_8080"
-        self._routes[route_id] = {
-            "id": route_id,
-            "name": "Bambu 3D Timelapse",
-            "path": "/bambu",
-            "target_host": "127.0.0.1",
-            "target_port": 8080,
-            "strip_prefix": True,
-            "mode": "serve",
-            "enabled": True,
-            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "hits": 0,
-            "last_status": "unknown",
-            "last_latency_ms": None,
-            "notes": "Tự động phát hiện container Bambu Lab A1",
-        }
+        """Khởi tạo danh sách route trống cho người dùng mới."""
+        self._routes = {}
+
 
     def save(self) -> bool:
         """Lưu danh sách route vào file JSON."""
@@ -347,4 +331,3 @@ class RoutesManager:
             self.save()
 
         return new_added
-
