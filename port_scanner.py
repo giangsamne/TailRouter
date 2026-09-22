@@ -84,8 +84,11 @@ def parse_ss_listeners() -> List[Dict[str, Any]]:
 
 
 def parse_macos_listeners() -> List[Dict[str, Any]]:
-    """Phân tích tiến trình và cổng lắng nghe trên macOS qua lsof."""
+    """Phân tích tiến trình và cổng lắng nghe trên macOS qua lsof kết hợp netstat."""
     listeners = []
+    seen_ports = set()
+
+    # 1. Thử lsof để lấy thông tin chi tiết tên tiến trình
     try:
         res = subprocess.run(
             ["lsof", "-iTCP", "-sTCP:LISTEN", "-P", "-n"],
@@ -104,10 +107,39 @@ def parse_macos_listeners() -> List[Dict[str, Any]]:
                         try:
                             port = int(port_p)
                             listeners.append({"ip": ip_p, "port": port, "process": proc_name})
+                            seen_ports.add(port)
                         except ValueError:
                             pass
     except Exception:
         pass
+
+    # 2. Bổ sung netstat -an -p tcp để phát hiện mọi cổng LISTEN hệ thống kể cả khi không chạy dưới sudo
+    try:
+        res = subprocess.run(
+            ["netstat", "-an", "-p", "tcp"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if res.returncode == 0:
+            for line in res.stdout.splitlines():
+                if "LISTEN" in line:
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        local_addr = parts[3]
+                        last_dot = local_addr.rfind(".")
+                        if last_dot != -1:
+                            port_str = local_addr[last_dot + 1 :]
+                            try:
+                                port = int(port_str)
+                                if port not in seen_ports and port != 65534:
+                                    listeners.append({"ip": "0.0.0.0", "port": port, "process": "Service"})
+                                    seen_ports.add(port)
+                            except ValueError:
+                                pass
+    except Exception:
+        pass
+
     return listeners
 
 

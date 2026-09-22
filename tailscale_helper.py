@@ -84,7 +84,6 @@ def apply_route_tailscale(path: str, target: str, mode: str = "serve") -> Dict[s
     - mode == 'funnel': Public ra toàn bộ internet qua HTTPS: https://<fqdn><path>
     - mode == 'serve': Chỉ truy cập trong mạng Tailnet: https://<fqdn><path>
     """
-    tailscale_bin = get_tailscale_bin()
     clean_path = "/" + path.strip().lstrip("/").rstrip("/")
     if not clean_path:
         clean_path = "/"
@@ -94,9 +93,9 @@ def apply_route_tailscale(path: str, target: str, mode: str = "serve") -> Dict[s
     if not target_url.startswith("http://") and not target_url.startswith("https://"):
         target_url = f"http://{target_url}"
 
-    cmd = [tailscale_bin, mode, "--bg", "--set-path", clean_path, target_url]
+    cmd = [mode, "--bg", "--yes", "--set-path", clean_path, target_url]
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=8.0)
+        res = run_tailscale_cmd(cmd, timeout=8.0)
         success = res.returncode == 0
         err = (res.stderr or res.stdout).strip()
         return {
@@ -113,15 +112,14 @@ def apply_route_tailscale(path: str, target: str, mode: str = "serve") -> Dict[s
 
 def remove_route_tailscale(path: str) -> Dict[str, Any]:
     """Xóa một đường dẫn route khỏi Tailscale Serve / Funnel."""
-    tailscale_bin = get_tailscale_bin()
     clean_path = "/" + path.strip().lstrip("/").rstrip("/")
     if not clean_path:
         clean_path = "/"
 
     # Tailscale CLI dùng '--set-path <path> off' để gỡ route
-    cmd = [tailscale_bin, "serve", "--set-path", clean_path, "off"]
+    cmd = ["serve", "--yes", "--set-path", clean_path, "off"]
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=8.0)
+        res = run_tailscale_cmd(cmd, timeout=8.0)
         return {
             "success": res.returncode == 0,
             "path": clean_path,
@@ -164,6 +162,48 @@ def sync_all_routes_tailscale(routes: List[Dict[str, Any]], port: int = 65534) -
     return results
 
 
+def configure_serve_router(port: int = 65534) -> Dict[str, Any]:
+    """Cấu hình Tailscale Serve đưa giao diện /router lên MagicDNS."""
+    res = apply_route_tailscale("/router", f"http://127.0.0.1:{port}/router", mode="serve")
+    if res.get("success"):
+        res["message"] = "Đã cấu hình Tailscale Serve thành công cho /router"
+    return res
+
+
+def configure_serve_gateway(port: int = 65534) -> Dict[str, Any]:
+    """Cấu hình Tailscale Serve ánh xạ toàn bộ Gateway (cổng 65534)."""
+    target = f"http://127.0.0.1:{port}"
+    cmd = ["serve", "--bg", "--yes", target]
+    try:
+        proc = run_tailscale_cmd(cmd, timeout=8.0)
+        success = proc.returncode == 0
+        err = (proc.stderr or proc.stdout).strip()
+        return {
+            "success": success,
+            "message": "Đã ánh xạ toàn bộ Gateway qua Tailscale Serve" if success else None,
+            "output": proc.stdout.strip(),
+            "error": err if not success else None,
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def reset_serve_config() -> Dict[str, Any]:
+    """Đặt lại toàn bộ cấu hình Tailscale Serve."""
+    try:
+        proc = run_tailscale_cmd(["serve", "reset"], timeout=8.0)
+        success = proc.returncode == 0
+        err = (proc.stderr or proc.stdout).strip()
+        return {
+            "success": success,
+            "message": "Đã đặt lại cấu hình Tailscale Serve thành công" if success else None,
+            "output": proc.stdout.strip(),
+            "error": err if not success else None,
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 def get_tailscale_info() -> Dict[str, Any]:
     """Lấy thông tin chi tiết về node Tailscale và cấu hình Serve/Funnel hiện tại."""
     info = {
@@ -182,16 +222,15 @@ def get_tailscale_info() -> Dict[str, Any]:
         "serve_routes": {},
     }
 
-    tailscale_bin = get_tailscale_bin()
     try:
-        ver_res = subprocess.run([tailscale_bin, "version"], capture_output=True, text=True, timeout=2)
+        ver_res = run_tailscale_cmd(["version"], timeout=2.0)
         if ver_res.returncode == 0:
             info["installed"] = True
     except Exception:
         return info
 
     try:
-        status_res = subprocess.run([tailscale_bin, "status", "--json"], capture_output=True, text=True, timeout=3)
+        status_res = run_tailscale_cmd(["status", "--json"], timeout=3.0)
         if status_res.returncode == 0:
             data = json.loads(status_res.stdout)
             backend_state = data.get("BackendState", "Unknown")
@@ -221,7 +260,7 @@ def get_tailscale_info() -> Dict[str, Any]:
 
     # Kiểm tra trạng thái Tailscale Serve / Funnel qua CLI
     try:
-        serve_res = subprocess.run([tailscale_bin, "serve", "status", "--json"], capture_output=True, text=True, timeout=3)
+        serve_res = run_tailscale_cmd(["serve", "status", "--json"], timeout=3.0)
         if serve_res.returncode == 0:
             output = serve_res.stdout.strip()
             if output and output != "{}":
@@ -240,7 +279,7 @@ def get_tailscale_info() -> Dict[str, Any]:
 
     # Kiểm tra Funnel status
     try:
-        fn_res = subprocess.run([tailscale_bin, "funnel", "status"], capture_output=True, text=True, timeout=3)
+        fn_res = run_tailscale_cmd(["funnel", "status"], timeout=3.0)
         if fn_res.returncode == 0:
             fn_out = fn_res.stdout
             if "Funnel on" in fn_out or "Available on the internet" in fn_out:
@@ -257,9 +296,8 @@ def get_tailscale_serve_routes() -> List[Dict[str, Any]]:
     đang mở bằng lệnh CLI (serve hoặc funnel).
     """
     import urllib.parse
-    tailscale_bin = get_tailscale_bin()
     try:
-        res = subprocess.run([tailscale_bin, "serve", "status", "--json"], capture_output=True, text=True, timeout=4.0)
+        res = run_tailscale_cmd(["serve", "status", "--json"], timeout=4.0)
         if res.returncode != 0 or not res.stdout.strip():
             return []
 

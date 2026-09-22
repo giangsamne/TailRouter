@@ -18,9 +18,12 @@ from port_scanner import scan_active_ports
 from routes_manager import RoutesManager
 from tailscale_helper import (
     apply_route_tailscale,
+    configure_serve_gateway,
+    configure_serve_router,
     get_tailscale_info,
     get_tailscale_serve_routes,
     remove_route_tailscale,
+    reset_serve_config,
     run_tailscale_cmd,
     sync_all_routes_tailscale,
 )
@@ -145,33 +148,36 @@ async def parse_http_request(reader: asyncio.StreamReader) -> Optional[HTTPReque
 
 
 async def send_json_response(writer: asyncio.StreamWriter, status: int, data: Any) -> None:
-    """Gửi phản hồi JSON chuẩn."""
+    """Gửi phản hồi JSON chuẩn RFC 7230."""
     payload = json.dumps(data, ensure_ascii=False).encode("utf-8")
+    status_text = "OK" if status == 200 else ("Created" if status == 201 else ("No Content" if status == 204 else ("Not Found" if status == 404 else ("Bad Request" if status == 400 else "Error"))))
     headers = [
-        f"HTTP/1.1 {status} {'OK' if status == 200 else 'Error'}",
+        f"HTTP/1.1 {status} {status_text}",
         "Content-Type: application/json; charset=utf-8",
         f"Content-Length: {len(payload)}",
         "Access-Control-Allow-Origin: *",
         "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS",
         "Access-Control-Allow-Headers: Content-Type, Authorization",
         "Connection: close",
-        "\r\n",
     ]
-    writer.write("\r\n".join(headers).encode("utf-8") + payload)
+    raw_response = "\r\n".join(headers).encode("utf-8") + b"\r\n\r\n" + payload
+    writer.write(raw_response)
     await writer.drain()
 
 
 async def send_html_response(writer: asyncio.StreamWriter, html_content: str, status: int = 200) -> None:
-    """Gửi phản hồi HTML."""
+    """Gửi phản hồi HTML chuẩn RFC 7230."""
     payload = html_content.encode("utf-8")
+    status_text = "OK" if status == 200 else ("Not Found" if status == 404 else "Error")
     headers = [
-        f"HTTP/1.1 {status} OK",
+        f"HTTP/1.1 {status} {status_text}",
         "Content-Type: text/html; charset=utf-8",
         f"Content-Length: {len(payload)}",
+        "Access-Control-Allow-Origin: *",
         "Connection: close",
-        "\r\n",
     ]
-    writer.write("\r\n".join(headers).encode("utf-8") + payload)
+    raw_response = "\r\n".join(headers).encode("utf-8") + b"\r\n\r\n" + payload
+    writer.write(raw_response)
     await writer.drain()
 
 
@@ -187,10 +193,11 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
             "Access-Control-Allow-Origin: *",
             "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS",
             "Access-Control-Allow-Headers: Content-Type, Authorization",
+            "Content-Length: 0",
             "Connection: close",
-            "\r\n\r\n",
         ]
-        writer.write("\r\n".join(headers).encode("utf-8"))
+        raw_response = "\r\n".join(headers).encode("utf-8") + b"\r\n\r\n"
+        writer.write(raw_response)
         await writer.drain()
         return True
 
@@ -591,12 +598,13 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 "Location: /router",
                 "Content-Length: 0",
                 "Connection: close",
-                "\r\n\r\n",
             ]
-            writer.write("\r\n".join(redir_resp).encode("utf-8"))
+            raw_response = "\r\n".join(redir_resp).encode("utf-8") + b"\r\n\r\n"
+            writer.write(raw_response)
             await writer.drain()
             try:
                 writer.close()
+                await writer.wait_closed()
             except Exception:
                 pass
             return
@@ -611,23 +619,26 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             await send_html_response(writer, "<h1>404 - Chưa tìm thấy file index.html giao diện /router</h1>", 404)
         try:
             writer.close()
+            await writer.wait_closed()
         except Exception:
             pass
         return
 
     # Phục vụ Favicon
     if path == "/favicon.ico" or path == "/favicon.svg":
+        svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#3b82f6"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'.encode("utf-8")
         headers = [
             "HTTP/1.1 200 OK",
             "Content-Type: image/svg+xml",
+            f"Content-Length: {len(svg)}",
             "Connection: close",
-            "\r\n\r\n",
         ]
-        svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#3b82f6"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'
-        writer.write("\r\n".join(headers).encode("utf-8") + svg.encode("utf-8"))
+        raw_response = "\r\n".join(headers).encode("utf-8") + b"\r\n\r\n" + svg
+        writer.write(raw_response)
         await writer.drain()
         try:
             writer.close()
+            await writer.wait_closed()
         except Exception:
             pass
         return
@@ -638,6 +649,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         if handled:
             try:
                 writer.close()
+                await writer.wait_closed()
             except Exception:
                 pass
             return
@@ -697,7 +709,11 @@ async def main() -> None:
     except Exception:
         pass
 
-    server = await asyncio.start_server(handle_client, HOST, PORT, reuse_address=True)
+    # Lắng nghe dual-stack (cả IPv4 và IPv6) để Safari và mọi trình duyệt kết nối localhost (::1) không bị từ chối
+    try:
+        server = await asyncio.start_server(handle_client, host=None, port=PORT, reuse_address=True)
+    except Exception:
+        server = await asyncio.start_server(handle_client, host="0.0.0.0", port=PORT, reuse_address=True)
     addrs = ", ".join(str(sock.getsockname()) for sock in server.sockets)
     logger.info(f"============================================================")
     logger.info(f"🚀 TailRouter & Gateway đang chạy trên cổng {PORT}!")
