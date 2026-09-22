@@ -58,12 +58,24 @@ def get_tailscale_bin() -> str:
 def run_tailscale_cmd(args: List[str], timeout: float = 6.0) -> subprocess.CompletedProcess:
     """Chạy lệnh tailscale CLI an toàn."""
     cmd = [get_tailscale_bin()] + args
+    env = dict(os.environ)
+    if "SHLVL" not in env:
+        env["SHLVL"] = "1"
+    extra_paths = ["/usr/local/bin", "/opt/homebrew/bin", "/snap/bin", "/usr/bin", "/bin"]
+    curr_path = env.get("PATH", "")
+    for ep in extra_paths:
+        if ep not in curr_path:
+            curr_path = f"{curr_path}:{ep}" if curr_path else ep
+    env["PATH"] = curr_path
+
     return subprocess.run(
         cmd,
         capture_output=True,
         text=True,
         timeout=timeout,
+        env=env,
     )
+
 
 
 def apply_route_tailscale(path: str, target: str, mode: str = "serve") -> Dict[str, Any]:

@@ -672,7 +672,27 @@
     </div>
   </div>
 
-  <!-- OPERATOR PERMISSION WARNING BANNER -->
+  <!-- AUTO-START ON BOOT CONTROL BANNER -->
+  <div id="autostart-banner" style="background: #182238; border: 1px solid #2a3b5c; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 0.85rem;">
+      <div style="font-size: 1.8rem;" id="autostart-icon">🚀</div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <strong style="font-size: 1rem; color: #fff;" data-i18n="autostart_title">Tự Động Bật Khi Mở Máy (Auto-Start on Boot):</strong>
+          <span id="autostart-badge" class="badge" style="background: #1e293b; color: #94a3b8;" data-i18n="checking">Đang kiểm tra...</span>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;" id="autostart-desc">
+          <span data-i18n="autostart_desc">Dịch vụ chạy ngầm độc lập ngay khi máy tính bật nguồn (hỗ trợ macOS launchd / Linux systemd).</span>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+      <button id="btn-toggle-autostart" class="btn btn-primary btn-sm" onclick="toggleAutostartAction()">
+        <span id="btn-autostart-text" data-i18n="btn_enable_autostart">⚡ Bật Tự Khởi Động</span>
+      </button>
+    </div>
+  </div>
+
   <div id="operator-warning-banner" style="display:none; background: #2e1d0f; border: 1px solid #f59e0b; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
     <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
       <span style="font-size: 1.5rem;">⚠️</span>
@@ -949,7 +969,9 @@ http://100.100.1.3:65534/bambu</pre>
   let currentScanPorts = [];
   let tailscaleIp = "127.0.0.1";
   let tailscaleFqdn = "";
+  let autostartEnabled = false;
   const PORT = 65534;
+
 
   // I18n Multi-language Dictionary
   const translations = {
@@ -1057,7 +1079,16 @@ http://100.100.1.3:65534/bambu</pre>
       toast_offline: "🔴 Dịch vụ OFFLINE! Không phản hồi kết nối.",
       toast_saved: "Lưu tuyến đường thành công!",
       toast_lang_changed: "Đã chuyển sang Tiếng Việt",
-      serve_active: "🟢 Đang Kích Hoạt HTTPS"
+      serve_active: "🟢 Đang Kích Hoạt HTTPS",
+      autostart_title: "Tự Động Bật Khi Mở Máy (Auto-Start on Boot):",
+      autostart_desc: "Dịch vụ chạy ngầm độc lập ngay khi máy tính bật nguồn (hỗ trợ macOS launchd / Linux systemd).",
+      btn_enable_autostart: "⚡ Bật Tự Khởi Động",
+      btn_disable_autostart: "🛑 Tắt Tự Khởi Động",
+      autostart_enabled: "ĐÃ BẬT",
+      autostart_disabled: "CHƯA BẬT",
+      autostart_active_desc: "Dịch vụ đã được đăng ký chạy ngầm tự động cùng hệ điều hành:",
+      toast_enabling_autostart: "Đang thiết lập tự khởi động cùng hệ thống...",
+      toast_disabling_autostart: "Đang tắt tự khởi động..."
     },
     en: {
       sub_title: "Homelab Port Router & Reverse Proxy Gateway",
@@ -1101,54 +1132,54 @@ http://100.100.1.3:65534/bambu</pre>
       th_status: "Status",
       th_action: "Action",
       scanning_msg: "Scanning all host ports...",
-      no_ports_found: "No open ports found.",
+      no_ports_found: "No active ports found.",
       btn_add_to_router: "+ Add to Router",
       btn_added: "Added",
       badge_assigned: "✓ Assigned",
       badge_unassigned: "Unassigned",
-      host_local: "Host Local",
+      host_local: "Localhost",
       ts_tab_title: "🌐 Tailscale Network Integration",
-      ts_tab_desc: "Port 65534 detects and natively communicates with devices across your Tailnet mesh.",
-      lbl_internal_ip: "INTERNAL TAILSCALE IP",
+      ts_tab_desc: "Port 65534 communicates directly with devices inside your Tailnet.",
+      lbl_internal_ip: "TAILSCALE INTERNAL IP",
       lbl_magicdns: "MAGICDNS DOMAIN (FQDN)",
-      lbl_quick_use: "💡 Quick access from iPhone / MacBook in your Tailnet:",
-      lbl_quick_use_desc: "Open browser on any Tailscale-connected device and visit:",
-      lbl_upgrade_serve: "🚀 Upgrade: Run via Tailscale Serve (Port 443 HTTPS without :65534)",
-      lbl_upgrade_serve_desc: "If you want standard HTTPS access (port 443) using your Tailscale MagicDNS name, click below:",
-      btn_enable_serve: "⚡ Enable Tailscale Serve for Port 65534",
-      logs_title: "📋 Recent Proxy Dispatch Logs",
+      lbl_quick_use: "💡 Quick access from iPhone / MacBook within Tailnet:",
+      lbl_quick_use_desc: "Open browser on any Tailscale connected device:",
+      lbl_upgrade_serve: "🚀 Upgrade: Expose via Tailscale Serve (No 65534 port in URL)",
+      lbl_upgrade_serve_desc: "To access with standard HTTPS (443) using Tailscale MagicDNS, click below:",
+      btn_enable_serve: "⚡ Enable Tailscale Serve on Port 65534",
+      logs_title: "📋 Recent Proxy Logs",
       btn_update: "🔄 Update",
       th_time: "Time",
       th_method: "Method",
       th_path: "Path",
-      th_target: "Target Backend",
-      th_response_code: "Response Code",
+      th_target: "Target",
+      th_response_code: "Status",
       no_logs: "No access logs yet.",
-      host_port_lbl: "Host Backend:",
+      host_port_lbl: "Target:",
       access_url_lbl: "Access URL:",
       btn_copy_link: "📋 Copy Link",
-      btn_to_serve: "🔒 Switch to Serve",
-      btn_to_funnel: "🌐 Switch to Funnel",
+      btn_to_serve: "🔒 To Serve",
+      btn_to_funnel: "🌐 To Funnel",
       btn_ping: "⚡ Ping",
       btn_edit: "✏️ Edit",
       btn_delete: "🗑️",
       badge_serve: "🔒 Serve (Tailnet Only)",
-      badge_funnel: "🌐 Funnel (Public Internet)",
+      badge_funnel: "🌐 Funnel (Public Web)",
       modal_title_add: "Add New Route",
       modal_title_edit: "Edit Route",
       lbl_friendly_name: "Friendly Name",
       lbl_url_path: "Public URL Path",
-      hint_url_path: "Path users will visit on port 65534 (e.g., http://100.100.1.3:65534/bambu).",
+      hint_url_path: "Path exposed on port 65534 (e.g. http://100.100.1.3:65534/bambu).",
       lbl_target_host: "Target Host",
       lbl_target_port: "Target Port",
       lbl_mode: "Publish Mode",
-      opt_mode_serve: "🔒 Serve (Tailnet Only) - Private access for your devices",
-      opt_mode_funnel: "🌐 Funnel (Public Internet) - Open to entire world via HTTPS",
+      opt_mode_serve: "🔒 Serve (Private Tailnet) - Accessible by your devices only",
+      opt_mode_funnel: "🌐 Funnel (Public Internet) - Global HTTPS access",
       lbl_expected_url: "Expected URL:",
-      lbl_strip_prefix: "Strip URL path prefix before sending to backend",
-      hint_strip_prefix: "If enabled: visiting /bambu/api/info forwards as /api/info to the target port.",
+      lbl_strip_prefix: "Strip Path Prefix when forwarding to target",
+      hint_strip_prefix: "When enabled: /bambu/api/info will be forwarded as /api/info.",
       lbl_notes: "Notes (Optional)",
-      lbl_activate_now: "Activate route immediately",
+      lbl_activate_now: "Activate Route Immediately",
       btn_cancel: "Cancel",
       btn_save: "Save Route",
       ph_name: "e.g., Bambu 3D Camera, Node Web App...",
@@ -1163,12 +1194,20 @@ http://100.100.1.3:65534/bambu</pre>
       toast_offline: "🔴 Service OFFLINE! Connection refused.",
       toast_saved: "Route saved successfully!",
       toast_lang_changed: "Switched language to English",
-      serve_active: "🟢 HTTPS Active"
+      serve_active: "🟢 HTTPS Active",
+      autostart_title: "Auto-Start on Boot:",
+      autostart_desc: "Runs as a background daemon automatically when system boots (supports macOS launchd / Linux systemd).",
+      btn_enable_autostart: "⚡ Enable Auto-Start",
+      btn_disable_autostart: "🛑 Disable Auto-Start",
+      autostart_enabled: "ENABLED",
+      autostart_disabled: "DISABLED",
+      autostart_active_desc: "Registered as a background service with operating system:",
+      toast_enabling_autostart: "Configuring auto-start on boot...",
+      toast_disabling_autostart: "Disabling auto-start..."
     },
     zh: {
       sub_title: "家庭实验室端口网关与反向代理服务",
       btn_add_router: "+ 添加路由",
-      loading_ts: "正在加载 Tailscale...",
       remote_control: "远程控制 (Tailscale Serve):",
       checking: "正在检查状态...",
       remote_access_via: "直接远程访问地址:",
@@ -1269,7 +1308,16 @@ http://100.100.1.3:65534/bambu</pre>
       toast_offline: "🔴 服务离线！无响应。",
       toast_saved: "路由保存成功！",
       toast_lang_changed: "已切换为中文",
-      serve_active: "🟢 HTTPS 已激活"
+      serve_active: "🟢 HTTPS 已激活",
+      autostart_title: "开机自启 (Auto-Start on Boot):",
+      autostart_desc: "系统开机时自动在后台启动运行 (支持 macOS launchd / Linux systemd)。",
+      btn_enable_autostart: "⚡ 开启开机自启",
+      btn_disable_autostart: "🛑 关闭开机自启",
+      autostart_enabled: "已开启",
+      autostart_disabled: "未开启",
+      autostart_active_desc: "已成功注册为后台系统自启服务:",
+      toast_enabling_autostart: "正在配置开机自启...",
+      toast_disabling_autostart: "正在关闭开机自启..."
     },
     ja: {
       sub_title: "ホームラボポートルーター＆リバースプロキシ",
@@ -1375,8 +1423,18 @@ http://100.100.1.3:65534/bambu</pre>
       toast_offline: "🔴 サービス オフライン！応答がありません。",
       toast_saved: "ルートを保存しました！",
       toast_lang_changed: "言語を日本語に切り替えました",
-      serve_active: "🟢 HTTPS 有効"
+      serve_active: "🟢 HTTPS 有効",
+      autostart_title: "システム起動時の自動実行 (Auto-Start on Boot):",
+      autostart_desc: "システム起動時にバックグラウンドで自動実行します (macOS launchd / Linux systemd 対応)。",
+      btn_enable_autostart: "⚡ 自動起動を有効化",
+      btn_disable_autostart: "🛑 自動起動を無効化",
+      autostart_enabled: "有効",
+      autostart_disabled: "無効",
+      autostart_active_desc: "OSバックグラウンドサービスとして自動起動登録済み:",
+      toast_enabling_autostart: "自動起動を設定中...",
+      toast_disabling_autostart: "自動起動を無効化中..."
     }
+
   };
 
   let currentLang = localStorage.getItem('ts_router_lang') || 'vi';
@@ -1545,6 +1603,35 @@ http://${tailscaleIp}:${PORT}/bambu`;
       const elBadgeCount = document.getElementById('badge-routes-count');
       if (elBadgeCount) elBadgeCount.textContent = totalRoutes;
 
+      // Auto-Start on Boot status update
+      if (data.autostart) {
+        autostartEnabled = !!data.autostart.enabled;
+        const autoBadge = document.getElementById('autostart-badge');
+        const autoBtnText = document.getElementById('btn-autostart-text');
+        const autoBtn = document.getElementById('btn-toggle-autostart');
+        const autoDesc = document.getElementById('autostart-desc');
+
+        if (autoBadge && autoBtnText && autoBtn && autoDesc) {
+          if (autostartEnabled) {
+            autoBadge.style.background = '#064e3b';
+            autoBadge.style.color = '#6ee7b7';
+            autoBadge.textContent = `✅ ${t('autostart_enabled') || "ĐÃ BẬT"} (${data.autostart.service_type || ""})`;
+            autoBtnText.textContent = t('btn_disable_autostart') || "🛑 Tắt Tự Khởi Động";
+            autoBtn.className = "btn btn-secondary btn-sm";
+            if (data.autostart.service_file) {
+              autoDesc.textContent = `${t('autostart_active_desc') || "Dịch vụ đã được đăng ký chạy ngầm tự động cùng hệ điều hành:"} ${data.autostart.service_file}`;
+            }
+          } else {
+            autoBadge.style.background = '#1e293b';
+            autoBadge.style.color = '#94a3b8';
+            autoBadge.textContent = `⚪ ${t('autostart_disabled') || "CHƯA BẬT"}`;
+            autoBtnText.textContent = t('btn_enable_autostart') || "⚡ Bật Tự Khởi Động";
+            autoBtn.className = "btn btn-primary btn-sm";
+            autoDesc.textContent = t('autostart_desc') || "Dịch vụ chạy ngầm độc lập ngay khi máy tính bật nguồn (hỗ trợ macOS launchd / Linux systemd).";
+          }
+        }
+      }
+
       // Routes
       currentRoutes = routesList;
       renderRoutes(currentRoutes);
@@ -1556,6 +1643,29 @@ http://${tailscaleIp}:${PORT}/bambu`;
       console.error("fetchStatus error", e);
     }
   }
+
+  // Toggle Auto-Start on Boot Action
+  async function toggleAutostartAction() {
+    const willEnable = !autostartEnabled;
+    showToast(willEnable ? (t('toast_enabling_autostart') || "Đang thiết lập tự khởi động cùng hệ thống...") : (t('toast_disabling_autostart') || "Đang tắt tự khởi động..."));
+    try {
+      const res = await fetch('/api/autostart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enable: willEnable })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("✅ " + data.message);
+        fetchStatus();
+      } else {
+        showToast(data.message || "Lỗi thiết lập", "error");
+      }
+    } catch (e) {
+      showToast("Lỗi: " + e, "error");
+    }
+  }
+
 
   // Trigger Serve Action
   async function triggerServe(action) {

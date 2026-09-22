@@ -24,6 +24,8 @@ from tailscale_helper import (
     run_tailscale_cmd,
     sync_all_routes_tailscale,
 )
+from service_helper import get_autostart_status, enable_autostart, disable_autostart
+
 
 # Cấu hình logging
 logging.basicConfig(
@@ -221,9 +223,30 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
             "routes": routes,
             "logs": recent_logs[-20:],
             "recent_logs": recent_logs[-20:],
+            "autostart": get_autostart_status(),
         }
         await send_json_response(writer, 200, data)
         return True
+
+    # 1.5. API Tự khởi động cùng hệ thống (Auto-Start on Boot)
+    if path == "/api/autostart":
+        if method == "GET":
+            await send_json_response(writer, 200, get_autostart_status())
+            return True
+        elif method == "POST":
+            body_json = json.loads(req.body.decode("utf-8")) if req.body else {}
+            action = body_json.get("action", "")
+            enable = body_json.get("enable")
+            if action == "enable" or enable is True:
+                success, msg = enable_autostart()
+            else:
+                success, msg = disable_autostart()
+            await send_json_response(writer, 200, {
+                "success": success,
+                "message": msg,
+                "autostart": get_autostart_status(),
+            })
+            return True
 
     # 2. API Quét cổng tự động (Auto Scan)
     if path == "/api/scan" and method == "GET":
