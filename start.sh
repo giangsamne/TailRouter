@@ -27,9 +27,15 @@ if [ "$1" = "-f" ] || [ "$1" = "--foreground" ]; then
     exit $?
 fi
 
-# Chạy ngầm (Daemon / Background) với setsid để tách biệt hoàn toàn khỏi terminal session
+# Chạy ngầm (Daemon / Background)
 echo "🚀 Đang khởi động TailRouter chạy nền trên cổng $PORT..."
-setsid python3 "$DIR/server.py" </dev/null > "$LOG_FILE" 2>&1 &
+if command -v setsid >/dev/null 2>&1; then
+    setsid python3 "$DIR/server.py" </dev/null > "$LOG_FILE" 2>&1 &
+elif command -v nohup >/dev/null 2>&1; then
+    nohup python3 "$DIR/server.py" </dev/null > "$LOG_FILE" 2>&1 &
+else
+    python3 "$DIR/server.py" </dev/null > "$LOG_FILE" 2>&1 &
+fi
 SERVER_PID=$!
 echo "$SERVER_PID" > "$PID_FILE"
 
@@ -38,7 +44,7 @@ sleep 1
 # Kiểm tra xem server đã khởi động thành công chưa
 if kill -0 $SERVER_PID 2>/dev/null; then
     # Lấy IP Tailscale nếu có
-    TS_IP=$(tailscale ip -4 2>/dev/null || echo "100.100.1.3")
+    TS_IP=$(tailscale ip -4 2>/dev/null || echo "")
     echo "============================================================"
     echo "✅ Khởi động thành công! (PID: $SERVER_PID)"
     echo "👉 Bảng Quản Trị Local:     http://localhost:$PORT/router"
