@@ -17,6 +17,16 @@
 
 ---
 
+### 🌿 Lựa Chọn Phiên Bản & Nhánh Cho Thiết Bị Của Bạn
+
+| Nhánh (Branch) | Thiết bị / Mục đích | Mô tả | Đường dẫn |
+| :--- | :--- | :--- | :--- |
+| **`main`** | ⚡ Máy chủ Linux / Bare-Metal | **Mặc định**: Bản Core Daemon chạy ngầm, 0 thư viện ngoài (zero-deps), tối ưu hiệu năng, tự khởi động với systemd. | [Xem nhánh `main`](https://github.com/giangsamne/TailRouter/tree/main) |
+| **`desktop-app`** | 🍏 macOS, 🪟 Windows, 🐧 Linux Desktop | **Ứng dụng Desktop chạy ngầm**: macOS Menu Bar (`TailRouter.app`), Windows Khay hệ thống (`TailRouter-Tray`), Linux Desktop Launcher. Không hiện cửa sổ đen. | [**Chuyển sang nhánh `desktop-app` 👉**](https://github.com/giangsamne/TailRouter/tree/desktop-app) |
+| **`docker`** | 🐳 Docker & Docker Compose | Dockerfile Multi-Arch (amd64 / arm64) tích hợp sẵn Tailscale CLI, `docker-compose.yml`, tài liệu chi tiết. | [**Chuyển sang nhánh `docker` 👉**](https://github.com/giangsamne/TailRouter/tree/docker) |
+
+---
+
 ## 💡 Giới Thiệu Dự Án
 
 **TailRouter** là giải pháp gateway chạy trực tiếp trên máy vật lý (bare-metal) tại cổng **65534**, giúp bạn gom và mở tất cả các cổng, ứng dụng nội bộ (máy in 3D Bambu Timelapse, NoMachine, Home Assistant, Docker container, Next.js, camera, v.v.) ra ngoài mạng **Tailscale** hoặc **Internet công cộng** một cách dễ dàng và an toàn.
