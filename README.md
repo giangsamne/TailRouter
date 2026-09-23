@@ -14,6 +14,25 @@
 
 </div>
 
+### ⚡ 1-Line Universal Auto-Installer (Recommended)
+
+Run a single command in your terminal or PowerShell — it automatically detects your Operating System, hardware architecture (Apple Silicon / Intel / ARM64 / x86_64), and init system (`systemd`, `openrc`, `launchd`), then downloads, extracts, and configures TailRouter in one shot:
+
+* **🐧 Linux & 🍏 macOS** (Terminal):
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/desktop-app/install.sh | bash
+  ```
+* **🪟 Windows** (PowerShell):
+  ```powershell
+  irm https://raw.githubusercontent.com/giangsamne/TailRouter/desktop-app/install.ps1 | iex
+  ```
+* **🌐 Universal Polyglot Script** (Single file for all 3 OS):
+  ```bash
+  # Windows: Double-click install.cmd (or run in Command Prompt)
+  # Linux & macOS:
+  ./install.cmd
+  ```
+
 ---
 
 ### 📦 Quick Downloads (Zero Dependencies / Self-Contained)
