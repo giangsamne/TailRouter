@@ -17,12 +17,17 @@
 
 ---
 
-### 🌿 Choose Your Version & Branch
+### 📦 Quick Downloads v2.0 (Zero Dependencies / No Python Needed)
 
-| Branch | Target Platform | Description | Quick Link |
+Download standalone native executables — double-click to run:
+
+| Operating System | 💻 Normal Edition (Desktop UX/UI + CLI) | ⚡ Server Edition (Headless CLI) | Direct Download Link |
 | :--- | :--- | :--- | :--- |
-| **`main`** | ⚡ Linux Server / Bare-Metal | **Default**: Core Headless Daemon, 0 dependencies, auto-start via systemd, loop protection. | [View `main`](https://github.com/giangsamne/TailRouter/tree/main) |
-| **`desktop-app`** | 🍏 macOS, 🪟 Windows, 🐧 Linux Desktop | **Native Background Apps**: macOS Menu Bar App (`TailRouter.app`), Windows System Tray (`TailRouter-Tray`), Linux Desktop launcher. No terminal clutter. | [**Switch to `desktop-app` 👉**](https://github.com/giangsamne/TailRouter/tree/desktop-app) |
+| 🍏 **macOS** | **Menu Bar App** (`TailRouter.app`) | `tailrouter-server` | [**Download `TailRouter-macOS.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip) |
+| 🪟 **Windows** | **System Tray** (`TailRouter.exe`) | `tailrouter-server.exe` | [**Download `TailRouter-Windows.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Windows.zip) |
+| 🐧 **Linux** | **Desktop Launcher** (`tailrouter-desktop`) | `tailrouter-server` (x86_64 & ARM64) | [**Download `TailRouter-Linux.tar.gz`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Linux.tar.gz) |
+
+> 💡 **All-in-One Gateway Architecture**: Both editions embed the full Web Dashboard at port **65534** (`/router`), support all CLI commands, and when closing the window/UI, **the app continues running in the background** to maintain network routing.
 
 ---
 

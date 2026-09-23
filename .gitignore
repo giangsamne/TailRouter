@@ -30,7 +30,9 @@ Thumbs.db
 config/routes.json
 config/*.tmp
 
-# Build distributions
+# Native Go Engine Binaries & Releases
 dist/
-*.app/
-*.exe
+release/
+tailrouter
+tailrouter.exe
+tailrouter.log*
