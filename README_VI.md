@@ -38,6 +38,7 @@ Tải file chạy trực tiếp, nhấp đúp là dùng ngay:
 | **`macos`** | 🍏 macOS | Chỉ chứa mã nguồn Menu Bar app (Swift), native engine và hướng dẫn macOS. | [**Xem nhánh `macos` 👉**](https://github.com/giangsamne/TailRouter/tree/macos) |
 | **`windows`** | 🪟 Windows | Chỉ chứa mã nguồn System Tray app, native engine và hướng dẫn Windows. | [**Xem nhánh `windows` 👉**](https://github.com/giangsamne/TailRouter/tree/windows) |
 | **`linux`** | 🐧 Linux | Chỉ chứa mã nguồn Desktop app, systemd service, CLI và Raspberry Pi. | [**Xem nhánh `linux` 👉**](https://github.com/giangsamne/TailRouter/tree/linux) |
+| **`v0`** | 🐍 Bản Thử Nghiệm Python | Bản prototype đầu tiên viết bằng Python 3 stdlib (lưu trữ tham khảo). | [**Xem nhánh `v0` 👉**](https://github.com/giangsamne/TailRouter/tree/v0) |
 | **`desktop-app`** | 🌐 Tổng hợp (Hub) | Nhánh mặc định tổng hợp mã nguồn đa nền tảng. | [**Nhánh `desktop-app`**](https://github.com/giangsamne/TailRouter/tree/desktop-app) |
 
 ---
