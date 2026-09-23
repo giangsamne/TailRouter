@@ -38,8 +38,9 @@ Download standalone native executables — double-click to run:
 | **`macos`** | 🍏 macOS | Dedicated macOS Menu Bar app (Swift), native engine & guide. | [**View `macos` branch 👉**](https://github.com/giangsamne/TailRouter/tree/macos) |
 | **`windows`** | 🪟 Windows | Dedicated Windows System Tray app, native engine & guide. | [**View `windows` branch 👉**](https://github.com/giangsamne/TailRouter/tree/windows) |
 | **`linux`** | 🐧 Linux | Dedicated Linux Desktop launcher, systemd daemon & Raspberry Pi. | [**View `linux` branch 👉**](https://github.com/giangsamne/TailRouter/tree/linux) |
-| **`v0`** | 🐍 Python Prototype | Initial proof-of-concept prototype in Python (historical archive). | [**View `v0` branch 👉**](https://github.com/giangsamne/TailRouter/tree/v0) |
 | **`desktop-app`** | 🌐 Main Hub | Default multi-platform hub branch. | [**Branch `desktop-app`**](https://github.com/giangsamne/TailRouter/tree/desktop-app) |
+
+> 📜 *Looking for the historical experimental Python prototype? Check out [**Release v0.1.0**](https://github.com/giangsamne/TailRouter/releases/tag/v0.1.0).*
 
 ---
 
