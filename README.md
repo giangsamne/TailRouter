@@ -23,7 +23,6 @@
 | :--- | :--- | :--- | :--- |
 | **`main`** | ⚡ Linux Server / Bare-Metal | **Default**: Core Headless Daemon, 0 dependencies, auto-start via systemd, loop protection. | [View `main`](https://github.com/giangsamne/TailRouter/tree/main) |
 | **`desktop-app`** | 🍏 macOS, 🪟 Windows, 🐧 Linux Desktop | **Native Background Apps**: macOS Menu Bar App (`TailRouter.app`), Windows System Tray (`TailRouter-Tray`), Linux Desktop launcher. No terminal clutter. | [**Switch to `desktop-app` 👉**](https://github.com/giangsamne/TailRouter/tree/desktop-app) |
-| **`docker`** | 🐳 Docker & Compose | Multi-Arch container (amd64 / arm64) with Tailscale CLI integration, `docker-compose.yml`, health checks. | [**Switch to `docker` 👉**](https://github.com/giangsamne/TailRouter/tree/docker) |
 
 ---
 

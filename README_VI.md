@@ -23,7 +23,6 @@
 | :--- | :--- | :--- | :--- |
 | **`main`** | ⚡ Máy chủ Linux / Bare-Metal | **Mặc định**: Bản Core Daemon chạy ngầm, 0 thư viện ngoài (zero-deps), tối ưu hiệu năng, tự khởi động với systemd. | [Xem nhánh `main`](https://github.com/giangsamne/TailRouter/tree/main) |
 | **`desktop-app`** | 🍏 macOS, 🪟 Windows, 🐧 Linux Desktop | **Ứng dụng Desktop chạy ngầm**: macOS Menu Bar (`TailRouter.app`), Windows Khay hệ thống (`TailRouter-Tray`), Linux Desktop Launcher. Không hiện cửa sổ đen. | [**Chuyển sang nhánh `desktop-app` 👉**](https://github.com/giangsamne/TailRouter/tree/desktop-app) |
-| **`docker`** | 🐳 Docker & Docker Compose | Dockerfile Multi-Arch (amd64 / arm64) tích hợp sẵn Tailscale CLI, `docker-compose.yml`, tài liệu chi tiết. | [**Chuyển sang nhánh `docker` 👉**](https://github.com/giangsamne/TailRouter/tree/docker) |
 
 ---
 
