@@ -31,6 +31,17 @@ Download standalone native executables — double-click to run:
 
 ---
 
+### 🌿 Dedicated OS Branches
+
+| Branch | Platform | Description | Link |
+| :--- | :--- | :--- | :--- |
+| **`macos`** | 🍏 macOS | Dedicated macOS Menu Bar app (Swift), native engine & guide. | [**View `macos` branch 👉**](https://github.com/giangsamne/TailRouter/tree/macos) |
+| **`windows`** | 🪟 Windows | Dedicated Windows System Tray app, native engine & guide. | [**View `windows` branch 👉**](https://github.com/giangsamne/TailRouter/tree/windows) |
+| **`linux`** | 🐧 Linux | Dedicated Linux Desktop launcher, systemd daemon & Raspberry Pi. | [**View `linux` branch 👉**](https://github.com/giangsamne/TailRouter/tree/linux) |
+| **`desktop-app`** | 🌐 Main Hub | Default multi-platform hub branch. | [**Branch `desktop-app`**](https://github.com/giangsamne/TailRouter/tree/desktop-app) |
+
+---
+
 ## 💡 What is TailRouter?
 
 **TailRouter** is a lightweight, bare-metal gateway running directly on port **65534** on your host machine. It eliminates the need for heavy virtual machines or complex reverse-proxy setups (Nginx, Traefik, NPM) to expose local homelab services (3D printers, home automation, web apps, media servers, Docker containers) to your Tailnet or the public Internet.
