@@ -29,3 +29,10 @@ Thumbs.db
 # User configuration & active routes (do not commit personal homelab routes)
 config/routes.json
 config/*.tmp
+
+# Native Go Engine Binaries & Releases
+dist/
+release/
+tailrouter
+tailrouter.exe
+tailrouter.log*

@@ -17,12 +17,17 @@
 
 ---
 
-### 🌿 Lựa Chọn Phiên Bản & Nhánh Cho Thiết Bị Của Bạn
+### 📦 Tải Nhanh Bản Phát Hành v2.0 (Không Cần Cài Python)
 
-| Nhánh (Branch) | Thiết bị / Mục đích | Mô tả | Đường dẫn |
+Tải file chạy trực tiếp, nhấp đúp là dùng ngay:
+
+| Hệ điều hành | 💻 Bản Normal (Desktop UX/UI + CLI) | ⚡ Bản Server (CLI Headless) | Tải Về Trực Tiếp |
 | :--- | :--- | :--- | :--- |
-| **`main`** | ⚡ Máy chủ Linux / Bare-Metal | **Mặc định**: Bản Core Daemon chạy ngầm, 0 thư viện ngoài (zero-deps), tối ưu hiệu năng, tự khởi động với systemd. | [Xem nhánh `main`](https://github.com/giangsamne/TailRouter/tree/main) |
-| **`desktop-app`** | 🍏 macOS, 🪟 Windows, 🐧 Linux Desktop | **Ứng dụng Desktop chạy ngầm**: macOS Menu Bar (`TailRouter.app`), Windows Khay hệ thống (`TailRouter-Tray`), Linux Desktop Launcher. Không hiện cửa sổ đen. | [**Chuyển sang nhánh `desktop-app` 👉**](https://github.com/giangsamne/TailRouter/tree/desktop-app) |
+| 🍏 **macOS** | **Menu Bar App** (`TailRouter.app`) | `tailrouter-server` | [**Tải `TailRouter-macOS.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip) |
+| 🪟 **Windows** | **Khay Hệ Thống** (`TailRouter.exe`) | `tailrouter-server.exe` | [**Tải `TailRouter-Windows.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Windows.zip) |
+| 🐧 **Linux** | **Desktop Launcher** (`tailrouter-desktop`) | `tailrouter-server` (x86_64 & ARM64) | [**Tải `TailRouter-Linux.tar.gz`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Linux.tar.gz) |
+
+> 💡 **Cơ chế All-in-One Gateway**: Cả 2 bản đều nhúng sẵn toàn bộ Web Dashboard tại cổng **65534** (`/router`), hỗ trợ đầy đủ lệnh CLI, và khi đóng cửa sổ giao diện **ứng dụng vẫn chạy ngầm** ở khay hệ thống để duy trì định tuyến.
 
 ---
 
