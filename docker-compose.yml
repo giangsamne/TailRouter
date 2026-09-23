@@ -1,13 +1,15 @@
 version: '3.8'
 
 services:
-  tailscale-port-router:
+  # TailRouter Gateway - Chạy ở chế độ host network để bắt toàn bộ cổng nội bộ
+  tailrouter:
     build: .
-    container_name: tailscale-port-router
+    container_name: tailrouter
     network_mode: host
     restart: unless-stopped
     volumes:
       - ./config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock:ro
     environment:
       - PYTHONUNBUFFERED=1
