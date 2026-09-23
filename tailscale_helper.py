@@ -310,13 +310,15 @@ def get_tailscale_serve_routes() -> List[Dict[str, Any]]:
             is_funnel = bool(allow_funnel.get(host_port, False))
             handlers = cfg.get("Handlers", {})
             for path, h in handlers.items():
-                if path == "/router":
+                if path in ("/", "/router"):
                     continue
                 proxy_url = h.get("Proxy", "")
                 if proxy_url:
                     parsed = urllib.parse.urlparse(proxy_url)
                     host = parsed.hostname or "127.0.0.1"
                     port = parsed.port or (443 if parsed.scheme == "https" else 80)
+                    if port == 65534:
+                        continue
                     routes.append({
                         "path": path,
                         "target_host": host,

@@ -417,9 +417,22 @@ async def handle_reverse_proxy(
     new_path: str,
 ) -> None:
     """Chuyển tiếp yêu cầu HTTP hoặc WebSocket tới dịch vụ đích."""
-    target_host = matched_route["target_host"]
-    target_port = matched_route["target_port"]
-    start_t = time.time()
+    # Bảo vệ chống vòng lặp tự trỏ (Loop Protection)
+    if target_port == PORT and target_host in ("127.0.0.1", "localhost", "0.0.0.0", "::1", "::"):
+        logger.error(f"[Loop Protection] Tuyến đường '{matched_route.get('path')}' tự trỏ về cổng Gateway {PORT}! Chặn ngay lập tức.")
+        await send_html_response(client_writer, "<h1>508 Loop Detected - Tuyến đường không thể chuyển tiếp về chính cổng Gateway</h1>", 508)
+        return
+
+    hop_count = 0
+    try:
+        hop_count = int(req.get_header("X-TailRouter-Hop", "0"))
+    except ValueError:
+        pass
+
+    if hop_count >= 3:
+        logger.error(f"[Loop Protection] Quá số lượt hop ({hop_count}) cho đường dẫn {req.path}! Chặn yêu cầu lặp.")
+        await send_html_response(client_writer, "<h1>508 Loop Detected - Phát hiện vòng lặp proxy vô hạn</h1>", 508)
+        return
 
     # Bổ sung query string nếu có
     if req.query:
@@ -478,6 +491,7 @@ code {{ background: #0f172a; padding: 0.2rem 0.4rem; border-radius: 0.25rem; col
     upstream_headers.append(f"X-Forwarded-For: {client_ip}")
     upstream_headers.append(f"X-Forwarded-Proto: http")
     upstream_headers.append(f"X-Forwarded-Prefix: {matched_route['path']}")
+    upstream_headers.append(f"X-TailRouter-Hop: {hop_count + 1}")
 
     header_payload = "\r\n".join(upstream_headers) + "\r\n\r\n"
     upstream_writer.write(header_payload.encode("utf-8"))

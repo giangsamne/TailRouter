@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple
 CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "routes.json")
 
-RESERVED_PATHS = ["/router", "/api", "/favicon.ico"]
+RESERVED_PATHS = ["/", "/router", "/api", "/favicon.ico", "/favicon.svg"]
 
 
 class RoutesManager:
@@ -24,7 +24,7 @@ class RoutesManager:
         self.load()
 
     def load(self) -> None:
-        """Tải danh sách route từ file JSON."""
+        """Tải danh sách route từ file JSON và lọc bỏ các route tự trỏ nguy hiểm."""
         if os.path.exists(self.config_path):
             try:
                 with open(self.config_path, "r", encoding="utf-8") as f:
@@ -33,7 +33,22 @@ class RoutesManager:
                         self._routes = {r["id"]: r for r in data if "id" in r}
                     elif isinstance(data, dict):
                         self._routes = data
-                    return
+
+                # Tự động loại bỏ mọi route lỗi hoặc tự trỏ về chính cổng Gateway (65534)
+                valid_routes = {}
+                for r_id, r in self._routes.items():
+                    p = r.get("path", "")
+                    port = r.get("target_port", 0)
+                    if port == 65534 or p in ("/", "/router"):
+                        continue
+                    valid_routes[r_id] = r
+                
+                if len(valid_routes) != len(self._routes):
+                    self._routes = valid_routes
+                    self.save()
+                else:
+                    self._routes = valid_routes
+                return
             except Exception as e:
                 print(f"[RoutesManager] Lỗi đọc config: {e}")
         
@@ -94,6 +109,8 @@ class RoutesManager:
             port = int(data.get("target_port", 0))
             if port < 1 or port > 65535:
                 return False, "Cổng đích (target port) phải trong khoảng 1 - 65535.", None
+            if port == 65534:
+                return False, "Cổng đích 65534 là cổng của chính máy chủ TailRouter Gateway, không thể định tuyến ngược về chính nó.", None
         except (ValueError, TypeError):
             return False, "Cổng đích không hợp lệ.", None
 
@@ -287,12 +304,17 @@ class RoutesManager:
 
         for disc in discovered_routes:
             d_path = disc.get("path", "").strip()
-            if not d_path or d_path == "/router":
+            if not d_path or d_path in ("/", "/router"):
                 continue
 
             clean_path = "/" + d_path.lstrip("/").rstrip("/")
+            if clean_path in ("/", "/router"):
+                continue
+
             target_host = disc.get("target_host", "127.0.0.1")
             target_port = disc.get("target_port", 80)
+            if target_port == 65534:
+                continue
             mode = disc.get("mode", "serve")
 
             if clean_path.lower() in path_map:
