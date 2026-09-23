@@ -27,22 +27,30 @@ from tailscale_helper import (
     run_tailscale_cmd,
     sync_all_routes_tailscale,
 )
+from logging.handlers import RotatingFileHandler
 from service_helper import get_autostart_status, enable_autostart, disable_autostart
 
-
-# Cấu hình logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S",
-)
-logger = logging.getLogger("tailscale_router")
-
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PORT = 65534
 HOST = "0.0.0.0"
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEB_DIR = os.path.join(BASE_DIR, "web")
 INDEX_HTML = os.path.join(WEB_DIR, "index.html")
+
+# Cấu hình logging kèm quay vòng file tối đa 5MB
+logger = logging.getLogger("tailscale_router")
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
+
+console_h = logging.StreamHandler(sys.stdout)
+console_h.setFormatter(formatter)
+logger.addHandler(console_h)
+
+try:
+    file_h = RotatingFileHandler(os.path.join(BASE_DIR, "server.log"), maxBytes=5 * 1024 * 1024, backupCount=2, encoding="utf-8")
+    file_h.setFormatter(formatter)
+    logger.addHandler(file_h)
+except Exception:
+    pass
 
 START_TIME = time.time()
 routes_mgr = RoutesManager()
