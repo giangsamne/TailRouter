@@ -257,6 +257,22 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 		return
 	}
 
+	if r.Method == http.MethodDelete {
+		rawTarget := strings.TrimPrefix(r.URL.Path, "/api/routes/")
+		rawTarget = strings.Trim(rawTarget, "/")
+		route, err := s.routes.Delete(rawTarget)
+		if err != nil {
+			s.jsonResponse(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+			return
+		}
+		// Remove from Tailscale in background
+		go func() {
+			_ = s.tailscale.RemoveRoute(route.Path)
+		}()
+		s.jsonResponse(w, http.StatusOK, map[string]string{"message": "Đã xóa route thành công"})
+		return
+	}
+
 	routeID := subParts[0]
 
 	if len(subParts) == 1 {
@@ -281,19 +297,6 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 				return
 			}
 			s.jsonResponse(w, http.StatusOK, updated)
-			return
-		}
-		if r.Method == http.MethodDelete {
-			route, err := s.routes.Delete(routeID)
-			if err != nil {
-				s.jsonResponse(w, http.StatusNotFound, map[string]string{"error": err.Error()})
-				return
-			}
-			// Remove from Tailscale in background
-			go func() {
-				_ = s.tailscale.RemoveRoute(route.Path)
-			}()
-			s.jsonResponse(w, http.StatusOK, map[string]string{"message": "Đã xóa route thành công"})
 			return
 		}
 	}

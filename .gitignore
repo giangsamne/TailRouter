@@ -33,6 +33,6 @@ config/*.tmp
 # Native Go Engine Binaries & Releases
 dist/
 release/
-tailrouter
-tailrouter.exe
+/tailrouter
+/tailrouter.exe
 tailrouter.log*

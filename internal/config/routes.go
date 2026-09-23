@@ -42,6 +42,7 @@ type Manager struct {
 	mu         sync.RWMutex
 	configPath string
 	routes     map[string]*Route
+	lastMod    time.Time
 }
 
 func NewManager(configPath string) *Manager {
@@ -66,14 +67,29 @@ func NewManager(configPath string) *Manager {
 func (m *Manager) Load() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	return m.loadLocked()
+}
 
+func (m *Manager) checkReloadLocked() {
+	fi, err := os.Stat(m.configPath)
+	if err == nil && !m.lastMod.IsZero() && fi.ModTime().After(m.lastMod) {
+		_ = m.loadLocked()
+	}
+}
+
+func (m *Manager) loadLocked() error {
 	dir := filepath.Dir(m.configPath)
 	_ = os.MkdirAll(dir, 0755)
 
-	if _, err := os.Stat(m.configPath); os.IsNotExist(err) {
+	fi, err := os.Stat(m.configPath)
+	if os.IsNotExist(err) {
 		m.routes = make(map[string]*Route)
 		return m.saveLocked()
 	}
+	if err != nil {
+		return err
+	}
+	m.lastMod = fi.ModTime()
 
 	data, err := os.ReadFile(m.configPath)
 	if err != nil {
@@ -126,7 +142,13 @@ func (m *Manager) saveLocked() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(m.configPath, data, 0644)
+	if err := os.WriteFile(m.configPath, data, 0644); err != nil {
+		return err
+	}
+	if fi, err := os.Stat(m.configPath); err == nil {
+		m.lastMod = fi.ModTime()
+	}
+	return nil
 }
 
 func (m *Manager) Save() error {
@@ -136,6 +158,10 @@ func (m *Manager) Save() error {
 }
 
 func (m *Manager) List() []*Route {
+	m.mu.Lock()
+	m.checkReloadLocked()
+	m.mu.Unlock()
+
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -153,10 +179,21 @@ func (m *Manager) List() []*Route {
 }
 
 func (m *Manager) Get(id string) (*Route, bool) {
+	m.mu.Lock()
+	m.checkReloadLocked()
+	m.mu.Unlock()
+
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	r, ok := m.routes[id]
 	if !ok {
+		norm := "/" + strings.Trim(id, "/")
+		for _, v := range m.routes {
+			if v.Path == id || v.Path == norm || v.Name == id {
+				cp := *v
+				return &cp, true
+			}
+		}
 		return nil, false
 	}
 	cp := *r
@@ -296,9 +333,21 @@ func (m *Manager) Update(id string, updates map[string]interface{}) (*Route, err
 
 func (m *Manager) Delete(id string) (*Route, error) {
 	m.mu.Lock()
+	m.checkReloadLocked()
 	defer m.mu.Unlock()
 
 	r, ok := m.routes[id]
+	if !ok {
+		norm := "/" + strings.Trim(id, "/")
+		for k, v := range m.routes {
+			if v.Path == id || v.Path == norm || v.Name == id {
+				r = v
+				id = k
+				ok = true
+				break
+			}
+		}
+	}
 	if !ok {
 		return nil, errors.New("route không tồn tại")
 	}
@@ -309,9 +358,20 @@ func (m *Manager) Delete(id string) (*Route, error) {
 
 func (m *Manager) Toggle(id string) (*Route, error) {
 	m.mu.Lock()
+	m.checkReloadLocked()
 	defer m.mu.Unlock()
 
 	r, ok := m.routes[id]
+	if !ok {
+		norm := "/" + strings.Trim(id, "/")
+		for _, v := range m.routes {
+			if v.Path == id || v.Path == norm || v.Name == id {
+				r = v
+				ok = true
+				break
+			}
+		}
+	}
 	if !ok {
 		return nil, errors.New("route không tồn tại")
 	}
@@ -322,9 +382,20 @@ func (m *Manager) Toggle(id string) (*Route, error) {
 
 func (m *Manager) ToggleMode(id string) (*Route, error) {
 	m.mu.Lock()
+	m.checkReloadLocked()
 	defer m.mu.Unlock()
 
 	r, ok := m.routes[id]
+	if !ok {
+		norm := "/" + strings.Trim(id, "/")
+		for _, v := range m.routes {
+			if v.Path == id || v.Path == norm || v.Name == id {
+				r = v
+				ok = true
+				break
+			}
+		}
+	}
 	if !ok {
 		return nil, errors.New("route không tồn tại")
 	}
@@ -339,6 +410,10 @@ func (m *Manager) ToggleMode(id string) (*Route, error) {
 
 // FindMatchingRoute matches the longest matching path
 func (m *Manager) FindMatchingRoute(reqPath string) (*Route, string, bool) {
+	m.mu.Lock()
+	m.checkReloadLocked()
+	m.mu.Unlock()
+
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
