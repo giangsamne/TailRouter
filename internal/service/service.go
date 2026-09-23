@@ -33,23 +33,37 @@ func (m *Manager) GetStatus() *Status {
 
 	switch runtime.GOOS {
 	case "linux":
-		s.Method = "systemd"
-		home, _ := os.UserHomeDir()
-		unitFile := filepath.Join(home, ".config", "systemd", "user", "tailrouter.service")
-		if _, err := os.Stat(unitFile); os.IsNotExist(err) {
-			unitFile = filepath.Join(home, ".config", "systemd", "user", "tailscale-port-router.service")
-		}
-		if _, err := os.Stat(unitFile); err == nil {
-			s.Enabled = true
-		}
-		out, err := exec.Command("systemctl", "--user", "is-active", "tailrouter").CombinedOutput()
-		if err == nil && strings.TrimSpace(string(out)) == "active" {
-			s.Active = true
-		} else {
-			out2, err2 := exec.Command("systemctl", "--user", "is-active", "tailscale-port-router").CombinedOutput()
-			if err2 == nil && strings.TrimSpace(string(out2)) == "active" {
+		if _, err := exec.LookPath("systemctl"); err == nil {
+			s.Method = "systemd"
+			home, _ := os.UserHomeDir()
+			unitFile := filepath.Join(home, ".config", "systemd", "user", "tailrouter.service")
+			if _, err := os.Stat(unitFile); os.IsNotExist(err) {
+				unitFile = filepath.Join(home, ".config", "systemd", "user", "tailscale-port-router.service")
+			}
+			if _, err := os.Stat(unitFile); err == nil {
+				s.Enabled = true
+			}
+			out, err := exec.Command("systemctl", "--user", "is-active", "tailrouter").CombinedOutput()
+			if err == nil && strings.TrimSpace(string(out)) == "active" {
+				s.Active = true
+			} else {
+				out2, err2 := exec.Command("systemctl", "--user", "is-active", "tailscale-port-router").CombinedOutput()
+				if err2 == nil && strings.TrimSpace(string(out2)) == "active" {
+					s.Active = true
+				}
+			}
+		} else if _, err := exec.LookPath("rc-service"); err == nil || fileExists("/sbin/rc-service") {
+			s.Method = "openrc"
+			if _, err := os.Stat("/etc/init.d/tailrouter"); err == nil {
+				s.Enabled = true
+			}
+			out, err := exec.Command("rc-service", "tailrouter", "status").CombinedOutput()
+			if err == nil && strings.Contains(string(out), "started") {
 				s.Active = true
 			}
+		} else {
+			s.Method = "unsupported"
+			s.Supported = false
 		}
 	case "darwin":
 		s.Method = "launchd"
@@ -186,4 +200,9 @@ func (m *Manager) Disable() error {
 		return exec.Command("reg", "delete", `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, "/v", "TailRouter", "/f").Run()
 	}
 	return nil
+}
+
+func fileExists(p string) bool {
+	_, err := os.Stat(p)
+	return err == nil
 }
