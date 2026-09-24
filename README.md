@@ -41,7 +41,7 @@ Download standalone native executables — no runtime or package installation re
 
 | Operating System | 💻 Normal Edition (Desktop UX/UI + CLI) | ⚡ Server Edition (Headless CLI & Daemon) | Direct Download Link |
 | :--- | :--- | :--- | :--- |
-| 🍏 **macOS** | **Menu Bar App** (`TailRouter.app`) | `tailrouter-server` (Apple Silicon & Intel) | [**Download `TailRouter-macOS.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip) |
+| 🍏 **macOS** | **Menu Bar App** (`TailRouter.app`) | `tailrouter-server` (Apple Silicon & Intel) | [**Download `TailRouter.pkg` (1-Click Installer)**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter.pkg) · [`.zip`](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip) |
 | 🪟 **Windows** | **System Tray App** (`TailRouter.exe`) | `tailrouter-server.exe` (x86_64) | [**Download `TailRouter-Windows.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Windows.zip) |
 | 🐧 **Linux** | **Desktop Launcher** (`tailrouter-desktop`) | `tailrouter-server` (x86_64 & ARM64) | [**Download `TailRouter-Linux.tar.gz`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Linux.tar.gz) |
 | 💾 **1-File USB Installer** | **Universal 1-File Installer** (Runs on Win/Mac/Linux) | **Just ONE single file** (~15MB), zero internet needed | [**Download `TailRouter-Setup.cmd`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Setup.cmd) |
