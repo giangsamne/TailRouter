@@ -1,0 +1,22 @@
+[Desktop Entry]
+Name=TailRouter
+Comment=Reverse Proxy & Tailscale Port Gateway
+Exec=xdg-open http://localhost:65534/router
+Icon=tailrouter
+Terminal=false
+Type=Application
+Categories=Network;System;Utility;
+Keywords=tailscale;router;proxy;gateway;
+Actions=OpenDashboard;RestartService;StopService;
+
+[Desktop Action OpenDashboard]
+Name=Mở Bảng Quản Trị (/router)
+Exec=xdg-open http://localhost:65534/router
+
+[Desktop Action RestartService]
+Name=Khởi động lại TailRouter
+Exec=systemctl --user restart tailscale-port-router
+
+[Desktop Action StopService]
+Name=Dừng TailRouter
+Exec=systemctl --user stop tailscale-port-router
