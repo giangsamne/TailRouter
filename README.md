@@ -44,20 +44,20 @@ Download standalone native executables — no runtime or package installation re
 | 🍏 **macOS** | **Menu Bar App** (`TailRouter.app`) | `tailrouter-server` (Apple Silicon & Intel) | [**Download `TailRouter-macOS.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip) |
 | 🪟 **Windows** | **System Tray App** (`TailRouter.exe`) | `tailrouter-server.exe` (x86_64) | [**Download `TailRouter-Windows.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Windows.zip) |
 | 🐧 **Linux** | **Desktop Launcher** (`tailrouter-desktop`) | `tailrouter-server` (x86_64 & ARM64) | [**Download `TailRouter-Linux.tar.gz`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Linux.tar.gz) |
-| 💾 **USB Flash Drive** | **Universal Offline Installer** (All 3 OS Bundled) | Self-contained, zero-internet offline package (~15MB) | [**Download `TailRouter-USB-Offline-Installer.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-USB-Offline-Installer.zip) |
+| 💾 **1-File USB Installer** | **Universal 1-File Installer** (Runs on Win/Mac/Linux) | **Just ONE single file** (~15MB), zero internet needed | [**Download `TailRouter-Setup.cmd`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Setup.cmd) |
 
 > 💡 **All-in-One Architecture**: Both editions embed the full Web Dashboard at port **65534** (`/router`), support all CLI management commands, and when closing the window/UI, **the app continues running in the background** to maintain uninterrupted reverse-proxy routing.
 
 ---
 
-### 💾 Offline USB Installation (Share & Install Anywhere)
+### 💾 1-File Universal USB Installation (Share & Install Anywhere)
 
-Carry TailRouter on a USB drive and install offline on any computer:
-1. Download [**`TailRouter-USB-Offline-Installer.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-USB-Offline-Installer.zip) and extract it to your USB drive root.
-2. Plug the USB into any machine:
-   - **🪟 Windows**: Double-click **`Setup.cmd`** (extracts and starts `TailRouter.exe` with desktop shortcut).
-   - **🍏 macOS**: Double-click **`Setup.command`** in Finder (installs `TailRouter.app` into `/Applications` and launches).
-   - **🐧 Linux**: Run **`./Setup.sh`** in terminal (installs binary and enables systemd/openrc service).
+Carry **just ONE single file** on a USB flash drive and install offline on any computer:
+1. Download [**`TailRouter-Setup.cmd`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Setup.cmd) and copy this single file onto your USB drive.
+2. Plug the USB into any computer:
+   - **🪟 Windows**: Double-click **`TailRouter-Setup.cmd`** (automatically extracts, installs, creates Desktop shortcut, and starts `TailRouter.exe`).
+   - **🍏 macOS**: Run in Terminal: **`sh TailRouter-Setup.cmd`** (installs `TailRouter.app` into `/Applications` and launches it to the Menu Bar).
+   - **🐧 Linux**: Run in Terminal: **`sh TailRouter-Setup.cmd`** (detects ARM64 / x86_64, installs binary, and enables systemd / OpenRC service).
 
 ---
 
