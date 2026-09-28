@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/giangsamne/TailRouter/internal/browser"
 	"github.com/giangsamne/TailRouter/internal/config"
 	"github.com/giangsamne/TailRouter/internal/gateway"
 	"github.com/giangsamne/TailRouter/internal/scanner"
@@ -29,7 +30,8 @@ const Banner = `
 
 func main() {
 	if len(os.Args) < 2 {
-		runServer(gateway.DefaultPort, "")
+		// Khi chạy trực tiếp không có tham số (hoặc click đúp file): mở server và tự động bật Web Dashboard
+		runServer(gateway.DefaultPort, "", true)
 		return
 	}
 
@@ -39,8 +41,9 @@ func main() {
 		runCmd := flag.NewFlagSet("run", flag.ExitOnError)
 		portFlag := runCmd.Int("port", gateway.DefaultPort, "Cổng lắng nghe của Gateway")
 		configFlag := runCmd.String("config", "", "Đường dẫn file cấu hình routes.json")
+		openFlag := runCmd.Bool("open", false, "Tự động mở Web Dashboard trên trình duyệt")
 		_ = runCmd.Parse(os.Args[2:])
-		runServer(*portFlag, *configFlag)
+		runServer(*portFlag, *configFlag, *openFlag)
 
 	case "scan":
 		runScan()
@@ -66,7 +69,7 @@ func main() {
 	default:
 		// If argument is a port number like `tailrouter 65534`
 		if p, err := strconv.Atoi(cmd); err == nil && p > 0 && p < 65536 {
-			runServer(p, "")
+			runServer(p, "", true)
 			return
 		}
 		fmt.Printf("Lệnh không xác định: %s\n", cmd)
@@ -81,7 +84,8 @@ func printHelp() {
 Sử dụng: tailrouter [lệnh] [tùy chọn]
 
 Các lệnh có sẵn:
-  run [--port 65534]          Khởi chạy máy chủ Gateway (mặc định)
+  (không tham số)             Khởi chạy máy chủ và tự động mở Web Dashboard
+  run [--port 65534] [--open] Khởi chạy máy chủ Gateway
   scan                        Quét toàn bộ cổng TCP & Docker đang mở trên máy thật
   status                      Kiểm tra trạng thái hoạt động của Gateway & Tailscale
   routes list                 Xem danh sách các tuyến đường đã cấu hình
@@ -97,9 +101,17 @@ Các lệnh có sẵn:
 `)
 }
 
-func runServer(port int, configPath string) {
+func runServer(port int, configPath string, openBrowser bool) {
 	fmt.Print(Banner)
 	srv := gateway.NewServer(port, configPath)
+
+	if openBrowser {
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			dashboardURL := fmt.Sprintf("http://localhost:%d/router", port)
+			_ = browser.Open(dashboardURL)
+		}()
+	}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)

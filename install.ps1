@@ -1,6 +1,6 @@
 # ==============================================================================
 # ⚡ TailRouter - Windows Smart Installer
-# Auto-downloads and installs TailRouter Tray & Server, creates shortcut & autostart.
+# Auto-downloads and installs TailRouter Native Engine, creates shortcut & autostart.
 # ==============================================================================
 
 $Repo = "giangsamne/TailRouter"
@@ -16,8 +16,8 @@ Write-Host "==========================================================" -Foregro
 
 # 1. Stop running processes
 Write-Host "==> [1/4] Stopping existing TailRouter processes if any..." -ForegroundColor Yellow
+Stop-Process -Name "tailrouter" -ErrorAction SilentlyContinue
 Stop-Process -Name "TailRouter" -ErrorAction SilentlyContinue
-Stop-Process -Name "tailrouter-server" -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 1
 
 # 2. Download release
@@ -33,18 +33,19 @@ Expand-Archive -Path $TempZip -DestinationPath $InstallDir -Force
 Remove-Item -Path $TempZip -Force
 
 # 4. Create Desktop Shortcut and Startup Registry
-Write-Host "==> [4/4] Creating Desktop shortcut and setting up Autostart..." -ForegroundColor Yellow
+Write-Host "==> [4/4] Setting up PATH and Autostart..." -ForegroundColor Yellow
 $WshShell = New-Object -ComObject WScript.Shell
 $DesktopPath = [Environment]::GetFolderPath("Desktop")
 $Shortcut = $WshShell.CreateShortcut("$DesktopPath\TailRouter.lnk")
-$Shortcut.TargetPath = "$InstallDir\TailRouter.exe"
+$Shortcut.TargetPath = "$InstallDir\tailrouter.exe"
+$Shortcut.Arguments = ""
 $Shortcut.WorkingDirectory = $InstallDir
-$Shortcut.Description = "TailRouter - Tailscale Port Router Gateway"
+$Shortcut.Description = "TailRouter - High-Performance Bare-Metal Gateway"
 $Shortcut.Save()
 
 # Autostart on Windows Logon
 $StartupKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
-Set-ItemProperty -Path $StartupKey -Name "TailRouter" -Value "`"$InstallDir\TailRouter.exe`"" -Force
+Set-ItemProperty -Path $StartupKey -Name "TailRouter" -Value "`"$InstallDir\tailrouter.exe`" run" -Force
 
 # Add InstallDir to User PATH if not present
 $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -54,7 +55,10 @@ if ($UserPath -notlike "*$InstallDir*") {
 
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "✅ TailRouter installed successfully to $InstallDir!" -ForegroundColor Green
-Write-Host "==> Starting TailRouter Tray App..." -ForegroundColor Cyan
-Start-Process -FilePath "$InstallDir\TailRouter.exe"
+Write-Host "==> Starting TailRouter Gateway..." -ForegroundColor Cyan
+Start-Process -FilePath "$InstallDir\tailrouter.exe" -ArgumentList "run"
+Start-Sleep -Seconds 1
+Start-Process "http://localhost:65534/router"
 Write-Host "💡 Web Dashboard accessible at: http://localhost:65534/router" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Green
+

@@ -52,8 +52,6 @@ case "$OS" in
   Darwin)
     echo "==> [1/3] Preparing macOS installation..."
     PKG_ZIP="$SCRIPT_DIR/packages/TailRouter-macOS.zip"
-    APP_NAME="TailRouter.app"
-    INSTALL_DIR="/Applications"
 
     if [ ! -f "$PKG_ZIP" ]; then
       echo "❌ Error: $PKG_ZIP not found on USB!"
@@ -62,23 +60,41 @@ case "$OS" in
 
     TMP_DIR="/tmp/tailrouter_usb_$$"
     mkdir -p "$TMP_DIR"
-    echo "==> [2/3] Extracting $APP_NAME from USB package..."
+    echo "==> [2/3] Extracting macOS binary from USB package..."
     unzip -q -o "$PKG_ZIP" -d "$TMP_DIR"
 
-    pkill -f "TailRouter.app" 2>/dev/null || true
-    pkill -f "tailrouter-server" 2>/dev/null || true
-    sleep 1
+    BIN_NAME="tailrouter-arm64"
+    if [ "$ARCH" = "x86_64" ]; then
+      BIN_NAME="tailrouter-amd64"
+    fi
 
-    echo "==> [3/3] Installing $APP_NAME into $INSTALL_DIR..."
-    cp -R "$TMP_DIR/$APP_NAME" "$INSTALL_DIR/"
-    xattr -dr com.apple.quarantine "$INSTALL_DIR/$APP_NAME" 2>/dev/null || true
+    TARGET_BIN="/usr/local/bin/tailrouter"
+    if [ -w "/usr/local/bin" ] || [ "$(id -u)" -eq 0 ]; then
+      cp "$TMP_DIR/$BIN_NAME" "$TARGET_BIN"
+      chmod +x "$TARGET_BIN"
+    elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+      sudo cp "$TMP_DIR/$BIN_NAME" "$TARGET_BIN"
+      sudo chmod +x "$TARGET_BIN"
+    else
+      TARGET_BIN="$HOME/.local/bin/tailrouter"
+      mkdir -p "$HOME/.local/bin"
+      cp "$TMP_DIR/$BIN_NAME" "$TARGET_BIN"
+      chmod +x "$TARGET_BIN"
+      if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+        export PATH="$HOME/.local/bin:$PATH"
+      fi
+    fi
+
     rm -rf "$TMP_DIR"
 
+    echo "==> [3/3] Setting up launchd system service..."
+    "$TARGET_BIN" service install 2>/dev/null || true
+
     echo "=========================================================="
-    echo "✅ TailRouter installed successfully from USB to $INSTALL_DIR/$APP_NAME!"
-    echo "==> Launching TailRouter..."
-    open "$INSTALL_DIR/$APP_NAME"
-    echo "💡 TailRouter is now running in your macOS Menu Bar."
+    echo "✅ TailRouter installed successfully from USB at: $TARGET_BIN"
+    echo "==> Launching Web Dashboard..."
+    open "http://localhost:65534/router" 2>/dev/null || true
+    echo "💡 Web Dashboard accessible at: http://localhost:65534/router"
     echo "=========================================================="
     ;;
 
@@ -96,9 +112,9 @@ case "$OS" in
     echo "==> [2/3] Extracting Linux binaries from USB package..."
     tar -xzf "$PKG_TAR" -C "$TMP_DIR"
 
-    BIN_NAME="tailrouter-server"
+    BIN_NAME="tailrouter"
     if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-      BIN_NAME="tailrouter-server-arm64"
+      BIN_NAME="tailrouter-arm64"
     fi
 
     TARGET_BIN="/usr/local/bin/tailrouter"
@@ -181,8 +197,8 @@ if not exist "%PKG_ZIP%" (
 )
 
 echo ==> [1/3] Dung cac tien trinh TailRouter neu co...
+taskkill /f /im tailrouter.exe 2>nul
 taskkill /f /im TailRouter.exe 2>nul
-taskkill /f /im tailrouter-server.exe 2>nul
 timeout /t 1 /nobreak >nul
 
 echo ==> [2/3] Dang giai nen tu USB vao %INSTALL_DIR%...
@@ -190,14 +206,15 @@ if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Path '%PKG_ZIP%' -DestinationPath '%INSTALL_DIR%' -Force"
 
 echo ==> [3/3] Dang tao Shortcut Desktop va cai dat Tu Khoi Dong...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\TailRouter.lnk'); $s.TargetPath = '%INSTALL_DIR%\TailRouter.exe'; $s.WorkingDirectory = '%INSTALL_DIR%'; $s.Save()"
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "TailRouter" /t REG_SZ /d "\"%INSTALL_DIR%\TailRouter.exe\"" /f >nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\TailRouter.lnk'); $s.TargetPath = '%INSTALL_DIR%\tailrouter.exe'; $s.WorkingDirectory = '%INSTALL_DIR%'; $s.Save()"
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "TailRouter" /t REG_SZ /d "\"%INSTALL_DIR%\tailrouter.exe\" run" /f >nul
 
 echo ==========================================================
 echo [SUCCESS] Cai dat TailRouter tu USB thanh cong!
 echo ==> Dang khoi dong TailRouter...
-start "" "%INSTALL_DIR%\TailRouter.exe"
-echo Bieu tuong app da xuat hien duoi khay he thong (System Tray).
+start "" "%INSTALL_DIR%\tailrouter.exe" run
+timeout /t 1 /nobreak >nul
+start http://localhost:65534/router
 echo Bang dieu khien Web: http://localhost:65534/router
 echo ==========================================================
 pause
@@ -218,13 +235,13 @@ Không cần kết nối Internet - Tự động nhận diện hệ điều hàn
    - Mở ổ USB trong File Explorer.
    - Nhấp đúp chuột (Double Click) vào file:
      👉 Setup.cmd
-   - Bộ cài sẽ tự động giải nén, tạo biểu tượng Desktop và khởi chạy TailRouter.exe.
+   - Bộ cài sẽ tự động giải nén, tạo biểu tượng Desktop và khởi chạy tailrouter.exe.
 
 2. 🍏 TRÊN MACOS:
    - Mở ổ USB trong Finder.
    - Nhấp đúp chuột (Double Click) vào file:
      👉 Setup.command
-   - Bộ cài sẽ tự động cài TailRouter.app vào thư mục /Applications và mở app.
+   - Bộ cài sẽ tự động cài tailrouter vào máy và mở giao diện Web Dashboard.
 
 3. 🐧 TRÊN LINUX (Ubuntu, Debian, Fedora, Alpine Linux, Raspberry Pi):
    - Mở Terminal tại thư mục USB.

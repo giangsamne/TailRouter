@@ -1,11 +1,12 @@
-package tray
+package browser
 
 import (
 	"os/exec"
 	"runtime"
 )
 
-func OpenBrowser(url string) error {
+// Open launches the default system browser to view the given URL.
+func Open(url string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":

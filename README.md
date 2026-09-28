@@ -2,10 +2,9 @@
 
 # ⚡ TailRouter
 
-**High-performance, zero-dependency bare-metal gateway & desktop manager for Tailscale Serve and Funnel.**
+**High-performance, zero-dependency bare-metal gateway & web dashboard for Tailscale Serve and Funnel.**
 
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8.svg?logo=go&logoColor=white)](https://golang.org)
-[![Swift](https://img.shields.io/badge/Swift-5.9+-FA7343.svg?logo=swift&logoColor=white)](https://developer.apple.com/swift/)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg?logo=tailscale&logoColor=white)](https://tailscale.com)
 [![Dependencies](https://img.shields.io/badge/dependencies-0%20(Pure%20Native%20Binaries)-success.svg)](https://github.com/giangsamne/TailRouter)
@@ -14,17 +13,19 @@
 
 </div>
 
+---
+
 ### ⚡ 1-Line Universal Auto-Installer (Recommended)
 
-Run a single command in your terminal or PowerShell — it automatically detects your Operating System, hardware architecture (Apple Silicon / Intel / ARM64 / x86_64), and init system (`systemd`, `openrc`, `launchd`), then downloads, extracts, and configures TailRouter in one shot:
+Run a single command in your terminal or PowerShell — it automatically detects your Operating System, hardware architecture (Apple Silicon / Intel / ARM64 / x86_64), and init system (`systemd`, `openrc`, `launchd`), then installs and starts TailRouter in one shot:
 
 * **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/desktop-app/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/main/install.sh | bash
   ```
 * **🪟 Windows** (PowerShell):
   ```powershell
-  irm https://raw.githubusercontent.com/giangsamne/TailRouter/desktop-app/install.ps1 | iex
+  irm https://raw.githubusercontent.com/giangsamne/TailRouter/main/install.ps1 | iex
   ```
 * **🌐 Universal Polyglot Script** (Single file for all 3 OS):
   ```bash
@@ -35,42 +36,29 @@ Run a single command in your terminal or PowerShell — it automatically detects
 
 ---
 
-### 📦 Quick Downloads (Zero Dependencies / Self-Contained)
+### 📦 Quick Downloads (Single-Binary Native Engines)
 
 Download standalone native executables — no runtime or package installation required:
 
-| Operating System | 💻 Normal Edition (Desktop UX/UI + CLI) | ⚡ Server Edition (Headless CLI & Daemon) | Direct Download Link |
+| Operating System | Architecture | Package | Description |
 | :--- | :--- | :--- | :--- |
-| 🍏 **macOS** | **Menu Bar App** (`TailRouter.app`) | `tailrouter-server` (Apple Silicon & Intel) | [**Download `TailRouter.pkg` (1-Click Installer)**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter.pkg) · [`.zip`](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip) |
-| 🪟 **Windows** | **System Tray App** (`TailRouter.exe`) | `tailrouter-server.exe` (x86_64) | [**Download `TailRouter-Windows.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Windows.zip) |
-| 🐧 **Linux** | **Desktop Launcher** (`tailrouter-desktop`) | `tailrouter-server` (x86_64 & ARM64) | [**Download `TailRouter-Linux.tar.gz`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Linux.tar.gz) |
-| 💾 **1-File USB Installer** | **Universal 1-File Installer** (Runs on Win/Mac/Linux) | **Just ONE single file** (~15MB), zero internet needed | [**Download `TailRouter-Setup.cmd`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Setup.cmd) |
+| 🍏 **macOS** | Apple Silicon & Intel | [**`TailRouter-macOS.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip) | Single binary (`tailrouter`) + Launchd service + Web UI |
+| 🪟 **Windows** | x86_64 | [**`TailRouter-Windows.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Windows.zip) | Single binary (`tailrouter.exe`) + Startup autostart + Web UI |
+| 🐧 **Linux** | x86_64 & ARM64 | [**`TailRouter-Linux.tar.gz`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Linux.tar.gz) | Single binary (`tailrouter`) + Systemd/OpenRC + Web UI |
+| 💾 **1-File Offline USB** | All OS (Win/Mac/Linux) | [**`TailRouter-Setup.cmd`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Setup.cmd) | Offline self-extracting polyglot installer (~20MB) |
 
-> 💡 **All-in-One Architecture**: Both editions embed the full Web Dashboard at port **65534** (`/router`), support all CLI management commands, and when closing the window/UI, **the app continues running in the background** to maintain uninterrupted reverse-proxy routing.
+> 💡 **Unified Single-Binary Architecture**: Each binary integrates a **Background System Service**, an embedded **Web Dashboard UX/UI** at port **65534** (`/router`), and a complete **CLI toolset**.
 
 ---
 
-### 💾 1-File Universal USB Installation (Share & Install Anywhere)
+### 💾 1-File Universal USB Installation (Offline / Anywhere)
 
 Carry **just ONE single file** on a USB flash drive and install offline on any computer:
-1. Download [**`TailRouter-Setup.cmd`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Setup.cmd) and copy this single file onto your USB drive.
+1. Download [**`TailRouter-Setup.cmd`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Setup.cmd) and copy it onto your USB drive.
 2. Plug the USB into any computer:
-   - **🪟 Windows**: Double-click **`TailRouter-Setup.cmd`** (automatically extracts, installs, creates Desktop shortcut, and starts `TailRouter.exe`).
-   - **🍏 macOS**: Run in Terminal: **`sh TailRouter-Setup.cmd`** (installs `TailRouter.app` into `/Applications` and launches it to the Menu Bar).
-   - **🐧 Linux**: Run in Terminal: **`sh TailRouter-Setup.cmd`** (detects ARM64 / x86_64, installs binary, and enables systemd / OpenRC service).
-
----
-
-### 🌿 Dedicated OS Branches
-
-For developers and users who only need code for their specific operating system:
-
-| Branch | Target Platform | Description | Quick Link |
-| :--- | :--- | :--- | :--- |
-| **`desktop-app`** | 🌐 Multi-Platform (Hub) | **Default**: Unified hub containing all platform sources, Go engine, and build systems. | [**View `desktop-app` branch 👉**](https://github.com/giangsamne/TailRouter/tree/desktop-app) |
-| **`macos`** | 🍏 macOS | Dedicated macOS Menu Bar app (Swift), native Go engine, and macOS instructions. | [**View `macos` branch 👉**](https://github.com/giangsamne/TailRouter/tree/macos) |
-| **`windows`** | 🪟 Windows | Dedicated Windows System Tray app (`.exe`), Win32 notify icon, and Windows guide. | [**View `windows` branch 👉**](https://github.com/giangsamne/TailRouter/tree/windows) |
-| **`linux`** | 🐧 Linux | Dedicated Linux Desktop launcher, systemd/openrc services, and Raspberry Pi / ARM64 engine. | [**View `linux` branch 👉**](https://github.com/giangsamne/TailRouter/tree/linux) |
+   - **🪟 Windows**: Double-click **`TailRouter-Setup.cmd`** (extracts, installs, creates Desktop shortcut, and launches).
+   - **🍏 macOS**: Run in Terminal: **`sh TailRouter-Setup.cmd`** (installs binary, registers launchd, and opens browser).
+   - **🐧 Linux**: Run in Terminal: **`sh TailRouter-Setup.cmd`** (detects ARM64 / x86_64, installs binary, and enables systemd / OpenRC).
 
 ---
 
@@ -81,7 +69,7 @@ For developers and users who only need code for their specific operating system:
 ### 🌟 Key Highlights
 
 - ⚡ **Zero Dependencies & Blazing Fast**:
-  - Written in 100% static Go and Swift.
+  - Written in 100% pure static Go.
   - **No Python, no Node.js, and no external runtimes required**.
   - Starts in **< 10ms**, consumes **< 8 MB RAM**, and uses **0.0% idle CPU**.
 - 🎛️ **Seamless Tailscale Serve & Funnel Integration**:
@@ -94,16 +82,11 @@ For developers and users who only need code for their specific operating system:
 - 🔍 **Host Port Discovery Scanner**:
   - Scans active TCP listening ports across the host system.
   - Probes HTTP titles and signatures automatically to pre-fill route names and paths.
-- 🔁 **CLI & Daemon Live Synchronization**:
-  - CLI commands (`routes add`, `routes delete`, `status`) dynamically communicate with the live Gateway daemon via local REST API.
-  - Configuration changes automatically hot-reload from disk without process restarts.
-- 🛡️ **Built-in Loop & Out-of-Memory Protection**:
-  - Prevents recursive routing back to port 65534 (`508 Loop Detected`).
-  - Auto-rotating log capped at 5MB.
+- 🔁 **Persistent Route Storage**:
+  - Automatically saves routes to standard system locations (`~/.config/tailrouter/routes.json` or `%APPDATA%\TailRouter\routes.json`).
+  - Survives updates, binary moves, and reboots seamlessly.
 - 🔄 **Native Boot Autostart**:
-  - Supports `systemd` (Ubuntu, Debian, Fedora), `openrc` (Alpine Linux), `launchd` (macOS), and Windows Registry autostart.
-- 🌐 **Multi-Language Support (i18n)**:
-  - English, Vietnamese, Chinese, and Japanese included out-of-the-box.
+  - Supports `systemd` (Ubuntu, Debian, Fedora), `openrc` (Alpine Linux), `launchd` (macOS), and Windows Registry autostart via `tailrouter service install`.
 
 ---
 
@@ -137,58 +120,40 @@ Port 8080                  Port 3000                       Port 22
 
 ## 🚀 Quick Start Guide
 
-### Option A: Desktop Apps (Normal Edition)
-
-* **🍏 macOS**:
-  1. Download and unzip [**`TailRouter-macOS.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip).
-  2. Drag `TailRouter.app` into `/Applications`.
-  3. Launch `TailRouter` — an icon will appear in your top Menu Bar. Click to access the dashboard, scan ports, or configure autostart.
-* **🪟 Windows**:
-  1. Download and unzip [**`TailRouter-Windows.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Windows.zip).
-  2. Run `TailRouter.exe`.
-  3. A tray icon appears in the Windows System Tray. Right-click to open the dashboard or control routes.
-* **🐧 Linux Desktop**:
-  1. Download and extract [**`TailRouter-Linux.tar.gz`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Linux.tar.gz).
-  2. Run `./tailrouter-desktop` to launch the background service and open the browser.
-
----
-
-### Option B: Server CLI & Headless Daemon
-
-For servers, Raspberry Pi, homelab nodes, or cloud VMs:
-
+### 1. Launching TailRouter
+Simply double-click `tailrouter` (or `tailrouter.exe` on Windows), or run it in your terminal:
 ```bash
-# 1. Download the static binary for your architecture (amd64 or arm64)
-curl -sL https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Linux.tar.gz | tar -xz
-
-# 2. Start the gateway daemon
-./tailrouter-server run
-
-# 3. Check gateway status
-./tailrouter-server status
-
-# 4. Scan open host ports
-./tailrouter-server scan
-
-# 5. Enable auto-start on system boot
-./tailrouter-server service install
+tailrouter
 ```
+* The gateway automatically starts on port `65534`.
+* Your default web browser immediately opens the Web Dashboard at:
+  👉 **`http://localhost:65534/router`**
+
+### 2. Running as a Permanent Background Service
+To make TailRouter start automatically every time your computer boots:
+```bash
+tailrouter service install
+```
+* **Linux**: Configured via `systemd` user service or `openrc`.
+* **macOS**: Configured via `launchd` user agent.
+* **Windows**: Configured via User Run registry key.
 
 ---
 
 ## ⌨️ CLI Command Reference
 
-Both `tailrouter-server` and `tailrouter-desktop` include a full CLI:
+`tailrouter` provides an intuitive command-line interface:
 
 ```bash
-# Run the gateway server (default port 65534)
-tailrouter run [--port 65534]
-
-# Scan active TCP ports on the host
-tailrouter scan
+# Run gateway (starts server and opens browser if no args provided)
+tailrouter
+tailrouter run [--port 65534] [--open]
 
 # Inspect running gateway status and Tailscale connection
 tailrouter status
+
+# Scan active TCP ports on the host
+tailrouter scan
 
 # List all configured routes
 tailrouter routes list
@@ -196,12 +161,12 @@ tailrouter routes list
 # Add a new route
 tailrouter routes add <name> <path> <port> [serve|funnel]
 # Example:
-tailrouter routes add "Grafana Dashboard" /grafana 3000 serve
+tailrouter routes add "Bambu 3D Printer" /bambu 8080 serve
 
 # Delete a route by ID or path
 tailrouter routes delete <id|path>
 # Example:
-tailrouter routes delete /grafana
+tailrouter routes delete /bambu
 
 # Automatic Tailscale Serve configuration
 tailrouter serve router     # Expose /router web interface over Tailscale Serve
@@ -241,26 +206,26 @@ TailRouter exposes a high-performance REST API on port `65534`:
 
 ```text
 TailRouter/
-├── app/
-│   ├── macos/                # macOS Swift Menu Bar app (TailRouterMenuApp.swift)
-│   ├── windows/              # Windows System Tray launcher scripts
-│   └── linux/                # Linux desktop entry & installer
 ├── cmd/
-│   ├── tailrouter/           # Core Headless Server CLI engine (Go)
-│   └── tailrouter-desktop/   # Desktop GUI launcher & CLI wrapper (Go)
+│   └── tailrouter/           # Single-binary engine: Daemon + Embedded Web UI + CLI (Go)
 ├── internal/
 │   ├── gateway/              # Reverse proxy, REST API & embedded web server
 │   ├── scanner/              # Host TCP port discovery engine
-│   ├── config/               # JSON route persistence with disk hot-reload
+│   ├── config/               # JSON route persistence with standard system path resolution
 │   ├── service/              # Systemd, OpenRC, Launchd, and Windows autostart
 │   ├── tailscale/            # Tailscale Serve & Funnel CLI integration
-│   └── tray/                 # Win32 notify icon & system tray support
+│   └── browser/              # Cross-platform browser launcher
 ├── web/
 │   ├── embed.go              # Go binary asset packaging via embed.FS
 │   └── index.html            # Responsive SPA Web Dashboard with i18n
 ├── scripts/
 │   ├── build_all.sh          # Multi-platform static compilation tool
-│   └── snapshot_tag.sh       # All-in-One release snapshot packaging tool
+│   ├── build_single_file_installer.sh # 1-File universal installer packager
+│   └── build_usb_installer.sh# Offline USB bundle packager
+├── install.sh                # 1-Line universal installer for Linux & macOS
+├── install.ps1               # 1-Line installer for Windows (PowerShell)
+├── install.cmd               # Double-clickable launcher for Windows
+├── install.command           # Double-clickable launcher for macOS
 ├── LICENSE                   # MIT License
 └── README.md                 # English documentation
 ```

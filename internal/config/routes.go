@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -45,15 +46,75 @@ type Manager struct {
 	lastMod    time.Time
 }
 
+// DefaultConfigPath returns the standard cross-platform path for routes.json
+// and handles migration from legacy paths if necessary.
+func DefaultConfigPath() string {
+	if env := os.Getenv("TAILROUTER_CONFIG"); env != "" {
+		return env
+	}
+
+	var configDir string
+	switch runtime.GOOS {
+	case "windows":
+		if appData := os.Getenv("APPDATA"); appData != "" {
+			configDir = filepath.Join(appData, "TailRouter")
+		} else {
+			home, _ := os.UserHomeDir()
+			configDir = filepath.Join(home, ".tailrouter")
+		}
+	case "darwin":
+		home, _ := os.UserHomeDir()
+		if home != "" {
+			configDir = filepath.Join(home, "Library", "Application Support", "TailRouter")
+		} else {
+			configDir = "/etc/tailrouter"
+		}
+	default: // linux, bsd, etc.
+		if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+			configDir = filepath.Join(xdg, "tailrouter")
+		} else {
+			home, _ := os.UserHomeDir()
+			if home != "" {
+				configDir = filepath.Join(home, ".config", "tailrouter")
+			} else {
+				configDir = "/etc/tailrouter"
+			}
+		}
+	}
+
+	targetPath := filepath.Join(configDir, "routes.json")
+
+	// Migration: if targetPath does not exist, check legacy locations
+	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
+		var legacyCandidates []string
+		execDir, err := os.Executable()
+		if err == nil {
+			execDir = filepath.Dir(execDir)
+			legacyCandidates = append(legacyCandidates, filepath.Join(execDir, "config", "routes.json"))
+		}
+		home, _ := os.UserHomeDir()
+		if home != "" {
+			legacyCandidates = append(legacyCandidates,
+				filepath.Join(home, ".local", "bin", "config", "routes.json"),
+				filepath.Join(home, ".tailrouter", "routes.json"),
+			)
+		}
+
+		for _, legacy := range legacyCandidates {
+			if data, err := os.ReadFile(legacy); err == nil && len(data) > 2 {
+				_ = os.MkdirAll(configDir, 0755)
+				_ = os.WriteFile(targetPath, data, 0644)
+				break
+			}
+		}
+	}
+
+	return targetPath
+}
+
 func NewManager(configPath string) *Manager {
 	if configPath == "" {
-		execDir, err := os.Executable()
-		if err != nil {
-			execDir = "."
-		} else {
-			execDir = filepath.Dir(execDir)
-		}
-		configPath = filepath.Join(execDir, "config", "routes.json")
+		configPath = DefaultConfigPath()
 	}
 
 	m := &Manager{

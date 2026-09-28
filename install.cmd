@@ -7,7 +7,7 @@
 :; if [ -f "$SCRIPT_DIR/install.sh" ]; then
 :;   bash "$SCRIPT_DIR/install.sh" "$@"
 :; else
-:;   curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/desktop-app/install.sh | bash
+:;   curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/main/install.sh | bash
 :; fi
 :; exit 0
 
@@ -21,7 +21,7 @@ set SCRIPT_DIR=%~dp0
 if exist "%SCRIPT_DIR%install.ps1" (
     powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%install.ps1"
 ) else (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/giangsamne/TailRouter/desktop-app/install.ps1 | iex"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/giangsamne/TailRouter/main/install.ps1 | iex"
 )
 pause
 exit /b 0

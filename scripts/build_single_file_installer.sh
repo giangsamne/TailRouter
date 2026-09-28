@@ -36,15 +36,15 @@ cat << 'POLYGLOT_HEADER' > "$HEADER_FILE"
 :; OS="$(uname -s)"
 :; ARCH="$(uname -m)"
 :; echo "=========================================================="
-:; echo "⚡ TailRouter - Universal 1-File Offline Installer"
+:; echo "⚡ BỘ CÀI ĐẶT TỰ ĐỘNG TAILROUTER CHO MỌI HỆ ĐIỀU HÀNH"
 :; echo "=========================================================="
-:; echo "==> Detected OS: $OS ($ARCH)"
+:; echo "==> Hệ điều hành phát hiện: $OS ($ARCH)"
 :; 
 :; TMP_WORK="/tmp/tailrouter_1file_$$"
 :; mkdir -p "$TMP_WORK"
 :; PKG_BUNDLE="$TMP_WORK/bundle.zip"
 :; 
-:; echo "==> [1/3] Extracting embedded packages..."
+:; echo "==> [1/3] Đang tự động trích xuất gói cài đặt tương ứng..."
 :; MARKER_LINE=$(grep -a -n -m 1 '^__ARCHIVE_DATA__$' "$0" | cut -d: -f1)
 :; if [ -n "$MARKER_LINE" ]; then
 :;   tail -n +$((MARKER_LINE + 1)) "$0" > "$PKG_BUNDLE"
@@ -56,28 +56,46 @@ cat << 'POLYGLOT_HEADER' > "$HEADER_FILE"
 :; rm -f "$PKG_BUNDLE"
 :; 
 :; if [ "$OS" = "Darwin" ]; then
-:;   echo "==> [2/3] Installing TailRouter on macOS..."
-:;   INSTALL_DIR="/Applications"
-:;   APP_NAME="TailRouter.app"
-:;   unzip -q -o "$TMP_WORK/TailRouter-macOS.zip" -d "$TMP_WORK"
-:;   pkill -f "TailRouter.app" 2>/dev/null || true
-:;   pkill -f "tailrouter-server" 2>/dev/null || true
-:;   sleep 1
-:;   cp -R "$TMP_WORK/$APP_NAME" "$INSTALL_DIR/"
-:;   xattr -dr com.apple.quarantine "$INSTALL_DIR/$APP_NAME" 2>/dev/null || true
+:;   echo "==> [2/3] Đang cài đặt TailRouter vào hệ thống macOS..."
+:;   ARCHIVE_NAME="TailRouter-macOS.zip"
+:;   unzip -q -o "$TMP_WORK/$ARCHIVE_NAME" -d "$TMP_WORK"
+:;   BIN_NAME="tailrouter-arm64"
+:;   if [ "$ARCH" = "x86_64" ]; then
+:;     BIN_NAME="tailrouter-amd64"
+:;   fi
+:;   TARGET_BIN="/usr/local/bin/tailrouter"
+:;   if [ -w "/usr/local/bin" ] || [ "$(id -u)" -eq 0 ]; then
+:;     cp "$TMP_WORK/$BIN_NAME" "$TARGET_BIN"
+:;     chmod +x "$TARGET_BIN"
+:;   elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+:;     sudo cp "$TMP_WORK/$BIN_NAME" "$TARGET_BIN"
+:;     sudo chmod +x "$TARGET_BIN"
+:;   else
+:;     TARGET_BIN="$HOME/.local/bin"
+:;     mkdir -p "$HOME/.local/bin"
+:;     cp "$TMP_WORK/$BIN_NAME" "$TARGET_BIN/tailrouter"
+:;     chmod +x "$TARGET_BIN/tailrouter"
+:;     TARGET_BIN="$TARGET_BIN/tailrouter"
+:;     if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+:;       export PATH="$HOME/.local/bin:$PATH"
+:;     fi
+:;   fi
 :;   rm -rf "$TMP_WORK"
-:;   echo "==> [3/3] Launching TailRouter..."
-:;   open "$INSTALL_DIR/$APP_NAME"
+:;   echo "==> [3/3] Cấu hình dịch vụ hệ thống launchd..."
+:;   "$TARGET_BIN" service install 2>/dev/null || true
 :;   echo "=========================================================="
-:;   echo "✅ TailRouter installed successfully to $INSTALL_DIR/$APP_NAME!"
-:;   echo "💡 TailRouter is running in your macOS Menu Bar."
+:;   echo "✅ CÀI ĐẶT THÀNH CÔNG VÀO $TARGET_BIN!"
+:;   echo "==> Trạng thái dịch vụ:"
+:;   "$TARGET_BIN" status || true
 :;   echo "=========================================================="
+:;   echo "💡 Bảng điều khiển Web: http://localhost:65534/router"
+:;   open "http://localhost:65534/router" 2>/dev/null || true
 :; elif [ "$OS" = "Linux" ]; then
-:;   echo "==> [2/3] Installing TailRouter on Linux..."
+:;   echo "==> [2/3] Đang cài đặt TailRouter vào hệ thống Linux..."
 :;   tar -xzf "$TMP_WORK/TailRouter-Linux.tar.gz" -C "$TMP_WORK"
-:;   BIN_NAME="tailrouter-server"
+:;   BIN_NAME="tailrouter"
 :;   if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-:;     BIN_NAME="tailrouter-server-arm64"
+:;     BIN_NAME="tailrouter-arm64"
 :;   fi
 :;   TARGET_BIN="/usr/local/bin/tailrouter"
 :;   if [ -w "/usr/local/bin" ] || [ "$(id -u)" -eq 0 ]; then
@@ -96,27 +114,28 @@ cat << 'POLYGLOT_HEADER' > "$HEADER_FILE"
 :;     fi
 :;   fi
 :;   rm -rf "$TMP_WORK"
-:;   echo "==> [3/3] Setting up system service..."
+:;   echo "==> [3/3] Cấu hình dịch vụ hệ thống chạy ngầm..."
 :;   "$TARGET_BIN" service install 2>/dev/null || true
 :;   echo "=========================================================="
-:;   echo "✅ TailRouter installed successfully at: $TARGET_BIN"
-:;   echo "==> Gateway status:"
+:;   echo "✅ CÀI ĐẶT THÀNH CÔNG VÀO: $TARGET_BIN"
+:;   echo "==> Trạng thái dịch vụ:"
 :;   "$TARGET_BIN" status || true
 :;   echo "=========================================================="
-:;   echo "💡 Web Dashboard: http://localhost:65534/router"
+:;   echo "💡 Bảng điều khiển Web: http://localhost:65534/router"
 :; else
-:;   echo "❌ Unsupported OS: $OS"
+:;   echo "❌ Hệ điều hành không được hỗ trợ: $OS"
 :;   exit 1
 :; fi
 :; exit 0
 
 @echo off
-setlocal enabledelayedexpansion
-title TailRouter - 1-File Universal Offline Installer
+setlocal EnableDelayedExpansion
+title TailRouter - Bo Cai Dat Tu Dong Cho Moi He Dieu Hanh
+chcp 65001 >nul
 echo ==========================================================
-echo ⚡ TailRouter - 1-File Universal Offline Installer (Windows)
+echo ⚡ BỘ CÀI ĐẶT TỰ ĐỘNG TAILROUTER CHO MÁY TÍNH (WINDOWS)
 echo ==========================================================
-echo ==> [1/3] Dang trich xuat goi cai dat...
+echo ==> [1/3] Đang tự động trích xuất phần mềm từ bộ cài...
 
 set THIS_FILE=%~f0
 set INSTALL_DIR=%LOCALAPPDATA%\TailRouter
@@ -145,34 +164,36 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "} else { Write-Error 'Cannot find embedded zip payload'; exit 1 }"
 
 if errorlevel 1 (
-    echo [ERROR] Trich xuat du lieu that bai!
+    echo [LỖI] Trích xuất dữ liệu thất bại!
     pause
     exit /b 1
 )
 
-echo ==> [2/3] Dung tien trinh cu neu co...
+echo ==> [2/3] Dừng các tiến trình cũ nếu có...
+taskkill /f /im tailrouter.exe 2>nul
 taskkill /f /im TailRouter.exe 2>nul
-taskkill /f /im tailrouter-server.exe 2>nul
 timeout /t 1 /nobreak >nul
 
-echo ==> [3/3] Tao Shortcut Desktop va Autostart...
+echo ==> [3/3] Đang tạo biểu tượng Desktop và cấu hình tự khởi động...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$ws = New-Object -ComObject WScript.Shell;" ^
     "$s = $ws.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\TailRouter.lnk');" ^
-    "$s.TargetPath = '%INSTALL_DIR%\TailRouter.exe';" ^
+    "$s.TargetPath = '%INSTALL_DIR%\tailrouter.exe';" ^
     "$s.WorkingDirectory = '%INSTALL_DIR%';" ^
-    "$s.Description = 'TailRouter - Tailscale Port Router Gateway';" ^
+    "$s.Description = 'TailRouter - High-Performance Bare-Metal Gateway';" ^
     "$s.Save()"
 
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "TailRouter" /t REG_SZ /d "\"%INSTALL_DIR%\TailRouter.exe\"" /f >nul
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "TailRouter" /t REG_SZ /d "\"%INSTALL_DIR%\tailrouter.exe\" run" /f >nul
 
 echo ==========================================================
-echo [SUCCESS] Cai dat TailRouter thanh cong vao %INSTALL_DIR%!
-echo ==> Dang khoi dong TailRouter...
-start "" "%INSTALL_DIR%\TailRouter.exe"
-echo Bieu tuong app da xuat hien duoi khay he thong (System Tray).
-echo Bang dieu khien Web: http://localhost:65534/router
+echo ✅ CÀI ĐẶT THÀNH CÔNG VÀO: %INSTALL_DIR%!
+echo ==> Đang khởi động ứng dụng TailRouter...
+start "" "%INSTALL_DIR%\tailrouter.exe" run
+timeout /t 1 /nobreak >nul
+start http://localhost:65534/router
+echo 🌐 Bảng điều khiển Web: http://localhost:65534/router
 echo ==========================================================
+echo Hoàn tất! Bạn có thể đóng cửa sổ này.
 pause
 exit /b 0
 __ARCHIVE_DATA__
@@ -180,6 +201,10 @@ POLYGLOT_HEADER
 
 cat "$HEADER_FILE" "$PAYLOAD_ZIP" > "$OUTPUT_FILE"
 chmod +x "$OUTPUT_FILE"
+
+# Also update the .command copy for Mac double-clickers
+cp "$OUTPUT_FILE" "$RELEASE_DIR/TailRouter-Setup.command"
+chmod +x "$RELEASE_DIR/TailRouter-Setup.command"
 
 rm -f "$HEADER_FILE" "$PAYLOAD_ZIP"
 
