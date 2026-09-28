@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-TAG="${1:-v2.0.0}"
+TAG="${1:-v2.1.0}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
