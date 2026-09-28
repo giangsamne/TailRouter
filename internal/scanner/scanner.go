@@ -458,7 +458,7 @@ func (s *Scanner) probeHTTP(pi *PortItem) {
 	if err != nil {
 		return
 	}
-	req.Header.Set("User-Agent", "TailRouter-Scanner/2.1.0")
+	req.Header.Set("User-Agent", "TailRouter-Scanner/2.2.0")
 
 	resp, err := client.Do(req)
 	if err != nil {

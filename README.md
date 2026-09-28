@@ -20,7 +20,7 @@
 Run this single command in your Linux terminal (Ubuntu, Debian, Fedora, Arch, Alpine, Raspberry Pi):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.2.0/install.sh | bash
 ```
 
 * **Zero Dependencies**: Pure static Go binary. Compatible with both `glibc` and `musl` (Alpine Linux).
@@ -33,7 +33,7 @@ curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/instal
 ### 📦 Manual Download (Standalone Tarball)
 
 Download the pre-compiled binary package:
-* [**`TailRouter-Linux.tar.gz` (GitHub Release)**](https://github.com/giangsamne/TailRouter/releases/download/v2.1.0/TailRouter-Linux.tar.gz)
+* [**`TailRouter-Linux.tar.gz` (GitHub Release)**](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/TailRouter-Linux.tar.gz)
 
 To extract and run manually:
 ```bash
