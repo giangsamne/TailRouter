@@ -31,7 +31,7 @@ irm https://raw.githubusercontent.com/giangsamne/TailRouter/windows/install.ps1 
 ### 📦 Manual Download (Standalone Zip)
 
 Download the pre-compiled binary package:
-* [**`TailRouter-Windows.zip` (GitHub Release)**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Windows.zip)
+* [**`TailRouter-Windows.zip` (GitHub Release)**](https://github.com/giangsamne/TailRouter/releases/download/v2.1.0/TailRouter-Windows.zip)
 
 To install or run manually:
 1. Extract `TailRouter-Windows.zip`.
