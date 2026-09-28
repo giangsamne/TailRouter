@@ -7,7 +7,7 @@ set -e
 # ==============================================================================
 
 REPO="giangsamne/TailRouter"
-RELEASE_TAG="v2.1.0"
+RELEASE_TAG="${1:-v2.1.0}"
 BASE_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
 
 echo "=========================================================="
@@ -121,7 +121,7 @@ case "$OS" in
 
   *)
     echo "❌ Unsupported operating system: $OS"
-    echo "For Windows, please run install.ps1 or install.cmd"
+    echo "For Windows, please run install.ps1 in PowerShell"
     exit 1
     ;;
 esac

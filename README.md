@@ -21,17 +21,11 @@ Run a single command in your terminal or PowerShell — it automatically detects
 
 * **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.sh | bash
   ```
 * **🪟 Windows** (PowerShell):
   ```powershell
-  irm https://raw.githubusercontent.com/giangsamne/TailRouter/main/install.ps1 | iex
-  ```
-* **🌐 Universal Polyglot Script** (Single file for all 3 OS):
-  ```bash
-  # Windows: Double-click install.cmd (or run in Command Prompt)
-  # Linux & macOS:
-  ./install.cmd
+  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.ps1 | iex
   ```
 
 ---
@@ -225,8 +219,6 @@ TailRouter/
 │   └── snapshot_tag.sh       # Release snapshot packaging tool
 ├── install.sh                # 1-Line universal installer for Linux & macOS
 ├── install.ps1               # 1-Line installer for Windows (PowerShell)
-├── install.cmd               # Double-clickable launcher for Windows
-├── install.command           # Double-clickable launcher for macOS
 ├── LICENSE                   # MIT License
 └── README.md                 # English documentation
 ```
