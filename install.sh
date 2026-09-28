@@ -72,7 +72,7 @@ case "$OS" in
     sleep 1
 
     # Fallback background daemon if service is not started
-    if ! "$TARGET_BIN" status >/dev/null 2>&1; then
+    if ! curl -sf http://127.0.0.1:65534/api/status >/dev/null 2>&1; then
       echo "==> Starting TailRouter daemon in background..."
       nohup "$TARGET_BIN" run > "$HOME/.tailrouter.log" 2>&1 &
       sleep 2
@@ -153,14 +153,14 @@ case "$OS" in
     AUTOSTART_SNIPPET="if ! pgrep -f \"tailrouter run\" >/dev/null 2>&1; then nohup $TARGET_BIN run > \"\$HOME/.tailrouter.log\" 2>&1 & fi"
     for rc_file in "$HOME/.profile" "$HOME/.ashrc"; do
       if [ -f "$rc_file" ] || [ "$(basename "$rc_file")" = ".profile" ]; then
-        if ! grep -F "tailrouter run" "$rc_file" 2>/dev/null; then
+        if ! grep -q -F "tailrouter run" "$rc_file" 2>/dev/null; then
           echo "$AUTOSTART_SNIPPET" >> "$rc_file"
         fi
       fi
     done
 
     # Fallback background daemon if service is not started (e.g. OpenRC / Alpine / non-systemd)
-    if ! "$TARGET_BIN" status >/dev/null 2>&1; then
+    if ! curl -sf http://127.0.0.1:65534/api/status >/dev/null 2>&1; then
       echo "==> Starting TailRouter daemon in background..."
       nohup "$TARGET_BIN" run > "$HOME/.tailrouter.log" 2>&1 &
       sleep 2
