@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-TAG="${1:-v2.1.0}"
+TAG="${1:-v2.2.0}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
@@ -21,7 +21,7 @@ GIT_INDEX_FILE="$TMP_INDEX" git read-tree --prefix=windows/ origin/windows
 GIT_INDEX_FILE="$TMP_INDEX" git read-tree --prefix=linux/ origin/linux
 
 echo "==> [2/4] Adding root README.md, LICENSE, install.sh & install.ps1 pinned to: $TAG..."
-README_CONTENT=$(sed "s|/v2.1.0/|/${TAG}/|g" README.md)
+README_CONTENT=$(sed -E "s|/v[0-9]+\.[0-9]+\.[0-9]+/|/${TAG}/|g" README.md)
 README_BLOB=$(echo "$README_CONTENT" | git hash-object -w --stdin)
 LICENSE_BLOB=$(git hash-object -w LICENSE)
 
