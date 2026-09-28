@@ -1,53 +1,98 @@
 <div align="center">
 
-# ⚡ TailRouter
+# 🐍 TailRouter (Python Edition v1.1.0)
 
-**High-performance, zero-dependency bare-metal gateway & web manager for Tailscale Serve and Funnel.**
+**Lightweight, zero-external-dependency gateway & web dashboard for Tailscale Serve and Funnel.**
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter)
+[![Python](https://img.shields.io/badge/Python-3.8+-3776AB.svg?logo=python&logoColor=white)](https://python.org)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter/tree/v1.1.0)
+[![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg?logo=tailscale&logoColor=white)](https://tailscale.com)
+[![Dependencies](https://img.shields.io/badge/dependencies-0%20(Pure%20Stdlib)-success.svg)](https://github.com/giangsamne/TailRouter/tree/v1.1.0)
+[![Memory Footprint](https://img.shields.io/badge/RAM-%3C%2025MB%20RSS-blueviolet.svg)](https://github.com/giangsamne/TailRouter/tree/v1.1.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg)](https://tailscale.com)
-[![Dependencies](https://img.shields.io/badge/dependencies-0%20(Pure%20Stdlib)-success.svg)](https://docs.python.org/3/library/asyncio.html)
-[![i18n](https://img.shields.io/badge/i18n-VI%20%7C%20EN%20%7C%20ZH%20%7C%20JA-orange.svg)](#-internationalization-i18n)
-
-[**Tiếng Việt (README_VI.md)**](README_VI.md) | [**English Documentation**](README.md)
 
 </div>
 
 ---
 
-### 🌿 Choose Your Version & Branch
+### ⚡ Quick Start (Recommended)
 
-| Branch | Target Platform | Description | Quick Link |
+TailRouter Python Edition relies 100% on the Python Standard Library. **No `pip install`**, virtual environment, or external wheels are required:
+
+* **🐧 Linux & 🍏 macOS** (Terminal):
+  ```bash
+  git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
+  cd TailRouter
+  ./start.sh
+  ```
+
+* **🪟 Windows** (Command Prompt / PowerShell):
+  ```cmd
+  git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
+  cd TailRouter
+  start.bat
+  ```
+
+* **Direct Foreground Execution** (All Operating Systems):
+  ```bash
+  python3 server.py
+  ```
+
+> 💡 **Ready in Seconds**: Once started, open **`http://localhost:65534/router`** to access the Web Control Dashboard.
+
+---
+
+### 🏷️ Releases & Engine Comparison
+
+| Release | Technology / Engine | Characteristics | Direct Link |
 | :--- | :--- | :--- | :--- |
-| **`main`** | ⚡ Linux Server / Bare-Metal | **Default**: Core Headless Daemon, 0 dependencies, auto-start via systemd, loop protection. | [View `main`](https://github.com/giangsamne/TailRouter/tree/main) |
-| **`desktop-app`** | 🍏 macOS, 🪟 Windows, 🐧 Linux Desktop | **Native Background Apps**: macOS Menu Bar App (`TailRouter.app`), Windows System Tray (`TailRouter-Tray`), Linux Desktop launcher. No terminal clutter. | [**Switch to `desktop-app` 👉**](https://github.com/giangsamne/TailRouter/tree/desktop-app) |
+| **`v2.1.0`** *(Latest)* | ⚡ Go Native Bare-Metal | Single pre-compiled binary (`< 8MB RAM`, `0.0% CPU`), no runtime required, multi-platform | [**View v2.1.0 Release 👉**](https://github.com/giangsamne/TailRouter/releases/tag/v2.1.0) |
+| **`v1.1.0`** | 🐍 Pure Python 3 Engine | Zero external dependencies (Pure stdlib), ascending port scanner with process & PID resolution | [**View v1.1.0 Tag 👉**](https://github.com/giangsamne/TailRouter/tree/v1.1.0) |
+
+---
+
+### 🌿 Dedicated OS Branches
+
+TailRouter provides dedicated platform branches with optimized guides, service setups, and configurations:
+
+| Branch | Platform | Features | Direct Link |
+| :--- | :--- | :--- | :--- |
+| **`main`** | 🌐 Multi-Platform (Hub) | Default hub: Unified guides, multi-OS installers, release artifacts | [**View `main` branch 👉**](https://github.com/giangsamne/TailRouter/tree/main) |
+| **`linux`** | 🐧 Linux | Native CLI + Web Control (:65534), systemd & OpenRC (Alpine/Ubuntu/Arch) | [**View `linux` branch 👉**](https://github.com/giangsamne/TailRouter/tree/linux) |
+| **`windows`** | 🪟 Windows | Native CLI (`.exe`) + Web Control (:65534), PowerShell installer, Startup autostart | [**View `windows` branch 👉**](https://github.com/giangsamne/TailRouter/tree/windows) |
+| **`macos`** | 🍏 macOS | Native CLI + Web Control (:65534), launchd agent, Apple Silicon & Intel | [**View `macos` branch 👉**](https://github.com/giangsamne/TailRouter/tree/macos) |
 
 ---
 
 ## 💡 What is TailRouter?
 
-**TailRouter** is a lightweight, bare-metal gateway running directly on port **65534** on your host machine. It eliminates the need for heavy virtual machines or complex reverse-proxy setups (Nginx, Traefik, NPM) to expose local homelab services (3D printers, home automation, web apps, media servers, Docker containers) to your Tailnet or the public Internet.
+**TailRouter** is a lightweight reverse-proxy gateway and dashboard running directly on port **65534** of your host machine. It makes publishing local homelab services (3D printers, home automation, web apps, media servers, dev tools) to your **Tailnet** or the **public Internet** effortless without third-party Docker proxies.
 
 ### 🌟 Key Highlights
-- 🪶 **Zero External Dependencies**: Built entirely with Python 3's standard library (`asyncio`, `urllib`, `json`, `subprocess`). No `pip install`, no virtualenv, no node_modules. Uses ~15MB RAM and starts in under 50ms.
-- ⚡ **Direct Bare-Metal Performance**: Runs straight on host hardware for maximum I/O throughput and ultra-low latency.
+
+- ⚡ **Zero External Dependencies**:
+  - Written in 100% Python Standard Library (`asyncio`, `urllib`, `socket`, `subprocess`).
+  - No `pip install` required. Works out of the box on Linux, macOS, and Windows.
 - 🎛️ **Tailscale Serve & Funnel Integration**:
   - **Serve**: Encrypted, authenticated access strictly within your private Tailnet (`https://<node-name>.ts.net/<path>`).
-  - **Funnel**: Fully public HTTPS route accessible to the entire world without requiring port forwarding or a public IPv4.
-  - Switch between Serve and Funnel with a single click in the UI!
-- 🖥️ **Web Dashboard (`/router`)**: Responsive Dark-mode SPA at `http://<ip>:65534/router` and `https://<node-name>.ts.net/router`.
-- 🔍 **Auto Port Scanner**: Scans open TCP ports and Docker containers on the host, inspects HTTP response headers, and lets you add routes with a single click.
-- 🌐 **Multi-Language (i18n)**: Out-of-the-box support for 🇻🇳 Tiếng Việt, 🇺🇸 English, 🇨🇳 中文, and 🇯🇵 日本語.
-- 💻 **Cross-Platform**: Ready-to-use scripts for **Linux**, **macOS**, **Windows**, and **Docker**.
-- 🔄 **Auto-Start on Boot**: Systemd user service support with auto-recovery and persistent state.
+  - **Funnel**: Fully public HTTPS route accessible across the Internet without port forwarding or public IPv4.
+  - Switch between Serve and Funnel in 1 click!
+- 🖥️ **Embedded Web Dashboard (`/router`)**:
+  - Responsive dark-mode SPA served directly on port `65534`.
+  - Accessible locally at `http://localhost:65534/router` and over Tailnet at `https://<node-name>.ts.net/router`.
+- 🔍 **Ascending Port Discovery Scanner**:
+  - Automatically discovers open TCP listening ports and sorts them strictly in ascending numerical order (`22`, `53`, `80`, `443`, `8080`...).
+  - Displays occupying software name, process PID, and Docker container tags.
+- 🔁 **Persistent Route Storage**:
+  - Routes are saved in standard location (`config/routes.json`) and persist across reboots and service restarts.
+- 🔄 **Boot Autostart**:
+  - Run `./install-service.sh` to configure systemd (Linux) or launchd (macOS) autostart on boot.
 
 ---
 
 ## 🖥️ System Architecture
 
-```
+```text
 Internet / Tailnet
          │
          ▼
@@ -56,156 +101,122 @@ Internet / Tailnet
 │         (MagicDNS: https://<your-node>.ts.net)               │
 └──────────────────────────────┬───────────────────────────────┘
                                │
-               ┌───────────────┴───────────────┐
-               ▼ (Serve / Funnel)              ▼ (/router Web UI)
-┌──────────────────────────────────────┐       │
-│ TailRouter (Port 65534)   │◄──────┘
-│  - Async reverse proxy               │
-│  - REST API & Web Dashboard          │
-│  - Auto Port & Container Scanner     │
-└──────────────┬───────────────────────┘
-               │
-   ┌───────────┼────────────────────────┐
-   ▼           ▼                        ▼
-Port 8080   Port 3000                Port 4000
-(Bambu)     (Web / Next.js)         (NoMachine / Remote)
+                ┌──────────────┴───────────────┐
+                ▼ (Serve / Funnel)              ▼ (/router Web Dashboard)
+┌──────────────────────────────────────────────────────────────┐
+│ TailRouter Python Gateway (Port 65534)                       │
+│  - Asyncio reverse proxy & streaming engine                  │
+│  - REST API & Web Dashboard                                  │
+│  - Host TCP port scanner & route hot-reload                  │
+└──────────────────────────────┬───────────────────────────────┘
+                               │
+    ┌──────────────────────────┼───────────────────────────────┐
+    ▼                          ▼                               ▼
+Port 8080                  Port 3000                       Port 22
+(Bambu 3D / OctoPrint)     (Web App / Next.js)             (SSH / Remote)
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start Guide
 
-### Prerequisites
-- Python 3.8 or newer (standard installation).
-- [Tailscale](https://tailscale.com) installed and logged in.
+### 1. Launching TailRouter
 
----
+* **Linux / macOS**:
+  ```bash
+  # Background daemon
+  ./start.sh
 
-### 🐧 Linux & 🍏 macOS
+  # Or foreground with live logs:
+  python3 server.py
+  ```
 
-1. **Clone the repository**:
-   ```bash
-   git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
-   cd TailRouter
-   ```
+* **Windows**:
+  ```cmd
+  # Background execution
+  start.bat
 
-2. **Start the gateway**:
-   ```bash
-   # Start as a background daemon:
-   ./start.sh
+  # Or foreground:
+  python server.py
+  ```
 
-   # Or run in foreground with live console logs:
-   ./start.sh -f
-   ```
+Open your web browser at: 👉 **`http://localhost:65534/router`**
 
-3. **Stop the gateway**:
-   ```bash
-   ./stop.sh
-   ```
+### 2. Stopping TailRouter
 
-4. **Enable auto-start on boot (Systemd)**:
-   ```bash
-   ./install-service.sh
-   ```
-   *The script enables lingering so the service launches on system boot even before user login.*
+* **Linux / macOS**:
+  ```bash
+  ./stop.sh
+  ```
 
----
+* **Windows**:
+  ```cmd
+  stop.bat
+  ```
 
-### 🪟 Windows
+### 3. Autostart on Boot (Linux & macOS)
 
-1. **Clone or download the repo**:
-   ```cmd
-   git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
-   cd TailRouter
-   ```
-
-2. **Start the gateway**:
-   Double-click `start.bat` or run:
-   ```cmd
-   start.bat
-   ```
-
-3. **Stop the gateway**:
-   Double-click `stop.bat` or run:
-   ```cmd
-   stop.bat
-   ```
-
----
-
-### 🐳 Docker & Docker Compose (Optional)
-
+To install TailRouter as an automatic background service:
 ```bash
-docker compose up -d
+./install-service.sh
 ```
-*(Uses `network_mode: host` to directly access host ports and Tailscale daemon).*
 
 ---
 
-## 🧭 Web Management Interface (`/router`)
+## ⌨️ Script & Command Reference
 
-Once started, open your browser and navigate to:
-- **Local Host**: [http://localhost:65534/router](http://localhost:65534/router)
-- **Within Tailnet**: `http://<tailscale-ip>:65534/router`
-- **Via Tailscale Serve**: `https://<your-node>.ts.net/router`
-
-### Key Features of the Dashboard:
-1. **Node Status Card**: Shows machine hostname, Tailscale IP, MagicDNS FQDN, and system uptime.
-2. **Active Routes Table**:
-   - Path (`/bambu`, `/grafana`, `/api`, etc.).
-   - Target destination (`127.0.0.1:8080`).
-   - Mode badge: **🔒 Serve (Tailnet Only)** or **🌐 Funnel (Public Internet)**.
-   - Quick Mode Toggle button (switch between Serve and Funnel in 1 click).
-   - Test Ping (measures backend latency in milliseconds).
-   - Direct MagicDNS link button with 1-click clipboard copy.
-3. **Auto Port Scanner Tab**:
-   - Lists all listening TCP ports and running Docker containers.
-   - Probes HTTP titles and signatures automatically.
-   - Single-click **"+ Add to Router"** button to prefill route creation modal.
-4. **Multi-Language Selector**:
-   - Switch between Vietnamese, English, Chinese, and Japanese.
-   - Saved automatically to browser `localStorage`.
+| Script | Platform | Description |
+| :--- | :--- | :--- |
+| `python3 server.py` | Cross-platform | Run Gateway in foreground with real-time log output |
+| `./start.sh` | Linux / macOS | Launch Gateway as a background daemon process |
+| `./stop.sh` | Linux / macOS | Gracefully terminate background Gateway process |
+| `start.bat` | Windows | Launch Gateway in background window on Windows |
+| `stop.bat` | Windows | Terminate running Gateway process on Windows |
+| `./install-service.sh` | Linux / macOS | Install systemd or launchd user service for boot autostart |
 
 ---
 
-## 📡 REST API Documentation
+## 📡 REST API Reference
+
+TailRouter exposes a REST API on port `65534`:
 
 | Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/status` | Get node info, Tailscale status, and gateway health. |
-| `GET` | `/api/routes` | List all configured routes. |
-| `POST` | `/api/routes` | Create a new route. |
-| `PUT` | `/api/routes/<id>` | Update an existing route. |
-| `POST` | `/api/routes/<id>/toggle-mode` | Toggle route between `serve` and `funnel`. |
-| `POST` | `/api/routes/<id>/ping` | Health-check backend target and return latency ms. |
-| `DELETE` | `/api/routes/<id>` | Delete route and unmap from Tailscale. |
-| `GET` | `/api/scan` | Trigger host TCP port and Docker container scan. |
+| :--- | :--- | :--- |
+| `GET` | `/api/status` | Node status, Tailscale state, gateway uptime, autostart info. |
+| `GET` | `/api/routes` | List all configured routes with latency and hit counts. |
+| `POST` | `/api/routes` | Register a new reverse-proxy route. |
+| `GET` | `/api/routes/{id}` | Inspect details of a specific route. |
+| `PUT` | `/api/routes/{id}` | Update route target, name, or settings. |
+| `DELETE` | `/api/routes/{id}` | Delete a route and unmap it from Tailscale. |
+| `POST` | `/api/routes/{id}/ping` | Health-check backend target and return latency in ms. |
+| `POST` | `/api/routes/{id}/toggle` | Enable or disable a route without deleting it. |
+| `POST` | `/api/routes/{id}/toggle-mode` | Switch route between `serve` (private) and `funnel` (public). |
+| `GET` | `/api/scan` | Trigger immediate host TCP port discovery scan. |
+| `GET` | `/api/autostart` | Inspect operating system autostart configuration. |
+| `POST` | `/api/autostart/toggle` | Enable or disable autostart on boot. |
 
 ---
 
 ## 📁 Repository Structure
 
-```
+```text
 TailRouter/
-├── server.py              # Main async HTTP reverse-proxy & REST API server
-├── port_scanner.py        # Cross-platform TCP port & Docker container scanner
-├── routes_manager.py      # Route state persistence & health checker
-├── tailscale_helper.py    # Tailscale CLI wrapper (Serve, Funnel, MagicDNS discovery)
-├── web/
-│   └── index.html         # Responsive SPA Web Dashboard with i18n
+├── server.py                 # Core Asyncio Gateway, Reverse Proxy & API Server
+├── port_scanner.py           # Host TCP port discovery scanner with process & PID resolution
+├── routes_manager.py         # JSON route manager & thread-safe persistence
+├── tailscale_helper.py       # Tailscale Serve & Funnel CLI integration
+├── service_helper.py         # Platform autostart manager (systemd, launchd, registry)
 ├── config/
-│   ├── routes.json        # Active route configuration (auto-created)
-│   └── routes.example.json# Example route configuration template
-├── start.sh               # Startup script for Linux / macOS
-├── stop.sh                # Stop script for Linux / macOS
-├── install-service.sh     # Systemd user service installer
-├── start.bat              # Startup batch script for Windows
-├── stop.bat               # Stop batch script for Windows
-├── Dockerfile             # Container definition
-├── docker-compose.yml     # Docker compose recipe
-├── LICENSE                # MIT License
-├── README.md              # English documentation
-└── README_VI.md           # Vietnamese documentation
+│   └── routes.example.json   # Template route configuration
+├── web/
+│   └── index.html            # Responsive SPA Web Dashboard with i18n
+├── start.sh                  # Background daemon launcher (Linux/macOS)
+├── stop.sh                   # Process terminator (Linux/macOS)
+├── start.bat                 # Background launcher (Windows)
+├── stop.bat                  # Process terminator (Windows)
+├── install-service.sh        # System service installer (Linux/macOS)
+├── LICENSE                   # MIT License
+└── README.md                 # English documentation
 ```
 
 ---
@@ -213,7 +224,7 @@ TailRouter/
 ## 🤝 Contributing
 
 Contributions, issues, and feature requests are welcome!
-Feel free to check [issues page](https://github.com/giangsamne/TailRouter/issues).
+Feel free to open an issue or submit a pull request on the [GitHub Issues page](https://github.com/giangsamne/TailRouter/issues).
 
 ---
 
