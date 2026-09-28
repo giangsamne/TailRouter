@@ -7,7 +7,7 @@ set -e
 # ==============================================================================
 
 REPO="giangsamne/TailRouter"
-RELEASE_TAG="${1:-v2.1.0}"
+RELEASE_TAG="${1:-v2.2.0}"
 BASE_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
 
 echo "=========================================================="
@@ -52,9 +52,15 @@ case "$OS" in
       mkdir -p "$HOME/.local/bin"
       cp "$TMP_DIR/$BIN_NAME" "$TARGET_BIN"
       chmod +x "$TARGET_BIN"
-      if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-        export PATH="$HOME/.local/bin:$PATH"
-      fi
+
+      for rc_file in "$HOME/.zprofile" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile"; do
+        if [ -f "$rc_file" ] || [ "$(basename "$rc_file")" = ".zprofile" ]; then
+          if ! grep -q '\.local/bin' "$rc_file" 2>/dev/null; then
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc_file"
+          fi
+        fi
+      done
+      export PATH="$HOME/.local/bin:$PATH"
     fi
 
     rm -rf "$TMP_DIR"
@@ -63,10 +69,25 @@ case "$OS" in
     echo "✅ TailRouter installed successfully at: $TARGET_BIN"
     echo "==> Setting up system service..."
     "$TARGET_BIN" service install 2>/dev/null || true
+    sleep 1
+
+    # Fallback background daemon if service is not started
+    if ! curl -sf http://127.0.0.1:65534/api/status >/dev/null 2>&1; then
+      echo "==> Starting TailRouter daemon in background..."
+      nohup "$TARGET_BIN" run > "$HOME/.tailrouter.log" 2>&1 &
+      sleep 2
+    fi
+
     echo "==> Checking gateway status..."
     "$TARGET_BIN" status || true
     echo "=========================================================="
     echo "💡 Web Dashboard accessible at: http://localhost:65534/router"
+    if [ "$TARGET_BIN" = "$HOME/.local/bin/tailrouter" ]; then
+      echo ""
+      echo "📌 NOTE: To use 'tailrouter' command directly in this current terminal, run:"
+      echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
+      echo "   (or: source ~/.zprofile)"
+    fi
     open "http://localhost:65534/router" 2>/dev/null || true
     ;;
 
@@ -102,9 +123,16 @@ case "$OS" in
       mkdir -p "$HOME/.local/bin"
       cp "$TMP_DIR/$BIN_NAME" "$TARGET_BIN"
       chmod +x "$TARGET_BIN"
-      if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-        export PATH="$HOME/.local/bin:$PATH"
-      fi
+
+      # Ensure ~/.local/bin is permanently in PATH across shell sessions
+      for rc_file in "$HOME/.profile" "$HOME/.ashrc" "$HOME/.bashrc" "$HOME/.zshrc"; do
+        if [ -f "$rc_file" ] || [ "$(basename "$rc_file")" = ".profile" ]; then
+          if ! grep -q '\.local/bin' "$rc_file" 2>/dev/null; then
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc_file"
+          fi
+        fi
+      done
+      export PATH="$HOME/.local/bin:$PATH"
     fi
 
     rm -rf "$TMP_DIR"
@@ -113,10 +141,41 @@ case "$OS" in
     echo "✅ TailRouter installed at: $TARGET_BIN"
     echo "==> Setting up system service..."
     "$TARGET_BIN" service install 2>/dev/null || true
+    sleep 1
+
+    # Universal Linux autostart fallback (Alpine Linux / OpenRC / crontab)
+    if command -v crontab >/dev/null 2>&1; then
+      CRON_ENTRY="@reboot sleep 5 && $TARGET_BIN run > $HOME/.tailrouter.log 2>&1"
+      if ! crontab -l 2>/dev/null | grep -F "$TARGET_BIN run" >/dev/null 2>&1; then
+        (crontab -l 2>/dev/null; echo "$CRON_ENTRY") | crontab - 2>/dev/null || true
+      fi
+    fi
+    AUTOSTART_SNIPPET="if ! pgrep -f \"tailrouter run\" >/dev/null 2>&1; then nohup $TARGET_BIN run > \"\$HOME/.tailrouter.log\" 2>&1 & fi"
+    for rc_file in "$HOME/.profile" "$HOME/.ashrc"; do
+      if [ -f "$rc_file" ] || [ "$(basename "$rc_file")" = ".profile" ]; then
+        if ! grep -q -F "tailrouter run" "$rc_file" 2>/dev/null; then
+          echo "$AUTOSTART_SNIPPET" >> "$rc_file"
+        fi
+      fi
+    done
+
+    # Fallback background daemon if service is not started (e.g. OpenRC / Alpine / non-systemd)
+    if ! curl -sf http://127.0.0.1:65534/api/status >/dev/null 2>&1; then
+      echo "==> Starting TailRouter daemon in background..."
+      nohup "$TARGET_BIN" run > "$HOME/.tailrouter.log" 2>&1 &
+      sleep 2
+    fi
+
     echo "==> Checking gateway status..."
     "$TARGET_BIN" status || true
     echo "=========================================================="
     echo "💡 Web Dashboard accessible at: http://localhost:65534/router"
+    if [ "$TARGET_BIN" = "$HOME/.local/bin/tailrouter" ]; then
+      echo ""
+      echo "📌 NOTE: To use 'tailrouter' command directly in this current terminal, run:"
+      echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
+      echo "   (or: source ~/.profile)"
+    fi
     ;;
 
   *)
