@@ -85,7 +85,7 @@ Port 8080   Port 3000                Port 4000
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/giangsamne/TailRouter.git
+   git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
    cd TailRouter
    ```
 
@@ -115,7 +115,7 @@ Port 8080   Port 3000                Port 4000
 
 1. **Clone or download the repo**:
    ```cmd
-   git clone https://github.com/giangsamne/TailRouter.git
+   git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
    cd TailRouter
    ```
 

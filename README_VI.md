@@ -64,7 +64,7 @@ Không cần cài máy ảo, không cần cấu hình phức tạp như Nginx/Tr
 
 1. **Tải mã nguồn về máy**:
    ```bash
-   git clone https://github.com/giangsamne/TailRouter.git
+   git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
    cd TailRouter
    ```
 
@@ -94,7 +94,7 @@ Không cần cài máy ảo, không cần cấu hình phức tạp như Nginx/Tr
 
 1. **Tải mã nguồn**:
    ```cmd
-   git clone https://github.com/giangsamne/TailRouter.git
+   git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
    cd TailRouter
    ```
 
