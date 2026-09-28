@@ -15,12 +15,12 @@ TMP_INDEX="/tmp/tailrouter_snapshot_index_$$"
 rm -f "$TMP_INDEX"
 
 echo "==> [1/4] Gathering code from all platform branches into folders..."
-GIT_INDEX_FILE="$TMP_INDEX" git read-tree --prefix=desktop-app/ origin/desktop-app
+GIT_INDEX_FILE="$TMP_INDEX" git read-tree --prefix=main/ origin/main
 GIT_INDEX_FILE="$TMP_INDEX" git read-tree --prefix=macos/ origin/macos
 GIT_INDEX_FILE="$TMP_INDEX" git read-tree --prefix=windows/ origin/windows
 GIT_INDEX_FILE="$TMP_INDEX" git read-tree --prefix=linux/ origin/linux
 
-echo "==> [2/4] Taking root README.md & LICENSE directly from main branch (desktop-app)..."
+echo "==> [2/4] Taking root README.md & LICENSE directly from main branch..."
 README_BLOB=$(git hash-object -w README.md)
 LICENSE_BLOB=$(git hash-object -w LICENSE)
 
@@ -32,7 +32,7 @@ rm -f "$TMP_INDEX"
 
 echo "==> [3/4] Creating snapshot commit for Tree: $TREE_ID..."
 PARENT_COMMIT=$(git rev-parse HEAD)
-COMMIT_MSG="release($TAG): all-in-one multi-platform snapshot across desktop-app, macos, windows, linux"
+COMMIT_MSG="release($TAG): all-in-one multi-platform snapshot across main, macos, windows, linux"
 COMMIT_ID=$(echo "$COMMIT_MSG" | git commit-tree "$TREE_ID" -p "$PARENT_COMMIT")
 
 echo "==> [4/4] Updating and pushing tag $TAG to GitHub..."
@@ -41,7 +41,7 @@ git push origin "$TAG" --force
 
 echo "=========================================================="
 echo "✅ Finished! Tag $TAG now includes all 4 platform folders:"
-echo "   - desktop-app/"
+echo "   - main/"
 echo "   - macos/"
 echo "   - windows/"
 echo "   - linux/"
