@@ -31,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/macos/install
 ### 📦 Manual Download (Standalone Zip)
 
 Download the pre-compiled binary package:
-* [**`TailRouter-macOS.zip` (GitHub Release)**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip)
+* [**`TailRouter-macOS.zip` (GitHub Release)**](https://github.com/giangsamne/TailRouter/releases/download/v2.1.0/TailRouter-macOS.zip)
 
 To install or run manually:
 1. Extract `TailRouter-macOS.zip`.

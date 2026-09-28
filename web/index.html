@@ -1893,14 +1893,19 @@ http://${tailscaleIp}:${PORT}/bambu`;
         ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.6;">${t('btn_added')}</button>`
         : `<button class="btn btn-primary btn-sm" onclick='prefillFromScan(${JSON.stringify(p)})'>${t('btn_add_to_router')}</button>`;
 
+      const procBadge = p.process && p.process !== '-' ? `<span class="badge" style="background:#1e3a5f; color:#93c5fd; font-weight:600; margin-left:6px;">⚙️ ${p.process}${p.pid ? ' ('+p.pid+')' : ''}</span>` : '';
+
       return `
         <tr>
-          <td><strong style="color:#38bdf8; font-size:1rem;">${p.port}</strong></td>
+          <td><strong style="color:#38bdf8; font-size:1.05rem;">${p.port}</strong></td>
           <td>
-            <div style="font-weight:500; color:#fff;">${p.service_name}</div>
-            <div style="font-size:0.75rem; color:#64748b;">Process: ${p.process} | Bind: ${p.ip}</div>
+            <div style="font-weight:500; color:#fff; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+              <span>${p.service_name || p.service || 'TCP Port'}</span>
+              ${procBadge}
+            </div>
+            <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">Bind: ${p.ip || p.host || '127.0.0.1'}</div>
           </td>
-          <td>${p.docker_container ? `<span style="color:#a5b4fc;">${p.docker_container}</span>` : `<span style="color:#64748b;">${t('host_local')}</span>`}</td>
+          <td>${(p.docker_container || p.container) ? `<span style="color:#a5b4fc; font-weight:500;">🐳 ${p.docker_container || p.container}</span>` : `<span style="color:#64748b;">${t('host_local')}</span>`}</td>
           <td>
             <div>${typeBadge}</div>
             ${p.title ? `<div style="font-size:0.8rem; color:#cbd5e1; margin-top:2px;">"${p.title}"</div>` : ''}

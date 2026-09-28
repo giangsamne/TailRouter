@@ -23,7 +23,7 @@ import (
 )
 
 const Banner = `
-  ⚡ TailRouter Native Engine v2.0
+  ⚡ TailRouter Native Engine v2.1.0
   ==================================
   Zero-Dependency Bare-Metal Gateway
 `
@@ -143,19 +143,38 @@ func runScan() {
 		return
 	}
 
-	fmt.Printf("\n%-7s %-20s %-25s %-20s\n", "CỔNG", "DỊCH VỤ", "MÔ TẢ / CONTAINER", "GỢI Ý PATH")
-	fmt.Println("-------------------------------------------------------------------------------")
+	fmt.Printf("\n%-7s %-20s %-20s %-28s %-20s\n", "CỔNG", "PHẦN MỀM / TIẾN TRÌNH", "DỊCH VỤ", "MÔ TẢ / CONTAINER", "GỢI Ý PATH")
+	fmt.Println("---------------------------------------------------------------------------------------------------------")
 	for _, p := range ports {
+		proc := p.Process
+		if proc == "" && p.Container != "" {
+			proc = "docker:" + p.Container
+		}
+		if proc == "" {
+			proc = "-"
+		}
+		if p.PID > 0 {
+			proc = fmt.Sprintf("%s (%d)", proc, p.PID)
+		}
+		if len(proc) > 19 {
+			proc = proc[:16] + "..."
+		}
+
 		desc := p.Description
 		if desc == "" {
 			desc = p.Title
 		}
-		if len(desc) > 24 {
-			desc = desc[:21] + "..."
+		if len(desc) > 27 {
+			desc = desc[:24] + "..."
 		}
-		fmt.Printf("%-7d %-20s %-25s %-20s\n", p.Port, p.Service, desc, p.SuggestedPath)
+		service := p.Service
+		if len(service) > 19 {
+			service = service[:16] + "..."
+		}
+
+		fmt.Printf("%-7d %-20s %-20s %-28s %-20s\n", p.Port, proc, service, desc, p.SuggestedPath)
 	}
-	fmt.Printf("\nTổng cộng: %d cổng đang mở.\n", len(ports))
+	fmt.Printf("\nTổng cộng: %d cổng đang mở (đã sắp xếp từ bé đến lớn).\n", len(ports))
 }
 
 func runStatus() {

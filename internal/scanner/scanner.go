@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,17 +21,21 @@ import (
 )
 
 type PortItem struct {
-	Port          int    `json:"port"`
-	Host          string `json:"host"`
-	Protocol      string `json:"protocol"`
-	Process       string `json:"process"`
-	PID           int    `json:"pid"`
-	Service       string `json:"service"`
-	Description   string `json:"description"`
-	Title         string `json:"title"`
-	Container     string `json:"container,omitempty"`
-	SuggestedPath string `json:"suggested_path"`
-	SuggestedName string `json:"suggested_name"`
+	Port            int    `json:"port"`
+	Host            string `json:"host"`
+	Protocol        string `json:"protocol"`
+	Process         string `json:"process"`
+	PID             int    `json:"pid"`
+	Service         string `json:"service"`
+	ServiceName     string `json:"service_name,omitempty"`
+	Description     string `json:"description"`
+	Title           string `json:"title"`
+	Container       string `json:"container,omitempty"`
+	DockerContainer string `json:"docker_container,omitempty"`
+	IsDocker        bool   `json:"is_docker,omitempty"`
+	IsHTTP          bool   `json:"is_http,omitempty"`
+	SuggestedPath   string `json:"suggested_path"`
+	SuggestedName   string `json:"suggested_name"`
 }
 
 type Scanner struct{}
@@ -111,6 +116,21 @@ func (s *Scanner) Scan() ([]*PortItem, error) {
 	}
 	wg.Wait()
 
+	// 6. Sort ports in ascending numerical order: từ bé đến lớn (22, 53, 80, 443, 3000, 8080...)
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Port < items[j].Port
+	})
+
+	for _, item := range items {
+		if item.ServiceName == "" {
+			item.ServiceName = item.Service
+		}
+		if item.Container != "" {
+			item.DockerContainer = item.Container
+			item.IsDocker = true
+		}
+	}
+
 	return items, nil
 }
 
@@ -157,6 +177,32 @@ func (s *Scanner) scanLinux(portMap map[int]*PortItem) {
 				Process:  procName,
 				PID:      pid,
 				Service:  detectKnownService(port, procName),
+			}
+		}
+	}
+
+	// Fallback pass: run lsof to fill in missing process names
+	if outLsof, err := runCmdWithStandardPath("lsof", "-iTCP", "-sTCP:LISTEN", "-n", "-P"); err == nil && len(outLsof) > 0 {
+		scanner := bufio.NewScanner(strings.NewReader(string(outLsof)))
+		for scanner.Scan() {
+			fields := strings.Fields(scanner.Text())
+			if len(fields) >= 9 && fields[0] != "COMMAND" {
+				pName := fields[0]
+				pPID, _ := strconv.Atoi(fields[1])
+				addr := fields[8]
+				if colon := strings.LastIndex(addr, ":"); colon != -1 {
+					if pNum, err := strconv.Atoi(addr[colon+1:]); err == nil {
+						if item, ok := portMap[pNum]; ok {
+							if item.Process == "" {
+								item.Process = pName
+								item.PID = pPID
+								if item.Service == "TCP Port" || item.Service == "" {
+									item.Service = detectKnownService(pNum, pName)
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -234,7 +280,33 @@ func (s *Scanner) scanDarwin(portMap map[int]*PortItem) {
 	}
 }
 
+func getWindowsProcessMap() map[int]string {
+	procMap := make(map[int]string)
+	out, err := runCmdWithStandardPath("tasklist", "/FO", "CSV", "/NH")
+	if err != nil {
+		return procMap
+	}
+	scanner := bufio.NewScanner(strings.NewReader(string(out)))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		// Format: "image.exe","pid","session","session#","mem"
+		parts := strings.Split(line, "\",\"")
+		if len(parts) >= 2 {
+			name := strings.Trim(parts[0], "\"")
+			pidStr := strings.Trim(parts[1], "\"")
+			if pid, err := strconv.Atoi(pidStr); err == nil {
+				procMap[pid] = name
+			}
+		}
+	}
+	return procMap
+}
+
 func (s *Scanner) scanWindows(portMap map[int]*PortItem) {
+	procMap := getWindowsProcessMap()
 	out, err := runCmdWithStandardPath("netstat", "-ano", "-p", "tcp")
 	if err == nil {
 		scanner := bufio.NewScanner(strings.NewReader(string(out)))
@@ -257,13 +329,18 @@ func (s *Scanner) scanWindows(portMap map[int]*PortItem) {
 				continue
 			}
 			pid, _ := strconv.Atoi(fields[4])
+			procName := procMap[pid]
+			if procName == "" {
+				procName = "-"
+			}
 
 			portMap[port] = &PortItem{
 				Port:     port,
 				Host:     "127.0.0.1",
 				Protocol: "tcp",
+				Process:  procName,
 				PID:      pid,
-				Service:  detectKnownService(port, ""),
+				Service:  detectKnownService(port, procName),
 			}
 		}
 	}
@@ -381,13 +458,14 @@ func (s *Scanner) probeHTTP(pi *PortItem) {
 	if err != nil {
 		return
 	}
-	req.Header.Set("User-Agent", "TailRouter-Scanner/2.0")
+	req.Header.Set("User-Agent", "TailRouter-Scanner/2.1.0")
 
 	resp, err := client.Do(req)
 	if err != nil {
 		return
 	}
 	defer resp.Body.Close()
+	pi.IsHTTP = true
 
 	bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 16384))
 	bodyStr := string(bodyBytes)
