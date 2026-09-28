@@ -45,20 +45,8 @@ Download standalone native executables — no runtime or package installation re
 | 🍏 **macOS** | Apple Silicon & Intel | [**`TailRouter-macOS.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip) | Single binary (`tailrouter`) + Launchd service + Web UI |
 | 🪟 **Windows** | x86_64 | [**`TailRouter-Windows.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Windows.zip) | Single binary (`tailrouter.exe`) + Startup autostart + Web UI |
 | 🐧 **Linux** | x86_64 & ARM64 | [**`TailRouter-Linux.tar.gz`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Linux.tar.gz) | Single binary (`tailrouter`) + Systemd/OpenRC + Web UI |
-| 💾 **1-File Offline USB** | All OS (Win/Mac/Linux) | [**`TailRouter-Setup.cmd`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Setup.cmd) | Offline self-extracting polyglot installer (~20MB) |
 
 > 💡 **Unified Single-Binary Architecture**: Each binary integrates a **Background System Service**, an embedded **Web Dashboard UX/UI** at port **65534** (`/router`), and a complete **CLI toolset**.
-
----
-
-### 💾 1-File Universal USB Installation (Offline / Anywhere)
-
-Carry **just ONE single file** on a USB flash drive and install offline on any computer:
-1. Download [**`TailRouter-Setup.cmd`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Setup.cmd) and copy it onto your USB drive.
-2. Plug the USB into any computer:
-   - **🪟 Windows**: Double-click **`TailRouter-Setup.cmd`** (extracts, installs, creates Desktop shortcut, and launches).
-   - **🍏 macOS**: Run in Terminal: **`sh TailRouter-Setup.cmd`** (installs binary, registers launchd, and opens browser).
-   - **🐧 Linux**: Run in Terminal: **`sh TailRouter-Setup.cmd`** (detects ARM64 / x86_64, installs binary, and enables systemd / OpenRC).
 
 ---
 
@@ -234,8 +222,7 @@ TailRouter/
 │   └── index.html            # Responsive SPA Web Dashboard with i18n
 ├── scripts/
 │   ├── build_all.sh          # Multi-platform static compilation tool
-│   ├── build_single_file_installer.sh # 1-File universal installer packager
-│   └── build_usb_installer.sh# Offline USB bundle packager
+│   └── snapshot_tag.sh       # Release snapshot packaging tool
 ├── install.sh                # 1-Line universal installer for Linux & macOS
 ├── install.ps1               # 1-Line installer for Windows (PowerShell)
 ├── install.cmd               # Double-clickable launcher for Windows
