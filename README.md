@@ -42,9 +42,9 @@ Download standalone native executables — no runtime or package installation re
 
 | Operating System | Architecture | Package | Description |
 | :--- | :--- | :--- | :--- |
-| 🍏 **macOS** | Apple Silicon & Intel | [**`TailRouter-macOS.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-macOS.zip) | Single binary (`tailrouter`) + Launchd service + Web UI |
-| 🪟 **Windows** | x86_64 | [**`TailRouter-Windows.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Windows.zip) | Single binary (`tailrouter.exe`) + Startup autostart + Web UI |
-| 🐧 **Linux** | x86_64 & ARM64 | [**`TailRouter-Linux.tar.gz`**](https://github.com/giangsamne/TailRouter/releases/download/v2.0.0/TailRouter-Linux.tar.gz) | Single binary (`tailrouter`) + Systemd/OpenRC + Web UI |
+| 🍏 **macOS** | Apple Silicon & Intel | [**`TailRouter-macOS.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.1.0/TailRouter-macOS.zip) | Single binary (`tailrouter`) + Launchd service + Web UI |
+| 🪟 **Windows** | x86_64 | [**`TailRouter-Windows.zip`**](https://github.com/giangsamne/TailRouter/releases/download/v2.1.0/TailRouter-Windows.zip) | Single binary (`tailrouter.exe`) + Startup autostart + Web UI |
+| 🐧 **Linux** | x86_64 & ARM64 | [**`TailRouter-Linux.tar.gz`**](https://github.com/giangsamne/TailRouter/releases/download/v2.1.0/TailRouter-Linux.tar.gz) | Single binary (`tailrouter`) + Systemd/OpenRC + Web UI |
 
 > 💡 **Unified Single-Binary Architecture**: Each binary integrates a **Background System Service**, an embedded **Web Dashboard UX/UI** at port **65534** (`/router`), and a complete **CLI toolset**.
 

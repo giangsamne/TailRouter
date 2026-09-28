@@ -4,7 +4,7 @@
 # ==============================================================================
 
 $Repo = "giangsamne/TailRouter"
-$ReleaseTag = "v2.0.0"
+$ReleaseTag = "v2.1.0"
 $ArchiveName = "TailRouter-Windows.zip"
 $DownloadUrl = "https://github.com/$Repo/releases/download/$ReleaseTag/$ArchiveName"
 $InstallDir = "$env:LOCALAPPDATA\TailRouter"
