@@ -18,7 +18,7 @@
 Run this single command in PowerShell (Administrator or standard user):
 
 ```powershell
-irm https://raw.githubusercontent.com/giangsamne/TailRouter/windows/install.ps1 | iex
+irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.ps1 | iex
 ```
 
 * **Zero Dependencies**: Pure static Go binary (`tailrouter.exe`).
@@ -35,7 +35,6 @@ Download the pre-compiled binary package:
 
 To install or run manually:
 1. Extract `TailRouter-Windows.zip`.
-2. Double-click `install.cmd` (or run `tailrouter.exe`).
 
 ---
 

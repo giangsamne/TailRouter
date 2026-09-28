@@ -3,8 +3,12 @@
 # Auto-downloads and installs TailRouter Native Engine, creates shortcut & autostart.
 # ==============================================================================
 
+param(
+    [string]$Tag = "v2.1.0"
+)
+
 $Repo = "giangsamne/TailRouter"
-$ReleaseTag = "v2.1.0"
+$ReleaseTag = $Tag
 $ArchiveName = "TailRouter-Windows.zip"
 $DownloadUrl = "https://github.com/$Repo/releases/download/$ReleaseTag/$ArchiveName"
 $InstallDir = "$env:LOCALAPPDATA\TailRouter"
