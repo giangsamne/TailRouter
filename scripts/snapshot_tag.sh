@@ -31,10 +31,17 @@ INSTALL_SH_BLOB=$(echo "$INSTALL_SH_CONTENT" | git hash-object -w --stdin)
 INSTALL_PS1_CONTENT=$(sed "s|\$Tag = \".*\"|\$Tag = \"${TAG}\"|g" install.ps1)
 INSTALL_PS1_BLOB=$(echo "$INSTALL_PS1_CONTENT" | git hash-object -w --stdin)
 
+START_SH_BLOB=$(git hash-object -w start.sh)
+STOP_SH_BLOB=$(git hash-object -w stop.sh)
+INSTALL_SERVICE_SH_BLOB=$(git hash-object -w install-service.sh)
+
 GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100644 "$README_BLOB" README.md
 GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100644 "$LICENSE_BLOB" LICENSE
 GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100755 "$INSTALL_SH_BLOB" install.sh
 GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100644 "$INSTALL_PS1_BLOB" install.ps1
+GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100755 "$START_SH_BLOB" start.sh
+GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100755 "$STOP_SH_BLOB" stop.sh
+GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100755 "$INSTALL_SERVICE_SH_BLOB" install-service.sh
 
 TREE_ID=$(GIT_INDEX_FILE="$TMP_INDEX" git write-tree)
 rm -f "$TMP_INDEX"
