@@ -3,12 +3,8 @@
 # Auto-downloads and installs TailRouter Native Engine, creates shortcut & autostart.
 # ==============================================================================
 
-param(
-    [string]$Tag = "v2.0.0"
-)
-
 $Repo = "giangsamne/TailRouter"
-$ReleaseTag = $Tag
+$ReleaseTag = "v2.0.0"
 $ArchiveName = "TailRouter-Windows.zip"
 $DownloadUrl = "https://github.com/$Repo/releases/download/$ReleaseTag/$ArchiveName"
 $InstallDir = "$env:LOCALAPPDATA\TailRouter"
@@ -65,3 +61,4 @@ Start-Sleep -Seconds 1
 Start-Process "http://localhost:65534/router"
 Write-Host "💡 Web Dashboard accessible at: http://localhost:65534/router" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Green
+
