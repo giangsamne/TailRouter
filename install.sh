@@ -52,9 +52,15 @@ case "$OS" in
       mkdir -p "$HOME/.local/bin"
       cp "$TMP_DIR/$BIN_NAME" "$TARGET_BIN"
       chmod +x "$TARGET_BIN"
-      if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-        export PATH="$HOME/.local/bin:$PATH"
-      fi
+
+      for rc_file in "$HOME/.zprofile" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile"; do
+        if [ -f "$rc_file" ] || [ "$(basename "$rc_file")" = ".zprofile" ]; then
+          if ! grep -q '\.local/bin' "$rc_file" 2>/dev/null; then
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc_file"
+          fi
+        fi
+      done
+      export PATH="$HOME/.local/bin:$PATH"
     fi
 
     rm -rf "$TMP_DIR"
@@ -63,10 +69,25 @@ case "$OS" in
     echo "✅ TailRouter installed successfully at: $TARGET_BIN"
     echo "==> Setting up system service..."
     "$TARGET_BIN" service install 2>/dev/null || true
+    sleep 1
+
+    # Fallback background daemon if service is not started
+    if ! "$TARGET_BIN" status >/dev/null 2>&1; then
+      echo "==> Starting TailRouter daemon in background..."
+      nohup "$TARGET_BIN" run > "$HOME/.tailrouter.log" 2>&1 &
+      sleep 2
+    fi
+
     echo "==> Checking gateway status..."
     "$TARGET_BIN" status || true
     echo "=========================================================="
     echo "💡 Web Dashboard accessible at: http://localhost:65534/router"
+    if [ "$TARGET_BIN" = "$HOME/.local/bin/tailrouter" ]; then
+      echo ""
+      echo "📌 NOTE: To use 'tailrouter' command directly in this current terminal, run:"
+      echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
+      echo "   (or: source ~/.zprofile)"
+    fi
     open "http://localhost:65534/router" 2>/dev/null || true
     ;;
 
@@ -102,9 +123,16 @@ case "$OS" in
       mkdir -p "$HOME/.local/bin"
       cp "$TMP_DIR/$BIN_NAME" "$TARGET_BIN"
       chmod +x "$TARGET_BIN"
-      if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-        export PATH="$HOME/.local/bin:$PATH"
-      fi
+
+      # Ensure ~/.local/bin is permanently in PATH across shell sessions
+      for rc_file in "$HOME/.profile" "$HOME/.ashrc" "$HOME/.bashrc" "$HOME/.zshrc"; do
+        if [ -f "$rc_file" ] || [ "$(basename "$rc_file")" = ".profile" ]; then
+          if ! grep -q '\.local/bin' "$rc_file" 2>/dev/null; then
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc_file"
+          fi
+        fi
+      done
+      export PATH="$HOME/.local/bin:$PATH"
     fi
 
     rm -rf "$TMP_DIR"
@@ -113,10 +141,25 @@ case "$OS" in
     echo "✅ TailRouter installed at: $TARGET_BIN"
     echo "==> Setting up system service..."
     "$TARGET_BIN" service install 2>/dev/null || true
+    sleep 1
+
+    # Fallback background daemon if service is not started (e.g. OpenRC / Alpine / non-systemd)
+    if ! "$TARGET_BIN" status >/dev/null 2>&1; then
+      echo "==> Starting TailRouter daemon in background..."
+      nohup "$TARGET_BIN" run > "$HOME/.tailrouter.log" 2>&1 &
+      sleep 2
+    fi
+
     echo "==> Checking gateway status..."
     "$TARGET_BIN" status || true
     echo "=========================================================="
     echo "💡 Web Dashboard accessible at: http://localhost:65534/router"
+    if [ "$TARGET_BIN" = "$HOME/.local/bin/tailrouter" ]; then
+      echo ""
+      echo "📌 NOTE: To use 'tailrouter' command directly in this current terminal, run:"
+      echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
+      echo "   (or: source ~/.profile)"
+    fi
     ;;
 
   *)
