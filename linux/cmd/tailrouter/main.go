@@ -190,7 +190,7 @@ func runStatus() {
 		} else {
 			fmt.Println("   Tailscale: Chưa chạy hoặc chưa cài đặt.")
 		}
-		os.Exit(1)
+		return
 	}
 	defer resp.Body.Close()
 
