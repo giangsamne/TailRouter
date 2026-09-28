@@ -18,7 +18,7 @@
 Run this single command in Terminal:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.2.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.sh | bash
 ```
 
 * **Zero Dependencies**: Pure static Go binary (`tailrouter`), universal for Apple Silicon (M1/M2/M3/M4) and Intel.
@@ -31,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.2.0/instal
 ### 📦 Manual Download (Standalone Zip)
 
 Download the pre-compiled binary package:
-* [**`TailRouter-macOS.zip` (GitHub Release)**](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/TailRouter-macOS.zip)
+* [**`TailRouter-macOS.zip` (GitHub Release)**](https://github.com/giangsamne/TailRouter/releases/download/v2.1.0/TailRouter-macOS.zip)
 
 To install or run manually:
 1. Extract `TailRouter-macOS.zip`.
