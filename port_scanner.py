@@ -118,6 +118,31 @@ def parse_ss_listeners() -> List[Dict[str, Any]]:
     except Exception:
         pass
 
+    # Fallback to netstat -an (useful on Alpine / Busybox / minimal systems without ss)
+    try:
+        res = subprocess.run(
+            ["netstat", "-an"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if res.returncode == 0:
+            for line in res.stdout.splitlines():
+                if "LISTEN" in line and "tcp" in line.lower():
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        local_addr = parts[3]
+                        if ":" in local_addr:
+                            ip_p, port_p = local_addr.rsplit(":", 1)
+                            try:
+                                port = int(port_p)
+                                if port not in port_map and port != 65534:
+                                    port_map[port] = {"ip": ip_p, "port": port, "process": "Service"}
+                            except ValueError:
+                                pass
+    except Exception:
+        pass
+
     return list(port_map.values())
 
 
