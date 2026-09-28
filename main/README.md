@@ -19,12 +19,7 @@
 
 TailRouter Python Edition relies 100% on the Python Standard Library. **No `pip install`**, virtual environment, or external wheels are required:
 
-* **🐧 Linux & 🍏 macOS** (1-Line Auto-Installer):
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v1.1.0/install.sh | bash
-  ```
-
-* **🐧 Linux & 🍏 macOS** (Git Clone):
+* **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
   git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
   cd TailRouter
@@ -40,7 +35,7 @@ TailRouter Python Edition relies 100% on the Python Standard Library. **No `pip 
 
 * **Direct Foreground Execution** (All Operating Systems):
   ```bash
-  python3 main/server.py
+  python3 server.py
   ```
 
 > 💡 **Ready in Seconds**: Once started, open **`http://localhost:65534/router`** to access the Web Control Dashboard.
@@ -91,7 +86,7 @@ TailRouter provides dedicated platform branches with optimized guides, service s
 - 🔁 **Persistent Route Storage**:
   - Routes are saved in standard location (`config/routes.json`) and persist across reboots and service restarts.
 - 🔄 **Boot Autostart**:
-  - Run `./main/install-service.sh` to configure systemd (Linux) or launchd (macOS) autostart on boot.
+  - Run `./install-service.sh` to configure systemd (Linux) or launchd (macOS) autostart on boot.
 
 ---
 
@@ -133,7 +128,7 @@ Port 8080                  Port 3000                       Port 22
   ./start.sh
 
   # Or foreground with live logs:
-  python3 main/server.py
+  python3 server.py
   ```
 
 * **Windows**:
@@ -142,7 +137,7 @@ Port 8080                  Port 3000                       Port 22
   start.bat
 
   # Or foreground:
-  python main\server.py
+  python server.py
   ```
 
 Open your web browser at: 👉 **`http://localhost:65534/router`**
@@ -156,14 +151,14 @@ Open your web browser at: 👉 **`http://localhost:65534/router`**
 
 * **Windows**:
   ```cmd
-  cd windows && stop.bat
+  stop.bat
   ```
 
 ### 3. Autostart on Boot (Linux & macOS)
 
 To install TailRouter as an automatic background service:
 ```bash
-cd linux && ./install-service.sh
+./install-service.sh
 ```
 
 ---
@@ -172,12 +167,12 @@ cd linux && ./install-service.sh
 
 | Script | Platform | Description |
 | :--- | :--- | :--- |
-| `python3 main/server.py` | Cross-platform | Run Gateway in foreground with real-time log output |
+| `python3 server.py` | Cross-platform | Run Gateway in foreground with real-time log output |
 | `./start.sh` | Linux / macOS | Launch Gateway as a background daemon process |
 | `./stop.sh` | Linux / macOS | Gracefully terminate background Gateway process |
 | `start.bat` | Windows | Launch Gateway in background window on Windows |
-| `./stop.sh` | Linux / macOS | Terminate running Gateway process |
-| `cd linux && ./install-service.sh` | Linux | Install systemd user service for boot autostart |
+| `stop.bat` | Windows | Terminate running Gateway process on Windows |
+| `./install-service.sh` | Linux / macOS | Install systemd or launchd user service for boot autostart |
 
 ---
 
@@ -206,21 +201,20 @@ TailRouter exposes a REST API on port `65534`:
 
 ```text
 TailRouter/
-├── main/                     # Complete Python Gateway Engine
-│   ├── server.py             # Core Asyncio Gateway, Reverse Proxy & API Server
-│   ├── port_scanner.py       # Host TCP port discovery scanner with process & PID resolution
-│   ├── routes_manager.py     # JSON route manager & thread-safe persistence
-│   ├── tailscale_helper.py   # Tailscale Serve & Funnel CLI integration
-│   ├── service_helper.py     # Platform autostart manager (systemd, launchd, registry)
-│   ├── web/                  # Responsive SPA Web Dashboard
-│   └── config/               # Template route configuration
-├── linux/                    # Linux package (scripts + service installer)
-├── windows/                  # Windows package (batch files + scripts)
-├── macos/                    # macOS package (scripts + launchd agent)
-├── install.sh                # 1-Line universal installer for v1.1.0
-├── start.sh                  # Quick-start script (Linux/macOS)
-├── stop.sh                   # Quick-stop script (Linux/macOS)
-├── start.bat                 # Quick-start script (Windows)
+├── server.py                 # Core Asyncio Gateway, Reverse Proxy & API Server
+├── port_scanner.py           # Host TCP port discovery scanner with process & PID resolution
+├── routes_manager.py         # JSON route manager & thread-safe persistence
+├── tailscale_helper.py       # Tailscale Serve & Funnel CLI integration
+├── service_helper.py         # Platform autostart manager (systemd, launchd, registry)
+├── config/
+│   └── routes.example.json   # Template route configuration
+├── web/
+│   └── index.html            # Responsive SPA Web Dashboard with i18n
+├── start.sh                  # Background daemon launcher (Linux/macOS)
+├── stop.sh                   # Process terminator (Linux/macOS)
+├── start.bat                 # Background launcher (Windows)
+├── stop.bat                  # Process terminator (Windows)
+├── install-service.sh        # System service installer (Linux/macOS)
 ├── LICENSE                   # MIT License
 └── README.md                 # English documentation
 ```
