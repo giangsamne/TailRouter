@@ -1,14 +1,14 @@
 <div align="center">
 
-# 🐍 TailRouter (Python Edition v1.1.0)
+# 🐍 TailRouter (Python Edition v1.0.1)
 
 **Lightweight, zero-external-dependency gateway & web dashboard for Tailscale Serve and Funnel.**
 
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB.svg?logo=python&logoColor=white)](https://python.org)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter/tree/v1.1.0)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter/tree/v1.0.1)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg?logo=tailscale&logoColor=white)](https://tailscale.com)
-[![Dependencies](https://img.shields.io/badge/dependencies-0%20(Pure%20Stdlib)-success.svg)](https://github.com/giangsamne/TailRouter/tree/v1.1.0)
-[![Memory Footprint](https://img.shields.io/badge/RAM-%3C%2025MB%20RSS-blueviolet.svg)](https://github.com/giangsamne/TailRouter/tree/v1.1.0)
+[![Dependencies](https://img.shields.io/badge/dependencies-0%20(Pure%20Stdlib)-success.svg)](https://github.com/giangsamne/TailRouter/tree/v1.0.1)
+[![Memory Footprint](https://img.shields.io/badge/RAM-%3C%2025MB%20RSS-blueviolet.svg)](https://github.com/giangsamne/TailRouter/tree/v1.0.1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
@@ -21,14 +21,14 @@ TailRouter Python Edition relies 100% on the Python Standard Library. **No `pip 
 
 * **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
-  git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
+  git clone -b v1.0.1 https://github.com/giangsamne/TailRouter.git
   cd TailRouter
   ./start.sh
   ```
 
 * **🪟 Windows** (Command Prompt / PowerShell):
   ```cmd
-  git clone -b v1.1.0 https://github.com/giangsamne/TailRouter.git
+  git clone -b v1.0.1 https://github.com/giangsamne/TailRouter.git
   cd TailRouter
   start.bat
   ```
@@ -46,8 +46,8 @@ TailRouter Python Edition relies 100% on the Python Standard Library. **No `pip 
 
 | Release | Technology / Engine | Characteristics | Direct Link |
 | :--- | :--- | :--- | :--- |
-| **`v2.1.0`** *(Latest)* | ⚡ Go Native Bare-Metal | Single pre-compiled binary (`< 8MB RAM`, `0.0% CPU`), no runtime required, multi-platform | [**View v2.1.0 Release 👉**](https://github.com/giangsamne/TailRouter/releases/tag/v2.1.0) |
-| **`v1.1.0`** | 🐍 Pure Python 3 Engine | Zero external dependencies (Pure stdlib), ascending port scanner with process & PID resolution | [**View v1.1.0 Tag 👉**](https://github.com/giangsamne/TailRouter/tree/v1.1.0) |
+| **`v2.0.1`** *(Latest)* | ⚡ Go Native Bare-Metal | Single pre-compiled binary (`< 8MB RAM`, `0.0% CPU`), no runtime required, multi-platform | [**View v2.0.1 Release 👉**](https://github.com/giangsamne/TailRouter/releases/tag/v2.0.1) |
+| **`v1.0.1`** | 🐍 Pure Python 3 Engine | Zero external dependencies (Pure stdlib), ascending port scanner with process & PID resolution | [**View v1.0.1 Tag 👉**](https://github.com/giangsamne/TailRouter/tree/v1.0.1) |
 
 ---
 
