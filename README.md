@@ -62,6 +62,20 @@ Carry **just ONE single file** on a USB flash drive and install offline on any c
 
 ---
 
+### 🌿 Dedicated OS Branches
+
+TailRouter provides dedicated platform branches with optimized guides, service setups, and configurations:
+
+| Branch | Platform | Features | Direct Link |
+| :--- | :--- | :--- | :--- |
+| **`main`** | 🌐 Multi-Platform (Hub) | Default hub: Unified guides, multi-OS installers, release artifacts | [**View `main` branch 👉**](https://github.com/giangsamne/TailRouter/tree/main) |
+| **`linux`** | 🐧 Linux | Native CLI + Web Control (:65534), systemd & OpenRC (Alpine/Ubuntu/Arch) | [**View `linux` branch 👉**](https://github.com/giangsamne/TailRouter/tree/linux) |
+| **`windows`** | 🪟 Windows | Native CLI (`.exe`) + Web Control (:65534), PowerShell installer, Startup autostart | [**View `windows` branch 👉**](https://github.com/giangsamne/TailRouter/tree/windows) |
+| **`macos`** | 🍏 macOS | Native CLI + Web Control (:65534), launchd agent, Apple Silicon & Intel | [**View `macos` branch 👉**](https://github.com/giangsamne/TailRouter/tree/macos) |
+
+
+---
+
 ## 💡 What is TailRouter?
 
 **TailRouter** is an ultra-fast, zero-dependency bare-metal gateway running directly on port **65534** of your host machine. It eliminates the need for heavy reverse proxies (Nginx, Traefik, NPM) or virtual machines to publish local homelab services (3D printers, home automation, web apps, media servers, dev tools) to your **Tailnet** or the **public Internet**.
