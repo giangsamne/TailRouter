@@ -143,6 +143,22 @@ case "$OS" in
     "$TARGET_BIN" service install 2>/dev/null || true
     sleep 1
 
+    # Universal Linux autostart fallback (Alpine Linux / OpenRC / crontab)
+    if command -v crontab >/dev/null 2>&1; then
+      CRON_ENTRY="@reboot sleep 5 && $TARGET_BIN run > $HOME/.tailrouter.log 2>&1"
+      if ! crontab -l 2>/dev/null | grep -F "$TARGET_BIN run" >/dev/null 2>&1; then
+        (crontab -l 2>/dev/null; echo "$CRON_ENTRY") | crontab - 2>/dev/null || true
+      fi
+    fi
+    AUTOSTART_SNIPPET="if ! pgrep -f \"tailrouter run\" >/dev/null 2>&1; then nohup $TARGET_BIN run > \"\$HOME/.tailrouter.log\" 2>&1 & fi"
+    for rc_file in "$HOME/.profile" "$HOME/.ashrc"; do
+      if [ -f "$rc_file" ] || [ "$(basename "$rc_file")" = ".profile" ]; then
+        if ! grep -F "tailrouter run" "$rc_file" 2>/dev/null; then
+          echo "$AUTOSTART_SNIPPET" >> "$rc_file"
+        fi
+      fi
+    done
+
     # Fallback background daemon if service is not started (e.g. OpenRC / Alpine / non-systemd)
     if ! "$TARGET_BIN" status >/dev/null 2>&1; then
       echo "==> Starting TailRouter daemon in background..."
