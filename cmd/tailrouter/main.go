@@ -23,7 +23,7 @@ import (
 )
 
 const Banner = `
-  ⚡ TailRouter Native Engine v2.1.0
+  ⚡ TailRouter Native Engine v2.0.1
   ==================================
   Zero-Dependency Bare-Metal Gateway
 `
