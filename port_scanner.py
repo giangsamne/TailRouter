@@ -43,8 +43,11 @@ def get_docker_services() -> Dict[int, Dict[str, str]]:
 
 
 def parse_ss_listeners() -> List[Dict[str, Any]]:
-    """Phân tích lệnh ss -tulpn để tìm các cổng TCP LISTEN trên Linux."""
+    """Phân tích lệnh ss -tulpn và lsof để tìm các cổng TCP LISTEN trên Linux cùng tên tiến trình."""
     listeners = []
+    seen_ports = set()
+    port_map = {}
+
     try:
         res = subprocess.run(
             ["ss", "-tulpn"],
@@ -73,14 +76,49 @@ def parse_ss_listeners() -> List[Dict[str, Any]]:
                 process = "N/A"
                 if len(parts) >= 7:
                     user_info = " ".join(parts[6:])
-                    proc_match = re.search(r'users:\(\("([^"]+)"', user_info)
+                    proc_match = re.search(r'users:\(\("([^"]+)",pid=(\d+)', user_info)
                     if proc_match:
-                        process = proc_match.group(1)
+                        p_name = proc_match.group(1)
+                        p_pid = proc_match.group(2)
+                        process = f"{p_name} ({p_pid})"
 
-                listeners.append({"ip": ip_part, "port": port, "process": process})
+                item = {"ip": ip_part, "port": port, "process": process}
+                port_map[port] = item
+                seen_ports.add(port)
     except Exception:
         pass
-    return listeners
+
+    # Fallback to lsof to find missing process names or ports
+    try:
+        res = subprocess.run(
+            ["lsof", "-iTCP", "-sTCP:LISTEN", "-P", "-n"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if res.returncode == 0:
+            for line in res.stdout.splitlines()[1:]:
+                parts = line.split()
+                if len(parts) >= 9:
+                    p_name = parts[0]
+                    p_pid = parts[1]
+                    addr_part = parts[8]
+                    if ":" in addr_part:
+                        ip_p, port_p = addr_part.rsplit(":", 1)
+                        try:
+                            port = int(port_p)
+                            proc_str = f"{p_name} ({p_pid})"
+                            if port in port_map:
+                                if port_map[port]["process"] == "N/A":
+                                    port_map[port]["process"] = proc_str
+                            else:
+                                port_map[port] = {"ip": ip_p, "port": port, "process": proc_str}
+                        except ValueError:
+                            pass
+    except Exception:
+        pass
+
+    return list(port_map.values())
 
 
 def parse_macos_listeners() -> List[Dict[str, Any]]:
@@ -101,12 +139,13 @@ def parse_macos_listeners() -> List[Dict[str, Any]]:
                 parts = line.split()
                 if len(parts) >= 9:
                     proc_name = parts[0]
+                    proc_pid = parts[1]
                     addr_part = parts[8]  # *:8080 or 127.0.0.1:3000
                     if ":" in addr_part:
                         ip_p, port_p = addr_part.rsplit(":", 1)
                         try:
                             port = int(port_p)
-                            listeners.append({"ip": ip_p, "port": port, "process": proc_name})
+                            listeners.append({"ip": ip_p, "port": port, "process": f"{proc_name} ({proc_pid})"})
                             seen_ports.add(port)
                         except ValueError:
                             pass
@@ -144,8 +183,29 @@ def parse_macos_listeners() -> List[Dict[str, Any]]:
 
 
 def parse_windows_listeners() -> List[Dict[str, Any]]:
-    """Phân tích cổng lắng nghe trên Windows qua netstat."""
+    """Phân tích cổng lắng nghe trên Windows qua netstat và tasklist."""
     listeners = []
+    pid_map = {}
+    try:
+        t_res = subprocess.run(
+            ["tasklist", "/FO", "CSV", "/NH"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if t_res.returncode == 0:
+            for line in t_res.stdout.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split('","')
+                if len(parts) >= 2:
+                    pname = parts[0].strip('"')
+                    ppid = parts[1].strip('"')
+                    pid_map[ppid] = pname
+    except Exception:
+        pass
+
     try:
         res = subprocess.run(
             ["netstat", "-ano", "-p", "tcp"],
@@ -164,7 +224,9 @@ def parse_windows_listeners() -> List[Dict[str, Any]]:
                             ip_p, port_p = addr.rsplit(":", 1)
                             try:
                                 port = int(port_p)
-                                listeners.append({"ip": ip_p, "port": port, "process": f"PID:{pid}"})
+                                p_name = pid_map.get(str(pid), "")
+                                proc_str = f"{p_name} ({pid})" if p_name else f"PID:{pid}"
+                                listeners.append({"ip": ip_p, "port": port, "process": proc_str})
                             except ValueError:
                                 pass
     except Exception:
@@ -321,6 +383,9 @@ async def scan_active_ports(configured_ports: Optional[List[int]] = None) -> Lis
 
         is_conf = (p in configured_ports) or bool(ts_routes)
 
+        if docker_info:
+            info["process"] = f"docker:{docker_info['container_name']}"
+
         results.append({
             "port": p,
             "ip": info["ip"],
@@ -337,6 +402,8 @@ async def scan_active_ports(configured_ports: Optional[List[int]] = None) -> Lis
             "is_configured": is_conf,
         })
 
+    # Sort strictly in ascending numerical order: từ bé đến lớn
+    results.sort(key=lambda x: x["port"])
     return results
 
 

@@ -29,3 +29,7 @@ Thumbs.db
 # User configuration & active routes (do not commit personal homelab routes)
 config/routes.json
 config/*.tmp
+
+# Build and release artifacts
+dist/
+release/
