@@ -23,7 +23,7 @@ import (
 )
 
 const Banner = `
-  ⚡ TailRouter Native Engine v2.1.0
+  ⚡ TailRouter Native Engine v2.2.0
   ==================================
   Zero-Dependency Bare-Metal Gateway
 `
@@ -190,7 +190,7 @@ func runStatus() {
 		} else {
 			fmt.Println("   Tailscale: Chưa chạy hoặc chưa cài đặt.")
 		}
-		return
+		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
