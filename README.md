@@ -20,7 +20,7 @@
 Run this single command in your Linux terminal (Ubuntu, Debian, Fedora, Arch, Alpine, Raspberry Pi):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/linux/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.sh | bash
 ```
 
 * **Zero Dependencies**: Pure static Go binary. Compatible with both `glibc` and `musl` (Alpine Linux).
