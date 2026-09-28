@@ -65,3 +65,4 @@ Start-Sleep -Seconds 1
 Start-Process "http://localhost:65534/router"
 Write-Host "💡 Web Dashboard accessible at: http://localhost:65534/router" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Green
+
