@@ -7,7 +7,7 @@ set -e
 # ==============================================================================
 
 REPO="giangsamne/TailRouter"
-RELEASE_TAG="v1.1.0"
+RELEASE_TAG="v1.2.0"
 BASE_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
 
 echo "=========================================================="
