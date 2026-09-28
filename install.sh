@@ -21,6 +21,12 @@ echo "==> [1/4] Detecting environment..."
 echo "    Operating System: $OS"
 echo "    Hardware Arch:    $ARCH"
 
+# Stop existing running instance if any to ensure clean binary upgrade
+if pkill -f "tailrouter" 2>/dev/null || killall tailrouter 2>/dev/null; then
+  echo "    Stopped running TailRouter processes for upgrade."
+  sleep 1
+fi
+
 case "$OS" in
   Darwin)
     echo "==> [2/4] Preparing macOS installation..."
