@@ -4,7 +4,7 @@
 # ==============================================================================
 
 param(
-    [string]$Tag = "v2.2.0"
+    [string]$Tag = "v1.0.0"
 )
 
 $Repo = "giangsamne/TailRouter"
@@ -65,4 +65,3 @@ Start-Sleep -Seconds 1
 Start-Process "http://localhost:65534/router"
 Write-Host "💡 Web Dashboard accessible at: http://localhost:65534/router" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Green
-
