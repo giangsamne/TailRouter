@@ -517,7 +517,11 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			err = s.tailscale.ConfigureServeRouter(s.port)
 		}
 		if err != nil {
-			s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{"success": false, "error": err.Error(), "message": err.Error()})
+			msg := err.Error()
+			if strings.Contains(msg, "Access denied") || strings.Contains(msg, "operator") {
+				msg = "Cần cấp quyền Operator cho Tailscale: Chạy 'sudo tailscale set --operator=$USER' trên terminal một lần"
+			}
+			s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": false, "error": msg, "message": msg})
 			return
 		}
 		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã cấu hình Tailscale Serve thành công"})
@@ -528,7 +532,11 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			return
 		}
 		if err := s.tailscale.ResetServe(); err != nil {
-			s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{"success": false, "error": err.Error(), "message": err.Error()})
+			msg := err.Error()
+			if strings.Contains(msg, "Access denied") || strings.Contains(msg, "operator") {
+				msg = "Cần cấp quyền Operator cho Tailscale: Chạy 'sudo tailscale set --operator=$USER' trên terminal một lần"
+			}
+			s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": false, "error": msg, "message": msg})
 			return
 		}
 		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã đặt lại Tailscale Serve thành công"})
