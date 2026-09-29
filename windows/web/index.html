@@ -1491,6 +1491,10 @@ http://100.100.1.3:65534/bambu</pre>
 
   // Toast Notification
   function showToast(msg, type = 'success') {
+    if (msg === undefined || msg === null || msg === 'undefined') {
+      if (type === 'error') msg = "Có lỗi xảy ra, vui lòng thử lại";
+      else msg = "Thao tác thành công";
+    }
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -1503,13 +1507,14 @@ http://100.100.1.3:65534/bambu</pre>
   }
 
   // Switch Tab
-  function switchTab(tabId) {
+  function switchTab(tabId, el) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    if (event && event.currentTarget) event.currentTarget.classList.add('active');
+    const activeBtn = el || (typeof event !== 'undefined' && event && event.currentTarget) || document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
 
     ['routes', 'scanner', 'tailscale', 'logs'].forEach(id => {
-      const el = document.getElementById(`tab-${id}`);
-      if (el) el.style.display = (id === tabId) ? 'block' : 'none';
+      const tabEl = document.getElementById(`tab-${id}`);
+      if (tabEl) tabEl.style.display = (id === tabId) ? 'block' : 'none';
     });
 
     if (tabId === 'scanner') {
@@ -1652,14 +1657,14 @@ http://${tailscaleIp}:${PORT}/bambu`;
       const res = await fetch('/api/autostart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enable: willEnable })
+        body: JSON.stringify({ enable: willEnable, enabled: willEnable })
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast("✅ " + data.message);
+      const data = await res.json().catch(() => ({}));
+      if (data.success || data.enabled !== undefined || res.ok) {
+        showToast("✅ " + (data.message || (willEnable ? "Đã bật tự khởi động" : "Đã tắt tự khởi động")));
         fetchStatus();
       } else {
-        showToast(data.message || "Lỗi thiết lập", "error");
+        showToast(data.message || data.error || "Lỗi thiết lập", "error");
       }
     } catch (e) {
       showToast("Lỗi: " + e, "error");
@@ -1674,13 +1679,13 @@ http://${tailscaleIp}:${PORT}/bambu`;
       const res = await fetch('/api/tailscale/serve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: action, port: PORT })
+        body: JSON.stringify({ action: action, target: action === 'serve_all' ? 'gateway' : 'router', port: PORT })
       });
-      const data = await res.json();
-      if (data.success) {
+      const data = await res.json().catch(() => ({}));
+      if (data.success || (res.ok && !data.error)) {
         showToast("✅ " + (data.message || "Tailscale Serve OK!"));
       } else {
-        showToast("⚠️ " + (data.error || "Lỗi cấu hình Tailscale Serve"), "error");
+        showToast("⚠️ " + (data.message || data.error || "Lỗi cấu hình Tailscale Serve"), "error");
       }
       fetchStatus();
     } catch (e) {
@@ -1789,12 +1794,13 @@ http://${tailscaleIp}:${PORT}/bambu`;
 
   // Refresh Routes
   async function refreshRoutes() {
-    showToast(t('toast_pinging'));
+    showToast(t('toast_pinging') || "Đang làm mới...");
     try {
       const res = await fetch('/api/routes');
-      const data = await res.json();
-      currentRoutes = data.routes || [];
+      const data = await res.json().catch(() => ([]));
+      currentRoutes = Array.isArray(data) ? data : (data.routes || []);
       renderRoutes(currentRoutes);
+      fetchStatus();
     } catch (e) {
       showToast("Error: " + e, "error");
     }
@@ -1805,14 +1811,14 @@ http://${tailscaleIp}:${PORT}/bambu`;
     showToast(t('toast_syncing_cli') || "Đang quét các router mở từ lệnh Tailscale CLI...");
     try {
       const res = await fetch('/api/routes/sync-tailscale', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        showToast("✅ " + data.message);
-        currentRoutes = data.routes || [];
+      const data = await res.json().catch(() => ({}));
+      if (data.success || res.ok) {
+        showToast("✅ " + (data.message || "Đã đồng bộ từ Tailscale CLI"));
+        currentRoutes = Array.isArray(data.routes) ? data.routes : (Array.isArray(data) ? data : currentRoutes);
         renderRoutes(currentRoutes);
         fetchStatus();
       } else {
-        showToast(data.message || "Lỗi đồng bộ", "error");
+        showToast(data.message || data.error || "Lỗi đồng bộ", "error");
       }
     } catch (e) {
       showToast("Lỗi: " + e, "error");
@@ -1823,28 +1829,32 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function toggleRoute(id) {
     try {
       const res = await fetch(`/api/routes/${id}/toggle`, { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        showToast(data.message);
+      const data = await res.json().catch(() => ({}));
+      if (data.success || res.ok) {
+        showToast(data.message || "Đã đổi trạng thái tuyến đường");
+        fetchStatus();
+      } else {
+        showToast(data.message || data.error || "Lỗi đổi trạng thái", "error");
         fetchStatus();
       }
     } catch (e) {
       showToast("Error: " + e, "error");
+      fetchStatus();
     }
   }
 
   // Ping Route
   async function pingRoute(id) {
-    showToast(t('toast_pinging'));
+    showToast(t('toast_pinging') || "Đang kiểm tra kết nối...");
     try {
       const res = await fetch(`/api/routes/${id}/ping`, { method: 'POST' });
-      const data = await res.json();
-      if (data.online) {
-        showToast(`${t('toast_online')} ${data.latency_ms} ms`);
+      const data = await res.json().catch(() => ({}));
+      if (data.online || data.status === 'online') {
+        showToast(`${t('toast_online') || "Trực tuyến"} ${data.latency_ms || 0} ms`);
       } else {
-        showToast(t('toast_offline'), "error");
+        showToast(t('toast_offline') || "Ngoại tuyến", "error");
       }
-      refreshRoutes();
+      fetchStatus();
     } catch (e) {
       showToast("Ping error: " + e, "error");
     }
@@ -1855,12 +1865,12 @@ http://${tailscaleIp}:${PORT}/bambu`;
     if (!confirm(`${t('toast_confirm_delete')} "${name}"?`)) return;
     try {
       const res = await fetch(`/api/routes/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        showToast(t('toast_deleted'));
+      const data = await res.json().catch(() => ({}));
+      if (data.success || res.ok) {
+        showToast(data.message || t('toast_deleted') || "Đã xóa tuyến đường");
         fetchStatus();
       } else {
-        showToast(data.message, "error");
+        showToast(data.message || data.error || "Lỗi xóa tuyến đường", "error");
       }
     } catch (e) {
       showToast("Error: " + e, "error");
@@ -1893,19 +1903,19 @@ http://${tailscaleIp}:${PORT}/bambu`;
         ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.6;">${t('btn_added')}</button>`
         : `<button class="btn btn-primary btn-sm" onclick='prefillFromScan(${JSON.stringify(p)})'>${t('btn_add_to_router')}</button>`;
 
-      const procBadge = p.process && p.process !== 'N/A' && p.process !== '-' ? `<span class="badge" style="background:#1e3a5f; color:#93c5fd; font-weight:600; margin-left:6px;">⚙️ ${p.process}</span>` : '';
+      const procBadge = p.process && p.process !== '-' ? `<span class="badge" style="background:#1e3a5f; color:#93c5fd; font-weight:600; margin-left:6px;">⚙️ ${p.process}${p.pid ? ' ('+p.pid+')' : ''}</span>` : '';
 
       return `
         <tr>
           <td><strong style="color:#38bdf8; font-size:1.05rem;">${p.port}</strong></td>
           <td>
             <div style="font-weight:500; color:#fff; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
-              <span>${p.service_name || 'TCP Port'}</span>
+              <span>${p.service_name || p.service || 'TCP Port'}</span>
               ${procBadge}
             </div>
-            <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">Bind: ${p.ip || '127.0.0.1'}</div>
+            <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">Bind: ${p.ip || p.host || '127.0.0.1'}</div>
           </td>
-          <td>${p.docker_container ? `<span style="color:#a5b4fc; font-weight:500;">🐳 ${p.docker_container}</span>` : `<span style="color:#64748b;">${t('host_local')}</span>`}</td>
+          <td>${(p.docker_container || p.container) ? `<span style="color:#a5b4fc; font-weight:500;">🐳 ${p.docker_container || p.container}</span>` : `<span style="color:#64748b;">${t('host_local')}</span>`}</td>
           <td>
             <div>${typeBadge}</div>
             ${p.title ? `<div style="font-size:0.8rem; color:#cbd5e1; margin-top:2px;">"${p.title}"</div>` : ''}
@@ -1993,15 +2003,15 @@ http://${tailscaleIp}:${PORT}/bambu`;
 
   // Toggle Route Mode (Serve ↔ Funnel)
   async function toggleRouteMode(id) {
-    showToast(t('toast_switching_mode'));
+    showToast(t('toast_switching_mode') || "Đang chuyển chế độ...");
     try {
       const res = await fetch(`/api/routes/${id}/toggle-mode`, { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        showToast(data.message);
+      const data = await res.json().catch(() => ({}));
+      if (data.success || res.ok) {
+        showToast(data.message || "Đã chuyển đổi chế độ");
         fetchStatus();
       } else {
-        showToast(data.message || "Error", "error");
+        showToast(data.message || data.error || "Lỗi chuyển chế độ", "error");
       }
     } catch (e) {
       showToast("Error: " + e, "error");
@@ -2056,13 +2066,13 @@ http://${tailscaleIp}:${PORT}/bambu`;
         });
       }
 
-      const data = await res.json();
-      if (data.success) {
-        showToast(data.message || t('toast_saved'));
+      const data = await res.json().catch(() => ({}));
+      if (data.success || (res.ok && !data.error && (data.id || data.route))) {
+        showToast(data.message || t('toast_saved') || "Đã lưu tuyến đường thành công");
         closeModal();
         fetchStatus();
       } else {
-        showToast(data.message, "error");
+        showToast(data.message || data.error || "Lỗi lưu tuyến đường", "error");
       }
     } catch (e) {
       showToast("Error: " + e, "error");
@@ -2078,11 +2088,11 @@ http://${tailscaleIp}:${PORT}/bambu`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ port: PORT })
       });
-      const data = await res.json();
-      if (data.success) {
+      const data = await res.json().catch(() => ({}));
+      if (data.success || (res.ok && !data.error)) {
         showToast("✅ " + (data.message || "Tailscale Serve OK!"));
       } else {
-        showToast("⚠️ " + (data.error || "Operator permission required"), "error");
+        showToast("⚠️ " + (data.message || data.error || "Operator permission required"), "error");
       }
     } catch (e) {
       showToast("Error: " + e, "error");

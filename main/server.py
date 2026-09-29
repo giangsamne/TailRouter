@@ -223,7 +223,7 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
         total_hits = sum(r.get("hits", 0) for r in routes)
         active_cnt = sum(1 for r in routes if r.get("enabled", True))
         data = {
-            "version": "1.1.0",
+            "version": "1.0.0",
             "uptime_seconds": uptime_sec,
             "port": PORT,
             "tailscale": ts_info,
@@ -359,7 +359,7 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
                     r["last_status"] = "online" if online else "offline"
                     r["last_latency_ms"] = latency
                     routes_mgr.save()
-                    await send_json_response(writer, 200, {"online": online, "latency_ms": latency})
+                    await send_json_response(writer, 200, {"success": True, "online": online, "latency_ms": latency})
                     return True
             await send_json_response(writer, 404, {"error": "Route không tồn tại"})
             return True
