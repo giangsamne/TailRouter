@@ -84,11 +84,41 @@ func (m *Manager) GetStatus() *Status {
 				s.ServiceFile = "crontab (@reboot)"
 			}
 		}
+		if !s.Enabled && os.Geteuid() == 0 {
+			cTabs, _ := filepath.Glob("/var/spool/cron/crontabs/*")
+			for _, ct := range cTabs {
+				content, _ := os.ReadFile(ct)
+				if strings.Contains(string(content), "tailrouter run") || strings.Contains(string(content), "tailscale-port-router run") {
+					s.Enabled = true
+					s.Active = true
+					s.Method = "crontab"
+					s.ServiceType = "crontab"
+					s.ServiceFile = ct + " (@reboot)"
+					break
+				}
+			}
+		}
 
 		// 4. Check ~/.profile, ~/.ashrc, ~/.bashrc
-		if !s.Enabled && home != "" {
-			for _, f := range []string{".profile", ".ashrc", ".bashrc"} {
-				p := filepath.Join(home, f)
+		if !s.Enabled {
+			var checkProfiles []string
+			if home != "" {
+				for _, f := range []string{".profile", ".ashrc", ".bashrc"} {
+					checkProfiles = append(checkProfiles, filepath.Join(home, f))
+				}
+			}
+			if os.Geteuid() == 0 {
+				for _, f := range []string{".profile", ".ashrc", ".bashrc"} {
+					checkProfiles = append(checkProfiles, filepath.Join("/root", f))
+				}
+				userHomes, _ := filepath.Glob("/home/*")
+				for _, uh := range userHomes {
+					for _, f := range []string{".profile", ".ashrc", ".bashrc"} {
+						checkProfiles = append(checkProfiles, filepath.Join(uh, f))
+					}
+				}
+			}
+			for _, p := range checkProfiles {
 				content, err := os.ReadFile(p)
 				if err == nil {
 					cStr := string(content)
@@ -142,6 +172,52 @@ func (m *Manager) GetStatus() *Status {
 	return s
 }
 
+func cleanFileLines(filePath string, keywords ...string) error {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(content), "\n")
+	var newLines []string
+	hasChanged := false
+	for _, l := range lines {
+		matched := false
+		for _, kw := range keywords {
+			if strings.Contains(l, kw) {
+				matched = true
+				hasChanged = true
+				break
+			}
+		}
+		if !matched {
+			newLines = append(newLines, l)
+		}
+	}
+	if !hasChanged {
+		return nil
+	}
+	return os.WriteFile(filePath, []byte(strings.Join(newLines, "\n")), 0644)
+}
+
+func updateCrontabFile(lines []string) error {
+	cleaned := strings.TrimSpace(strings.Join(lines, "\n"))
+	if cleaned == "" {
+		return exec.Command("crontab", "-r").Run()
+	}
+	tmpFile, err := os.CreateTemp("", "tailrouter_cron_*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(cleaned + "\n"); err != nil {
+		tmpFile.Close()
+		return err
+	}
+	tmpFile.Close()
+	return exec.Command("crontab", tmpFile.Name()).Run()
+}
+
 func (m *Manager) Enable() error {
 	execPath, err := os.Executable()
 	if err != nil {
@@ -191,36 +267,22 @@ WantedBy=default.target
 			return nil
 		}
 
-		// Fallback for non-systemd (Alpine Linux / OpenRC / crontab / profile)
+		// Fallback for non-systemd (Alpine Linux / OpenRC / crontab)
 		if _, err := exec.LookPath("crontab"); err == nil {
 			cronEntry := fmt.Sprintf("@reboot sleep 5 && %s run > %s 2>&1", execPath, filepath.Join(home, ".tailrouter.log"))
 			out, _ := exec.Command("crontab", "-l").CombinedOutput()
 			currCron := string(out)
 			if !strings.Contains(currCron, "tailrouter run") && !strings.Contains(currCron, "tailscale-port-router run") {
-				newCron := strings.TrimSpace(currCron)
-				if newCron != "" {
-					newCron += "\n"
+				var lines []string
+				if strings.TrimSpace(currCron) != "" {
+					lines = strings.Split(strings.TrimSpace(currCron), "\n")
 				}
-				newCron += cronEntry + "\n"
-				cmd := exec.Command("crontab", "-")
-				cmd.Stdin = strings.NewReader(newCron)
-				_ = cmd.Run()
+				lines = append(lines, cronEntry)
+				_ = updateCrontabFile(lines)
 			}
+			return nil
 		}
 
-		// Also configure ~/.profile and ~/.ashrc
-		snippet := fmt.Sprintf("if ! pgrep -f \"tailrouter run\" >/dev/null 2>&1; then nohup %s run > \"$HOME/.tailrouter.log\" 2>&1 & fi", execPath)
-		for _, f := range []string{".profile", ".ashrc"} {
-			p := filepath.Join(home, f)
-			content, err := os.ReadFile(p)
-			if err == nil {
-				if !strings.Contains(string(content), "tailrouter run") {
-					_ = os.WriteFile(p, []byte(string(content)+"\n"+snippet+"\n"), 0644)
-				}
-			} else if f == ".profile" {
-				_ = os.WriteFile(p, []byte(snippet+"\n"), 0644)
-			}
-		}
 		return nil
 
 	case "darwin":
@@ -276,49 +338,73 @@ func (m *Manager) Disable() error {
 		if _, err := exec.LookPath("systemctl"); err == nil {
 			_ = exec.Command("systemctl", "--user", "stop", "tailrouter").Run()
 			_ = exec.Command("systemctl", "--user", "disable", "tailrouter").Run()
-			unitPath := filepath.Join(home, ".config", "systemd", "user", "tailrouter.service")
-			_ = os.Remove(unitPath)
+			if home != "" {
+				_ = os.Remove(filepath.Join(home, ".config", "systemd", "user", "tailrouter.service"))
+			}
 			_ = exec.Command("systemctl", "--user", "daemon-reload").Run()
 		}
+		if os.Geteuid() == 0 {
+			_ = exec.Command("systemctl", "stop", "tailrouter").Run()
+			_ = exec.Command("systemctl", "disable", "tailrouter").Run()
+			_ = os.Remove("/etc/systemd/system/tailrouter.service")
+			_ = exec.Command("systemctl", "daemon-reload").Run()
+		}
 
-		// 2. Remove from crontab
+		// 2. OpenRC service
+		if fileExists("/etc/init.d/tailrouter") {
+			_ = exec.Command("rc-service", "tailrouter", "stop").Run()
+			_ = exec.Command("rc-update", "del", "tailrouter", "default").Run()
+			_ = os.Remove("/etc/init.d/tailrouter")
+		}
+
+		// 3. Remove from crontab using updateCrontabFile
 		if _, err := exec.LookPath("crontab"); err == nil {
 			out, err := exec.Command("crontab", "-l").CombinedOutput()
 			if err == nil {
-				lines := strings.Split(string(out), "\n")
-				var newLines []string
-				for _, l := range lines {
+				var remaining []string
+				for _, l := range strings.Split(string(out), "\n") {
 					if !strings.Contains(l, "tailrouter run") && !strings.Contains(l, "tailscale-port-router run") {
-						newLines = append(newLines, l)
+						remaining = append(remaining, l)
 					}
 				}
-				cleaned := strings.TrimSpace(strings.Join(newLines, "\n"))
-				cmd := exec.Command("crontab", "-")
-				if cleaned != "" {
-					cmd.Stdin = strings.NewReader(cleaned + "\n")
-				} else {
-					cmd.Stdin = strings.NewReader("")
-				}
-				_ = cmd.Run()
+				_ = updateCrontabFile(remaining)
 			}
 		}
 
-		// 3. Remove from ~/.profile, ~/.ashrc, ~/.bashrc
-		if home != "" {
-			for _, f := range []string{".profile", ".ashrc", ".bashrc"} {
-				p := filepath.Join(home, f)
-				content, err := os.ReadFile(p)
-				if err == nil {
-					lines := strings.Split(string(content), "\n")
-					var newLines []string
-					for _, l := range lines {
-						if !strings.Contains(l, "tailrouter run") && !strings.Contains(l, "tailscale-port-router run") {
-							newLines = append(newLines, l)
-						}
-					}
-					_ = os.WriteFile(p, []byte(strings.Join(newLines, "\n")), 0644)
+		// If running as root, clean root crontab AND all crontabs in /var/spool/cron/crontabs/
+		if os.Geteuid() == 0 {
+			cTabs, _ := filepath.Glob("/var/spool/cron/crontabs/*")
+			for _, ct := range cTabs {
+				_ = cleanFileLines(ct, "tailrouter run", "tailscale-port-router run")
+			}
+			cTabs2, _ := filepath.Glob("/var/spool/cron/*")
+			for _, ct := range cTabs2 {
+				if !strings.HasSuffix(ct, "crontabs") {
+					_ = cleanFileLines(ct, "tailrouter run", "tailscale-port-router run")
 				}
 			}
+		}
+
+		// 4. Remove from ~/.profile, ~/.ashrc, ~/.bashrc, ~/.bash_profile
+		var profiles []string
+		if home != "" {
+			for _, f := range []string{".profile", ".ashrc", ".bashrc", ".bash_profile", ".zshrc"} {
+				profiles = append(profiles, filepath.Join(home, f))
+			}
+		}
+		if os.Geteuid() == 0 {
+			for _, f := range []string{".profile", ".ashrc", ".bashrc", ".bash_profile"} {
+				profiles = append(profiles, filepath.Join("/root", f))
+			}
+			userHomes, _ := filepath.Glob("/home/*")
+			for _, uh := range userHomes {
+				for _, f := range []string{".profile", ".ashrc", ".bashrc", ".bash_profile"} {
+					profiles = append(profiles, filepath.Join(uh, f))
+				}
+			}
+		}
+		for _, p := range profiles {
+			_ = cleanFileLines(p, "tailrouter run", "tailscale-port-router run")
 		}
 		return nil
 
