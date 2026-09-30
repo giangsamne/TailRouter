@@ -352,7 +352,7 @@ async def scan_active_ports(configured_ports: Optional[List[int]] = None) -> Lis
             ports_seen[dp] = {"ip": "0.0.0.0", "port": dp, "process": "docker"}
 
     tasks = []
-    port_list = sorted(ports_seen.keys())
+    port_list = list(ports_seen.keys())
     for p in port_list:
         tasks.append(probe_http_service(p))
 
@@ -427,8 +427,7 @@ async def scan_active_ports(configured_ports: Optional[List[int]] = None) -> Lis
             "is_configured": is_conf,
         })
 
-    # Sort strictly in ascending numerical order: từ bé đến lớn
-    results.sort(key=lambda x: x["port"])
+    # Giữ nguyên thứ tự ngẫu nhiên / không sắp xếp như ban đầu (unsorted)
     return results
 
 

@@ -217,10 +217,33 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
             routes_mgr.sync_from_tailscale(cli_routes)
 
         ts_info = get_tailscale_info()
-        routes = routes_mgr.list_routes()
+        routes = list(routes_mgr.list_routes())
         uptime_sec = int(time.time() - START_TIME)
 
         total_hits = sum(r.get("hits", 0) for r in routes)
+
+        # Tự động ghim route hệ thống TailRouter Gateway vào danh sách nếu Serve đang bật
+        if ts_info.get("serve_configured"):
+            has_system = any(r.get("id") == "system-tailrouter-gateway" or r.get("path") == "/router" for r in routes)
+            if not has_system:
+                system_route = {
+                    "id": "system-tailrouter-gateway",
+                    "name": "TailRouter Gateway",
+                    "path": "/router",
+                    "target_host": "127.0.0.1",
+                    "target_port": PORT,
+                    "service_name": "TailRouter Gateway",
+                    "is_docker": False,
+                    "docker_container": None,
+                    "is_system": True,
+                    "mode": "serve",
+                    "enabled": True,
+                    "hits": total_hits,
+                    "last_status": "online",
+                    "last_latency_ms": 0.5,
+                }
+                routes.insert(0, system_route)
+
         active_cnt = sum(1 for r in routes if r.get("enabled", True))
         data = {
             "version": "1.0.0",
@@ -302,7 +325,29 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
             if cli_routes:
                 routes_mgr.sync_from_tailscale(cli_routes)
             await routes_mgr.check_all_health()
-            await send_json_response(writer, 200, {"routes": routes_mgr.list_routes()})
+            ts_info = get_tailscale_info()
+            routes = list(routes_mgr.list_routes())
+            if ts_info.get("serve_configured"):
+                has_system = any(r.get("id") == "system-tailrouter-gateway" or r.get("path") == "/router" for r in routes)
+                if not has_system:
+                    system_route = {
+                        "id": "system-tailrouter-gateway",
+                        "name": "TailRouter Gateway",
+                        "path": "/router",
+                        "target_host": "127.0.0.1",
+                        "target_port": PORT,
+                        "service_name": "TailRouter Gateway",
+                        "is_docker": False,
+                        "docker_container": None,
+                        "is_system": True,
+                        "mode": "serve",
+                        "enabled": True,
+                        "hits": sum(r.get("hits", 0) for r in routes),
+                        "last_status": "online",
+                        "last_latency_ms": 0.5,
+                    }
+                    routes.insert(0, system_route)
+            await send_json_response(writer, 200, {"routes": routes})
             return True
         elif method == "POST":
             try:
@@ -610,44 +655,13 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
     path = req.path
 
-    # Chuyển hướng trang chủ "/" về "/router" nếu chưa có route "/" được định nghĩa riêng
-    if path == "/" or path == "":
-        match = routes_mgr.match_route("/")
-        if not match:
-            # 302 Redirect về /router
-            redir_resp = [
-                "HTTP/1.1 302 Found",
-                "Location: /router",
-                "Content-Length: 0",
-                "Connection: close",
-            ]
-            raw_response = "\r\n".join(redir_resp).encode("utf-8") + b"\r\n\r\n"
-            writer.write(raw_response)
-            await writer.drain()
-            try:
-                writer.close()
-                await writer.wait_closed()
-            except Exception:
-                pass
-            return
+    # 1. Hỗ trợ tiền tố /router/api/ (chuyển đổi thành /api/ để xử lý)
+    if path.startswith("/router/api/"):
+        req.path = path[len("/router"):]
+        path = req.path
 
-    # Phục vụ Giao diện Dashboard tại /router
-    if path == "/router" or path == "/router/":
-        if os.path.exists(INDEX_HTML):
-            with open(INDEX_HTML, "r", encoding="utf-8") as f:
-                html = f.read()
-            await send_html_response(writer, html)
-        else:
-            await send_html_response(writer, "<h1>404 - Chưa tìm thấy file index.html giao diện /router</h1>", 404)
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
-        return
-
-    # Phục vụ Favicon
-    if path == "/favicon.ico" or path == "/favicon.svg":
+    # 2. Phục vụ Favicon (cả trực tiếp và qua /router)
+    if path in ("/favicon.ico", "/favicon.svg", "/router/favicon.ico", "/router/favicon.svg"):
         svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#3b82f6"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'.encode("utf-8")
         headers = [
             "HTTP/1.1 200 OK",
@@ -658,6 +672,37 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         raw_response = "\r\n".join(headers).encode("utf-8") + b"\r\n\r\n" + svg
         writer.write(raw_response)
         await writer.drain()
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
+        return
+
+    # 3. Phục vụ Giao diện Dashboard tại / hoặc /router nếu chưa có proxy route "/" riêng
+    if path in ("/", ""):
+        match = routes_mgr.match_route("/")
+        if not match:
+            if os.path.exists(INDEX_HTML):
+                with open(INDEX_HTML, "r", encoding="utf-8") as f:
+                    html = f.read()
+                await send_html_response(writer, html)
+            else:
+                await send_html_response(writer, "<h1>404 - Chưa tìm thấy file index.html giao diện TailRouter</h1>", 404)
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except Exception:
+                pass
+            return
+
+    if path in ("/router", "/router/"):
+        if os.path.exists(INDEX_HTML):
+            with open(INDEX_HTML, "r", encoding="utf-8") as f:
+                html = f.read()
+            await send_html_response(writer, html)
+        else:
+            await send_html_response(writer, "<h1>404 - Chưa tìm thấy file index.html giao diện /router</h1>", 404)
         try:
             writer.close()
             await writer.wait_closed()

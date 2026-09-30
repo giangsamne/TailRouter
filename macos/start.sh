@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/bin/sh
 # ==============================================================================
 # start.sh - Khởi động TailRouter trên cổng 65534
 # ==============================================================================
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIR="$(cd "$(dirname "$0")" && pwd)"
 PID_FILE="$DIR/server.pid"
 LOG_FILE="$DIR/server.log"
 PORT=65534
