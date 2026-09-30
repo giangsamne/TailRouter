@@ -26,7 +26,7 @@ import (
 
 const (
 	DefaultPort = 65534
-	Version     = "2.0.1-go-native"
+	Version = "2.0.1-go-native"
 	MaxLogSize  = 5 * 1024 * 1024 // 5MB max log file
 )
 

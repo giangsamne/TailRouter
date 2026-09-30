@@ -19,6 +19,9 @@ type StatusInfo struct {
 	FQDN            string   `json:"fqdn"`
 	IPs             []string `json:"ips"`
 	MagicDNSEnabled bool     `json:"magic_dns"`
+	ServeConfigured bool     `json:"serve_configured"`
+	RemoteRouterURL string   `json:"remote_router_url,omitempty"`
+	NeedsOperator   bool     `json:"needs_operator"`
 	RawJSON         string   `json:"-"`
 }
 
@@ -161,6 +164,61 @@ func (c *Client) GetStatus() (*StatusInfo, error) {
 
 	if magic, ok := data["MagicDNSEnabled"].(bool); ok {
 		info.MagicDNSEnabled = magic
+	}
+
+	// Detect Tailscale Serve status
+	serveOut, serveErr := c.RunCmd("serve", "status", "--json")
+	if serveErr == nil && serveOut != "" {
+		var serveData map[string]interface{}
+		if err := json.Unmarshal([]byte(serveOut), &serveData); err == nil {
+			if web, ok := serveData["Web"].(map[string]interface{}); ok && len(web) > 0 {
+				for hostKey, v := range web {
+					if info.FQDN == "" {
+						hostPort := strings.Split(hostKey, ":")
+						if len(hostPort) > 0 && strings.Contains(hostPort[0], ".") {
+							info.FQDN = hostPort[0]
+						}
+					}
+					if hostConfig, ok := v.(map[string]interface{}); ok {
+						if handlers, ok := hostConfig["Handlers"].(map[string]interface{}); ok {
+							if _, hasRouter := handlers["/router"]; hasRouter {
+								info.ServeConfigured = true
+							}
+							if _, hasRoot := handlers["/"]; hasRoot {
+								info.ServeConfigured = true
+							}
+						}
+					}
+				}
+			}
+		}
+	} else if serveErr != nil {
+		errStr := serveErr.Error() + " " + serveOut
+		if strings.Contains(errStr, "Access denied") || strings.Contains(errStr, "operator") {
+			info.NeedsOperator = true
+		}
+	}
+
+	if !info.ServeConfigured {
+		serveText, tErr := c.RunCmd("serve", "status")
+		if tErr != nil {
+			errStr := tErr.Error() + " " + serveText
+			if strings.Contains(errStr, "Access denied") || strings.Contains(errStr, "operator") {
+				info.NeedsOperator = true
+			}
+		} else {
+			if strings.Contains(serveText, "/router") || strings.Contains(serveText, "proxy http://") {
+				info.ServeConfigured = true
+			}
+		}
+	}
+
+	if info.ServeConfigured {
+		if info.FQDN != "" {
+			info.RemoteRouterURL = fmt.Sprintf("https://%s/router", info.FQDN)
+		} else if len(info.IPs) > 0 {
+			info.RemoteRouterURL = fmt.Sprintf("https://%s/router", info.IPs[0])
+		}
 	}
 
 	return info, nil

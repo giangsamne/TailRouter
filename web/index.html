@@ -669,6 +669,9 @@
       <button class="btn btn-secondary btn-sm" onclick="triggerServe('serve_all')" title="Ánh xạ toàn bộ cổng 65534 vào HTTPS">
         <span data-i18n="btn_serve_all">🌐 Ánh Xạ Toàn Bộ Gateway</span>
       </button>
+      <button id="btn-reset-serve" class="btn btn-secondary btn-sm" onclick="triggerResetServe()" style="display:none; color: #f87171; border-color: rgba(239, 68, 68, 0.4);" title="Tắt Tailscale Serve">
+        <span data-i18n="btn_reset_serve">🛑 Tắt Serve</span>
+      </button>
     </div>
   </div>
 
@@ -984,6 +987,7 @@ http://100.100.1.3:65534/bambu</pre>
       remote_access_via: "Truy cập từ xa trực tiếp qua:",
       btn_serve_router: "⚡ Bật Serve Cho /router",
       btn_serve_all: "🌐 Ánh Xạ Toàn Bộ Gateway",
+      btn_reset_serve: "🛑 Tắt Serve",
       operator_warning_title: "Cần cấp quyền Operator cho Tailscale (1 lần duy nhất) để tự động hóa:",
       operator_warning_desc: "Để gateway có thể tự động bật/tắt tailscale serve cho /router từ xa khi máy khởi động mà không cần gõ mật khẩu root, hãy chạy lệnh sau một lần trên terminal máy thật:",
       btn_copy_cmd: "📋 Sao Chép Lệnh",
@@ -1099,6 +1103,7 @@ http://100.100.1.3:65534/bambu</pre>
       remote_access_via: "Remote access directly via:",
       btn_serve_router: "⚡ Enable Serve for /router",
       btn_serve_all: "🌐 Map Entire Gateway",
+      btn_reset_serve: "🛑 Disable Serve",
       operator_warning_title: "Grant Operator permissions to Tailscale (One-time only):",
       operator_warning_desc: "To allow the gateway to automatically manage tailscale serve without root passwords on boot, run this command once on the host terminal:",
       btn_copy_cmd: "📋 Copy Command",
@@ -1213,6 +1218,7 @@ http://100.100.1.3:65534/bambu</pre>
       remote_access_via: "直接远程访问地址:",
       btn_serve_router: "⚡ 为 /router 启用 Serve",
       btn_serve_all: "🌐 映射整个网关",
+      btn_reset_serve: "🛑 禁用 Serve",
       operator_warning_title: "需要为 Tailscale 授予 Operator 权限（仅需一次）:",
       operator_warning_desc: "为了允许网关在开机时无需 root 密码自动管理 tailscale serve，请在主机终端运行此命令一次:",
       btn_copy_cmd: "📋 复制命令",
@@ -1328,6 +1334,7 @@ http://100.100.1.3:65534/bambu</pre>
       remote_access_via: "直接リモートアクセス URL:",
       btn_serve_router: "⚡ /router の Serve を有効化",
       btn_serve_all: "🌐 ゲートウェイ全体をマッピング",
+      btn_reset_serve: "🛑 Serve を無効化",
       operator_warning_title: "Tailscale Operator 権限の付与が必要です（初回のみ）:",
       operator_warning_desc: "起動時に root パスワードなしで tailscale serve を自動管理するため、ターミナルで一度実行してください:",
       btn_copy_cmd: "📋 コマンドをコピー",
@@ -1570,14 +1577,16 @@ http://${tailscaleIp}:${PORT}/bambu`;
         const serveBadge = document.getElementById('serve-status-badge');
         const serveLink = document.getElementById('serve-remote-link');
         const opWarning = document.getElementById('operator-warning-banner');
+        const btnResetServe = document.getElementById('btn-reset-serve');
 
         if (data.tailscale.serve_configured) {
           serveBadge.style.background = '#064e3b';
           serveBadge.style.color = '#6ee7b7';
-          serveBadge.textContent = t('serve_active');
+          serveBadge.textContent = t('serve_active') || "🟢 HTTPS Active";
           const remoteUrl = data.tailscale.remote_router_url || `https://${tailscaleFqdn}/router`;
           serveLink.href = remoteUrl;
           serveLink.textContent = remoteUrl + ' ↗';
+          if (btnResetServe) btnResetServe.style.display = 'inline-flex';
           if (opWarning) opWarning.style.display = 'none';
         } else if (data.tailscale.needs_operator) {
           serveBadge.style.background = '#451a03';
@@ -1585,6 +1594,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
           serveBadge.textContent = '⚠️ Cần quyền operator';
           serveLink.textContent = 'Chưa bật (xem hướng dẫn bên dưới)';
           serveLink.removeAttribute('href');
+          if (btnResetServe) btnResetServe.style.display = 'none';
           if (opWarning) opWarning.style.display = 'block';
         } else {
           serveBadge.style.background = '#1e293b';
@@ -1592,6 +1602,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
           serveBadge.textContent = '⚪ Chưa kích hoạt';
           serveLink.textContent = 'Chưa thiết lập';
           serveLink.removeAttribute('href');
+          if (btnResetServe) btnResetServe.style.display = 'none';
           if (opWarning) opWarning.style.display = 'none';
         }
       }
@@ -1693,6 +1704,23 @@ http://${tailscaleIp}:${PORT}/bambu`;
         showToast("✅ " + (data.message || "Tailscale Serve OK!"));
       } else {
         showToast("⚠️ " + (data.message || data.error || "Lỗi cấu hình Tailscale Serve"), "error");
+      }
+      fetchStatus();
+    } catch (e) {
+      showToast("Lỗi: " + e, "error");
+    }
+  }
+
+  // Reset Serve Action
+  async function triggerResetServe() {
+    showToast("Đang tắt cấu hình Tailscale Serve...");
+    try {
+      const res = await fetch('/api/tailscale/reset', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (data.success || res.ok) {
+        showToast("✅ " + (data.message || "Đã tắt Tailscale Serve!"));
+      } else {
+        showToast("⚠️ " + (data.message || data.error || "Lỗi tắt Serve"), "error");
       }
       fetchStatus();
     } catch (e) {
