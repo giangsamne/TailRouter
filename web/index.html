@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TailRouter (Port 65534) - Tailscale Gateway</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='m12 5 7 7-7 7'/></svg>">
   <style>
     :root {
       --bg-primary: #0b0f19;
@@ -971,6 +971,7 @@ http://100.100.1.3:65534/bambu</pre>
   let tailscaleFqdn = "";
   let autostartEnabled = false;
   const PORT = 65534;
+  const API_BASE = window.location.pathname.startsWith('/router') ? '/router/api' : '/api';
 
 
   // I18n Multi-language Dictionary
@@ -1543,7 +1544,7 @@ http://100.100.1.3:65534/bambu</pre>
   // Fetch Status
   async function fetchStatus() {
     try {
-      const res = await fetch('/api/status');
+      const res = await fetch(`${API_BASE}/status`);
       const data = await res.json();
 
       if (data.version) {
@@ -1674,7 +1675,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
     const willEnable = !autostartEnabled;
     showToast(willEnable ? (t('toast_enabling_autostart') || "Đang thiết lập tự khởi động cùng hệ thống...") : (t('toast_disabling_autostart') || "Đang tắt tự khởi động..."));
     try {
-      const res = await fetch('/api/autostart', {
+      const res = await fetch(`${API_BASE}/autostart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enable: willEnable, enabled: willEnable })
@@ -1696,7 +1697,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function triggerServe(action) {
     showToast("Đang kích hoạt Tailscale Serve cho TailRouter...");
     try {
-      const res = await fetch('/api/tailscale/serve', {
+      const res = await fetch(`${API_BASE}/tailscale/serve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: action || 'serve_router', target: 'router', port: PORT })
@@ -1717,7 +1718,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function triggerResetServe() {
     showToast("Đang tắt cấu hình Tailscale Serve...");
     try {
-      const res = await fetch('/api/tailscale/reset', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/tailscale/reset`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast("✅ " + (data.message || "Đã tắt Tailscale Serve!"));
@@ -1833,7 +1834,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function refreshRoutes() {
     showToast(t('toast_pinging') || "Đang làm mới...");
     try {
-      const res = await fetch('/api/routes');
+      const res = await fetch(`${API_BASE}/routes`);
       const data = await res.json().catch(() => ([]));
       currentRoutes = Array.isArray(data) ? data : (data.routes || []);
       renderRoutes(currentRoutes);
@@ -1847,7 +1848,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function syncFromTailscaleCli() {
     showToast(t('toast_syncing_cli') || "Đang quét các router mở từ lệnh Tailscale CLI...");
     try {
-      const res = await fetch('/api/routes/sync-tailscale', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/routes/sync-tailscale`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast("✅ " + (data.message || "Đã đồng bộ từ Tailscale CLI"));
@@ -1865,7 +1866,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   // Toggle Route
   async function toggleRoute(id) {
     try {
-      const res = await fetch(`/api/routes/${id}/toggle`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/routes/${id}/toggle`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast(data.message || "Đã đổi trạng thái tuyến đường");
@@ -1884,7 +1885,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function pingRoute(id) {
     showToast(t('toast_pinging') || "Đang kiểm tra kết nối...");
     try {
-      const res = await fetch(`/api/routes/${id}/ping`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/routes/${id}/ping`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.online || data.status === 'online') {
         showToast(`${t('toast_online') || "Trực tuyến"} ${data.latency_ms || 0} ms`);
@@ -1901,7 +1902,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function deleteRoute(id, name) {
     if (!confirm(`${t('toast_confirm_delete')} "${name}"?`)) return;
     try {
-      const res = await fetch(`/api/routes/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/routes/${id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast(data.message || t('toast_deleted') || "Đã xóa tuyến đường");
@@ -1974,7 +1975,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
     </td></tr>`;
 
     try {
-      const res = await fetch('/api/scan');
+      const res = await fetch(`${API_BASE}/scan`);
       const data = await res.json();
       currentScanPorts = data.ports || [];
       document.getElementById('badge-scan-count').textContent = `${currentScanPorts.length}`;
@@ -2042,7 +2043,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function toggleRouteMode(id) {
     showToast(t('toast_switching_mode') || "Đang chuyển chế độ...");
     try {
-      const res = await fetch(`/api/routes/${id}/toggle-mode`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/routes/${id}/toggle-mode`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast(data.message || "Đã chuyển đổi chế độ");
@@ -2090,13 +2091,13 @@ http://${tailscaleIp}:${PORT}/bambu`;
     try {
       let res;
       if (routeId) {
-        res = await fetch(`/api/routes/${routeId}`, {
+        res = await fetch(`${API_BASE}/routes/${routeId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       } else {
-        res = await fetch('/api/routes', {
+        res = await fetch(`${API_BASE}/routes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -2120,7 +2121,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function setupTailscaleServe() {
     showToast("Setting up Tailscale Serve...");
     try {
-      const res = await fetch('/api/tailscale/serve', {
+      const res = await fetch(`${API_BASE}/tailscale/serve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ port: PORT })

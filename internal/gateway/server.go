@@ -140,22 +140,27 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	reqPath := r.URL.Path
 
-	// 1. Web Dashboard routes
-	if reqPath == "/" || reqPath == "/router" || reqPath == "/router/" || strings.HasPrefix(reqPath, "/router/") {
-		s.serveWebDashboard(w, r)
-		return
-	}
-
-	// 2. Favicon
-	if reqPath == "/favicon.ico" || reqPath == "/favicon.svg" {
+	// 1. Favicon
+	if reqPath == "/favicon.ico" || reqPath == "/favicon.svg" || reqPath == "/router/favicon.ico" || reqPath == "/router/favicon.svg" {
 		w.Header().Set("Content-Type", "image/svg+xml")
 		fmt.Fprintf(w, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`)
 		return
 	}
 
-	// 3. REST API routes
+	// 2. REST API routes (direct or via /router/api/)
+	if strings.HasPrefix(reqPath, "/router/api/") {
+		r.URL.Path = strings.TrimPrefix(reqPath, "/router")
+		s.handleAPI(w, r)
+		return
+	}
 	if strings.HasPrefix(reqPath, "/api/") {
 		s.handleAPI(w, r)
+		return
+	}
+
+	// 3. Web Dashboard routes
+	if reqPath == "/" || reqPath == "/router" || reqPath == "/router/" {
+		s.serveWebDashboard(w, r)
 		return
 	}
 
