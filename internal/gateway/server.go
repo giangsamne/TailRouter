@@ -311,19 +311,11 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 
 	// Handle /api/routes/sync-tailscale
 	if routeID == "sync-tailscale" {
-		if r.Method == http.MethodPost {
-			_ = s.routes.Load()
-			s.jsonResponse(w, http.StatusOK, map[string]interface{}{
-				"success": true,
-				"message": "Đã đồng bộ tuyến đường thành công",
-				"routes":  s.routes.List(),
-			})
-			return
-		}
-		s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{
-			"success": false,
-			"error":   "Cần phương thức POST",
-			"message": "Cần phương thức POST",
+		_ = s.routes.Load()
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success": true,
+			"message": "Đã đồng bộ tuyến đường thành công",
+			"routes":  s.routes.List(),
 		})
 		return
 	}
@@ -540,6 +532,10 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			return
 		}
 		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã đặt lại Tailscale Serve thành công"})
+
+	case "sync":
+		s.handleAPIRoutes(w, r, []string{"sync-tailscale"})
+		return
 
 	default:
 		s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{"error": "Hành động Tailscale không hợp lệ", "success": false})
