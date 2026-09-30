@@ -181,6 +181,86 @@ func (s *Scanner) scanLinux(portMap map[int]*PortItem) {
 		}
 	}
 
+	// Fallback 1: netstat -tlpn (common on Alpine Linux, BusyBox, minimal distros)
+	if len(portMap) == 0 {
+		outNetstat, err := runCmdWithStandardPath("netstat", "-tlpn")
+		if err == nil && len(outNetstat) > 0 {
+			scanner := bufio.NewScanner(strings.NewReader(string(outNetstat)))
+			for scanner.Scan() {
+				line := scanner.Text()
+				if !strings.Contains(line, "LISTEN") {
+					continue
+				}
+				fields := strings.Fields(line)
+				if len(fields) < 4 {
+					continue
+				}
+				localAddr := fields[3]
+				colonIdx := strings.LastIndex(localAddr, ":")
+				if colonIdx == -1 {
+					continue
+				}
+				portStr := localAddr[colonIdx+1:]
+				port, err := strconv.Atoi(portStr)
+				if err != nil || port <= 0 || port > 65535 {
+					continue
+				}
+
+				procName := ""
+				pid := 0
+				if len(fields) >= 7 {
+					progField := fields[6]
+					if slashIdx := strings.Index(progField, "/"); slashIdx != -1 {
+						pid, _ = strconv.Atoi(progField[:slashIdx])
+						procName = progField[slashIdx+1:]
+					}
+				}
+
+				portMap[port] = &PortItem{
+					Port:     port,
+					Host:     "127.0.0.1",
+					Protocol: "tcp",
+					Process:  procName,
+					PID:      pid,
+					Service:  detectKnownService(port, procName),
+				}
+			}
+		}
+	}
+
+	// Fallback 2: /proc/net/tcp & /proc/net/tcp6 (100% pure kernel procfs reading)
+	parseProcNet := func(filePath string) {
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			return
+		}
+		scanner := bufio.NewScanner(strings.NewReader(string(data)))
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			fields := strings.Fields(line)
+			if len(fields) >= 4 && fields[3] == "0A" { // 0A = TCP_LISTEN
+				addrParts := strings.Split(fields[1], ":")
+				if len(addrParts) == 2 {
+					if p64, err := strconv.ParseInt(addrParts[1], 16, 32); err == nil {
+						p := int(p64)
+						if p > 0 && p <= 65535 {
+							if _, exists := portMap[p]; !exists {
+								portMap[p] = &PortItem{
+									Port:     p,
+									Host:     "127.0.0.1",
+									Protocol: "tcp",
+									Service:  detectKnownService(p, ""),
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	parseProcNet("/proc/net/tcp")
+	parseProcNet("/proc/net/tcp6")
+
 	// Fallback pass: run lsof to fill in missing process names
 	if outLsof, err := runCmdWithStandardPath("lsof", "-iTCP", "-sTCP:LISTEN", "-n", "-P"); err == nil && len(outLsof) > 0 {
 		scanner := bufio.NewScanner(strings.NewReader(string(outLsof)))
