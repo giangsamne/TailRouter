@@ -1581,7 +1581,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
         const opWarning = document.getElementById('operator-warning-banner');
         const btnResetServe = document.getElementById('btn-reset-serve');
 
-        const tailrouterRoute = (data.routes || []).find(r => r.id === 'system-tailrouter-gateway' || (r.path === '/' && r.target_port === PORT));
+        const tailrouterRoute = (data.routes || []).find(r => r.id === 'system-tailrouter-gateway' || (r.path === '/router' && r.target_port === PORT));
         const isServeActive = !!(data.tailscale.serve_configured && (!tailrouterRoute || tailrouterRoute.enabled));
 
         if (isServeActive) {
@@ -1699,7 +1699,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
       const res = await fetch('/api/tailscale/serve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: action || 'serve_tailrouter', target: 'gateway', port: PORT })
+        body: JSON.stringify({ action: action || 'serve_router', target: 'router', port: PORT })
       });
       const data = await res.json().catch(() => ({}));
       if (data.success || (res.ok && !data.error)) {

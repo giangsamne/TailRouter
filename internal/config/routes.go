@@ -482,7 +482,7 @@ func (m *Manager) FindMatchingRoute(reqPath string) (*Route, string, bool) {
 	var bestMatch string
 
 	for _, r := range m.routes {
-		if !r.Enabled || r.ID == TailRouterRouteID || r.Path == "/" {
+		if !r.Enabled || r.ID == TailRouterRouteID || r.Path == "/" || r.Path == "/router" {
 			continue
 		}
 		p := r.Path
@@ -557,6 +557,7 @@ func (m *Manager) EnsureTailRouterRoute(port int) *Route {
 
 	if r, ok := m.routes[TailRouterRouteID]; ok {
 		r.Enabled = true
+		r.Path = "/router"
 		r.TargetPort = port
 		r.LastStatus = "online"
 		_ = m.saveLocked()
@@ -566,7 +567,7 @@ func (m *Manager) EnsureTailRouterRoute(port int) *Route {
 	r := &Route{
 		ID:          TailRouterRouteID,
 		Name:        "⚡ TailRouter Gateway",
-		Path:        "/",
+		Path:        "/router",
 		TargetHost:  "127.0.0.1",
 		TargetPort:  port,
 		StripPrefix: false,
@@ -574,7 +575,7 @@ func (m *Manager) EnsureTailRouterRoute(port int) *Route {
 		CreatedAt:   time.Now().UTC().Format(time.RFC3339),
 		LastStatus:  "online",
 		Mode:        "serve",
-		Notes:       "Trang điều khiển chính TailRouter trên cổng HTTPS",
+		Notes:       "Trang điều khiển TailRouter qua Tailscale Serve (/router)",
 	}
 	m.routes[TailRouterRouteID] = r
 	_ = m.saveLocked()

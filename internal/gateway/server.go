@@ -314,7 +314,7 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 		}
 		// Remove from Tailscale in background
 		go func() {
-			if route.Path == "/" || route.ID == config.TailRouterRouteID {
+			if route.Path == "/router" || route.Path == "/" || route.ID == config.TailRouterRouteID {
 				_ = s.tailscale.ResetServe()
 			} else {
 				_ = s.tailscale.RemoveRoute(route.Path)
@@ -411,7 +411,7 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 					s.routes.SetTailRouterRouteEnabled(newEnabled)
 					go func() {
 						if newEnabled {
-							_ = s.tailscale.ConfigureServeGateway(s.port)
+							_ = s.tailscale.ConfigureServeRouter(s.port)
 						} else {
 							_ = s.tailscale.ResetServe()
 						}
@@ -441,9 +441,9 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 				return
 			}
 			go func() {
-				if route.Path == "/" || route.ID == config.TailRouterRouteID {
+				if route.Path == "/router" || route.Path == "/" || route.ID == config.TailRouterRouteID {
 					if route.Enabled {
-						_ = s.tailscale.ConfigureServeGateway(s.port)
+						_ = s.tailscale.ConfigureServeRouter(s.port)
 					} else {
 						_ = s.tailscale.ResetServe()
 					}
@@ -556,7 +556,12 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			Action string `json:"action"` // "serve_router" or "serve_all"
 		}
 		_ = json.NewDecoder(r.Body).Decode(&req)
-		err := s.tailscale.ConfigureServeGateway(s.port)
+		var err error
+		if req.Target == "gateway" || req.Action == "serve_all" {
+			err = s.tailscale.ConfigureServeGateway(s.port)
+		} else {
+			err = s.tailscale.ConfigureServeRouter(s.port)
+		}
 		if err != nil {
 			msg := err.Error()
 			if strings.Contains(msg, "Access denied") || strings.Contains(msg, "operator") {
