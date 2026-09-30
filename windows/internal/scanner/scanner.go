@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -115,11 +114,6 @@ func (s *Scanner) Scan() ([]*PortItem, error) {
 		}(item)
 	}
 	wg.Wait()
-
-	// 6. Sort ports in ascending numerical order: từ bé đến lớn (22, 53, 80, 443, 3000, 8080...)
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].Port < items[j].Port
-	})
 
 	for _, item := range items {
 		if item.ServiceName == "" {
