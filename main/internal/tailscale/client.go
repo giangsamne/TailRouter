@@ -225,8 +225,7 @@ func (c *Client) GetStatus() (*StatusInfo, error) {
 }
 
 func (c *Client) ConfigureServeRouter(port int) error {
-	// Map /router to 127.0.0.1:port/router
-	target := fmt.Sprintf("http://127.0.0.1:%d/router", port)
+	target := fmt.Sprintf("http://127.0.0.1:%d", port)
 	_, err := c.RunCmd("serve", "--bg", "--yes", "--https=443", "--set-path=/router", target)
 	return err
 }

@@ -35,6 +35,9 @@ START_SH_BLOB=$(git hash-object -w start.sh)
 STOP_SH_BLOB=$(git hash-object -w stop.sh)
 INSTALL_SERVICE_SH_BLOB=$(git hash-object -w install-service.sh)
 
+HTML_CONTENT=$(sed -E "s|id=\"app-version-badge\"[^>]*>[^<]*<|id=\"app-version-badge\" style=\"background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 9999px; vertical-align: middle; margin-left: 6px;\">${TAG}<|g" web/index.html)
+HTML_BLOB=$(echo "$HTML_CONTENT" | git hash-object -w --stdin)
+
 GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100644 "$README_BLOB" README.md
 GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100644 "$LICENSE_BLOB" LICENSE
 GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100755 "$INSTALL_SH_BLOB" install.sh
@@ -42,6 +45,10 @@ GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100644 "$INSTALL_
 GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100755 "$START_SH_BLOB" start.sh
 GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100755 "$STOP_SH_BLOB" stop.sh
 GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100755 "$INSTALL_SERVICE_SH_BLOB" install-service.sh
+GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100644 "$HTML_BLOB" main/web/index.html
+GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100644 "$HTML_BLOB" macos/web/index.html
+GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100644 "$HTML_BLOB" windows/web/index.html
+GIT_INDEX_FILE="$TMP_INDEX" git update-index --add --cacheinfo 100644 "$HTML_BLOB" linux/web/index.html
 
 TREE_ID=$(GIT_INDEX_FILE="$TMP_INDEX" git write-tree)
 rm -f "$TMP_INDEX"

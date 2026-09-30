@@ -26,7 +26,7 @@ import (
 
 const (
 	DefaultPort = 65534
-	Version = "2.0.1-go-native"
+	Version = "2.0.0-go-native"
 	MaxLogSize  = 5 * 1024 * 1024 // 5MB max log file
 )
 
@@ -119,7 +119,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("không thể mở cổng %d: %w", s.port, err)
 	}
 
-	s.logger.Printf("TailRouter Gateway sẵn sàng tại: http://localhost:%d/router", s.port)
+	s.logger.Printf("TailRouter Gateway sẵn sàng tại: http://localhost:%d", s.port)
 	return s.httpServer.Serve(listener)
 }
 
@@ -140,22 +140,27 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	reqPath := r.URL.Path
 
-	// 1. Web Dashboard routes
-	if reqPath == "/" || reqPath == "/router" || reqPath == "/router/" || strings.HasPrefix(reqPath, "/router/") {
-		s.serveWebDashboard(w, r)
-		return
-	}
-
-	// 2. Favicon
-	if reqPath == "/favicon.ico" || reqPath == "/favicon.svg" {
+	// 1. Favicon
+	if reqPath == "/favicon.ico" || reqPath == "/favicon.svg" || reqPath == "/router/favicon.ico" || reqPath == "/router/favicon.svg" {
 		w.Header().Set("Content-Type", "image/svg+xml")
 		fmt.Fprintf(w, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`)
 		return
 	}
 
-	// 3. REST API routes
+	// 2. REST API routes (direct or via /router/api/)
+	if strings.HasPrefix(reqPath, "/router/api/") {
+		r.URL.Path = strings.TrimPrefix(reqPath, "/router")
+		s.handleAPI(w, r)
+		return
+	}
 	if strings.HasPrefix(reqPath, "/api/") {
 		s.handleAPI(w, r)
+		return
+	}
+
+	// 3. Web Dashboard routes
+	if reqPath == "/" || reqPath == "/router" || reqPath == "/router/" {
+		s.serveWebDashboard(w, r)
 		return
 	}
 
@@ -202,6 +207,13 @@ func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAPIStatus(w http.ResponseWriter, r *http.Request) {
 	tsStatus, _ := s.tailscale.GetStatus()
+	if tsStatus != nil && tsStatus.ServeConfigured {
+		s.routes.EnsureTailRouterRoute(s.port)
+	} else if tsStatus != nil && !tsStatus.ServeConfigured {
+		if tr, ok := s.routes.Get(config.TailRouterRouteID); ok && tr.Enabled {
+			s.routes.SetTailRouterRouteEnabled(false)
+		}
+	}
 	autoStatus := s.service.GetStatus()
 	routesList := s.routes.List()
 
@@ -287,6 +299,15 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 	if r.Method == http.MethodDelete {
 		rawTarget := strings.TrimPrefix(r.URL.Path, "/api/routes/")
 		rawTarget = strings.Trim(rawTarget, "/")
+		if rawTarget == config.TailRouterRouteID {
+			_ = s.tailscale.ResetServe()
+			s.routes.RemoveTailRouterRoute()
+			s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+				"success": true,
+				"message": "Đã xóa route TailRouter và tắt Tailscale Serve",
+			})
+			return
+		}
 		route, err := s.routes.Delete(rawTarget)
 		if err != nil {
 			s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{
@@ -298,7 +319,11 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 		}
 		// Remove from Tailscale in background
 		go func() {
-			_ = s.tailscale.RemoveRoute(route.Path)
+			if route.Path == "/router" || route.Path == "/" || route.ID == config.TailRouterRouteID {
+				_ = s.tailscale.ResetServe()
+			} else {
+				_ = s.tailscale.RemoveRoute(route.Path)
+			}
 		}()
 		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
 			"success": true,
@@ -385,6 +410,32 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 				s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Cần phương thức POST"})
 				return
 			}
+			if routeID == config.TailRouterRouteID {
+				if r, ok := s.routes.Get(routeID); ok {
+					newEnabled := !r.Enabled
+					s.routes.SetTailRouterRouteEnabled(newEnabled)
+					go func() {
+						if newEnabled {
+							_ = s.tailscale.ConfigureServeRouter(s.port)
+						} else {
+							_ = s.tailscale.ResetServe()
+						}
+					}()
+					actionMsg := "Đã bật route TailRouter"
+					if !newEnabled {
+						actionMsg = "Đã tắt route TailRouter"
+					}
+					route, _ := s.routes.Get(routeID)
+					s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+						"success": true,
+						"message": actionMsg,
+						"enabled": newEnabled,
+						"route":   route,
+					})
+					return
+				}
+			}
+
 			route, err := s.routes.Toggle(routeID)
 			if err != nil {
 				s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{
@@ -395,10 +446,18 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 				return
 			}
 			go func() {
-				if route.Enabled {
-					_ = s.tailscale.ApplyRoute(route.Path, route.TargetHost, route.TargetPort, route.Mode)
+				if route.Path == "/router" || route.Path == "/" || route.ID == config.TailRouterRouteID {
+					if route.Enabled {
+						_ = s.tailscale.ConfigureServeRouter(s.port)
+					} else {
+						_ = s.tailscale.ResetServe()
+					}
 				} else {
-					_ = s.tailscale.RemoveRoute(route.Path)
+					if route.Enabled {
+						_ = s.tailscale.ApplyRoute(route.Path, route.TargetHost, route.TargetPort, route.Mode)
+					} else {
+						_ = s.tailscale.RemoveRoute(route.Path)
+					}
 				}
 			}()
 			actionMsg := "Đã bật route"
@@ -503,7 +562,7 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 		}
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		var err error
-		if req.Target == "gateway" || req.Action == "serve_all" || req.Action == "gateway" {
+		if req.Target == "gateway" || req.Action == "serve_all" {
 			err = s.tailscale.ConfigureServeGateway(s.port)
 		} else {
 			err = s.tailscale.ConfigureServeRouter(s.port)
@@ -516,7 +575,8 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": false, "error": msg, "message": msg})
 			return
 		}
-		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã cấu hình Tailscale Serve thành công"})
+		s.routes.EnsureTailRouterRoute(s.port)
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã cấu hình Tailscale Serve cho TailRouter thành công"})
 
 	case "reset":
 		if r.Method != http.MethodPost {
@@ -531,6 +591,7 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": false, "error": msg, "message": msg})
 			return
 		}
+		s.routes.RemoveTailRouterRoute()
 		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã đặt lại Tailscale Serve thành công"})
 
 	case "sync":

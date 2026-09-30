@@ -108,7 +108,7 @@ func runServer(port int, configPath string, openBrowser bool) {
 	if openBrowser {
 		go func() {
 			time.Sleep(500 * time.Millisecond)
-			dashboardURL := fmt.Sprintf("http://localhost:%d/router", port)
+			dashboardURL := fmt.Sprintf("http://localhost:%d", port)
 			_ = browser.Open(dashboardURL)
 		}()
 	}
@@ -201,7 +201,7 @@ func runStatus() {
 	fmt.Printf("   Phiên bản: %v\n", data["version"])
 	fmt.Printf("   Uptime: %v giây\n", data["uptime_seconds"])
 	fmt.Printf("   Số tuyến đường (Routes): %v\n", data["routes_count"])
-	fmt.Printf("   Dashboard: http://localhost:%d/router\n", gateway.DefaultPort)
+	fmt.Printf("   Dashboard: http://localhost:%d\n", gateway.DefaultPort)
 
 	if ts, ok := data["tailscale"].(map[string]interface{}); ok && ts["running"] == true {
 		fmt.Printf("   Tailscale Node: %v (FQDN: %v)\n", ts["node_name"], ts["fqdn"])
@@ -347,18 +347,12 @@ func runServe(args []string) {
 	ts := tailscale.NewClient()
 	sub := args[0]
 	switch sub {
-	case "router":
-		if err := ts.ConfigureServeRouter(gateway.DefaultPort); err != nil {
-			fmt.Printf("Lỗi: %v\n", err)
-			return
-		}
-		fmt.Println("✅ Đã bật Tailscale Serve cho /router")
-	case "gateway":
+	case "router", "gateway":
 		if err := ts.ConfigureServeGateway(gateway.DefaultPort); err != nil {
 			fmt.Printf("Lỗi: %v\n", err)
 			return
 		}
-		fmt.Println("✅ Đã ánh xạ toàn bộ Gateway qua Tailscale Serve")
+		fmt.Println("✅ Đã bật Tailscale Serve cho TailRouter")
 	case "reset":
 		if err := ts.ResetServe(); err != nil {
 			fmt.Printf("Lỗi: %v\n", err)
