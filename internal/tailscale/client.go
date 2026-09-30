@@ -92,7 +92,21 @@ func (c *Client) RunCmd(args ...string) (string, error) {
 	out, err := cmd.CombinedOutput()
 	outputStr := string(out)
 	if err != nil {
-		return outputStr, fmt.Errorf("tailscale error: %v, output: %s", err, outputStr)
+		if strings.Contains(outputStr, "Access denied") || strings.Contains(outputStr, "operator") {
+			if sudoPath, sErr := exec.LookPath("sudo"); sErr == nil {
+				sudoArgs := append([]string{"-n", bin}, args...)
+				sCmd := exec.Command(sudoPath, sudoArgs...)
+				sCmd.Env = append(os.Environ(), "SHLVL=1")
+				if sOut, sErr2 := sCmd.CombinedOutput(); sErr2 == nil {
+					return string(sOut), nil
+				}
+			}
+		}
+		cleanOut := strings.TrimSpace(outputStr)
+		if cleanOut != "" {
+			return outputStr, errors.New(cleanOut)
+		}
+		return outputStr, fmt.Errorf("tailscale error: %v", err)
 	}
 	return outputStr, nil
 }
@@ -155,14 +169,14 @@ func (c *Client) GetStatus() (*StatusInfo, error) {
 func (c *Client) ConfigureServeRouter(port int) error {
 	// Map /router to 127.0.0.1:port/router
 	target := fmt.Sprintf("http://127.0.0.1:%d/router", port)
-	_, err := c.RunCmd("serve", "--bg", "--https=443", "/router", target)
+	_, err := c.RunCmd("serve", "--bg", "--yes", "--https=443", "--set-path=/router", target)
 	return err
 }
 
 func (c *Client) ConfigureServeGateway(port int) error {
-	// Map / to 127.0.0.1:port
+	// Map root to 127.0.0.1:port
 	target := fmt.Sprintf("http://127.0.0.1:%d", port)
-	_, err := c.RunCmd("serve", "--bg", "--https=443", "/", target)
+	_, err := c.RunCmd("serve", "--bg", "--yes", "--https=443", target)
 	return err
 }
 
@@ -172,24 +186,26 @@ func (c *Client) ResetServe() error {
 }
 
 func (c *Client) ApplyRoute(path string, targetHost string, targetPort int, mode string) error {
+	cleanPath := "/" + strings.Trim(strings.TrimSpace(path), "/")
+	if cleanPath == "" {
+		cleanPath = "/"
+	}
+	target := fmt.Sprintf("http://%s:%d", targetHost, targetPort)
 	if mode == "funnel" {
-		target := fmt.Sprintf("http://%s:%d", targetHost, targetPort)
-		if _, err := c.RunCmd("serve", "--bg", "--https=443", path, target); err != nil {
-			return err
-		}
-		_, err := c.RunCmd("funnel", "--bg", "--https=443", path, "on")
+		_, err := c.RunCmd("funnel", "--bg", "--yes", "--https=443", fmt.Sprintf("--set-path=%s", cleanPath), target)
 		return err
 	}
 	// mode serve
-	target := fmt.Sprintf("http://%s:%d", targetHost, targetPort)
-	_, err := c.RunCmd("serve", "--bg", "--https=443", path, target)
+	_, err := c.RunCmd("serve", "--bg", "--yes", "--https=443", fmt.Sprintf("--set-path=%s", cleanPath), target)
 	return err
 }
 
 func (c *Client) RemoveRoute(path string) error {
-	// Tailscale serve allows removing path by resetting or reconfiguring
-	// tailscale serve --https=443 <path> off
-	_, _ = c.RunCmd("funnel", "--https=443", path, "off")
-	_, err := c.RunCmd("serve", "--https=443", path, "off")
+	cleanPath := "/" + strings.Trim(strings.TrimSpace(path), "/")
+	if cleanPath == "" {
+		cleanPath = "/"
+	}
+	_, _ = c.RunCmd("funnel", "--https=443", fmt.Sprintf("--set-path=%s", cleanPath), "off")
+	_, err := c.RunCmd("serve", "--https=443", fmt.Sprintf("--set-path=%s", cleanPath), "off")
 	return err
 }

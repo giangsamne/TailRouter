@@ -311,19 +311,11 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 
 	// Handle /api/routes/sync-tailscale
 	if routeID == "sync-tailscale" {
-		if r.Method == http.MethodPost {
-			_ = s.routes.Load()
-			s.jsonResponse(w, http.StatusOK, map[string]interface{}{
-				"success": true,
-				"message": "Đã đồng bộ tuyến đường thành công",
-				"routes":  s.routes.List(),
-			})
-			return
-		}
-		s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{
-			"success": false,
-			"error":   "Cần phương thức POST",
-			"message": "Cần phương thức POST",
+		_ = s.routes.Load()
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success": true,
+			"message": "Đã đồng bộ tuyến đường thành công",
+			"routes":  s.routes.List(),
 		})
 		return
 	}
@@ -517,7 +509,11 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			err = s.tailscale.ConfigureServeRouter(s.port)
 		}
 		if err != nil {
-			s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{"success": false, "error": err.Error(), "message": err.Error()})
+			msg := err.Error()
+			if strings.Contains(msg, "Access denied") || strings.Contains(msg, "operator") {
+				msg = "Cần cấp quyền Operator cho Tailscale: Chạy 'sudo tailscale set --operator=$USER' trên terminal một lần"
+			}
+			s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": false, "error": msg, "message": msg})
 			return
 		}
 		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã cấu hình Tailscale Serve thành công"})
@@ -528,10 +524,18 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			return
 		}
 		if err := s.tailscale.ResetServe(); err != nil {
-			s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{"success": false, "error": err.Error(), "message": err.Error()})
+			msg := err.Error()
+			if strings.Contains(msg, "Access denied") || strings.Contains(msg, "operator") {
+				msg = "Cần cấp quyền Operator cho Tailscale: Chạy 'sudo tailscale set --operator=$USER' trên terminal một lần"
+			}
+			s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": false, "error": msg, "message": msg})
 			return
 		}
 		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã đặt lại Tailscale Serve thành công"})
+
+	case "sync":
+		s.handleAPIRoutes(w, r, []string{"sync-tailscale"})
+		return
 
 	default:
 		s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{"error": "Hành động Tailscale không hợp lệ", "success": false})
