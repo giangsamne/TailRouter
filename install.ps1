@@ -62,7 +62,7 @@ Write-Host "✅ TailRouter installed successfully to $InstallDir!" -ForegroundCo
 Write-Host "==> Starting TailRouter Gateway..." -ForegroundColor Cyan
 Start-Process -FilePath "$InstallDir\tailrouter.exe" -ArgumentList "run"
 Start-Sleep -Seconds 1
-Start-Process "http://localhost:65534/router"
-Write-Host "💡 Web Dashboard accessible at: http://localhost:65534/router" -ForegroundColor Cyan
+Start-Process "http://localhost:65534"
+Write-Host "💡 Web Dashboard accessible at: http://localhost:65534" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Green
 

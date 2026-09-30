@@ -119,7 +119,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("không thể mở cổng %d: %w", s.port, err)
 	}
 
-	s.logger.Printf("TailRouter Gateway sẵn sàng tại: http://localhost:%d/router", s.port)
+	s.logger.Printf("TailRouter Gateway sẵn sàng tại: http://localhost:%d", s.port)
 	return s.httpServer.Serve(listener)
 }
 
@@ -202,6 +202,13 @@ func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAPIStatus(w http.ResponseWriter, r *http.Request) {
 	tsStatus, _ := s.tailscale.GetStatus()
+	if tsStatus != nil && tsStatus.ServeConfigured {
+		s.routes.EnsureTailRouterRoute(s.port)
+	} else if tsStatus != nil && !tsStatus.ServeConfigured {
+		if tr, ok := s.routes.Get(config.TailRouterRouteID); ok && tr.Enabled {
+			s.routes.SetTailRouterRouteEnabled(false)
+		}
+	}
 	autoStatus := s.service.GetStatus()
 	routesList := s.routes.List()
 
@@ -287,6 +294,15 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 	if r.Method == http.MethodDelete {
 		rawTarget := strings.TrimPrefix(r.URL.Path, "/api/routes/")
 		rawTarget = strings.Trim(rawTarget, "/")
+		if rawTarget == config.TailRouterRouteID {
+			_ = s.tailscale.ResetServe()
+			s.routes.RemoveTailRouterRoute()
+			s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+				"success": true,
+				"message": "Đã xóa route TailRouter và tắt Tailscale Serve",
+			})
+			return
+		}
 		route, err := s.routes.Delete(rawTarget)
 		if err != nil {
 			s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{
@@ -298,7 +314,11 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 		}
 		// Remove from Tailscale in background
 		go func() {
-			_ = s.tailscale.RemoveRoute(route.Path)
+			if route.Path == "/" || route.ID == config.TailRouterRouteID {
+				_ = s.tailscale.ResetServe()
+			} else {
+				_ = s.tailscale.RemoveRoute(route.Path)
+			}
 		}()
 		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
 			"success": true,
@@ -385,6 +405,32 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 				s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Cần phương thức POST"})
 				return
 			}
+			if routeID == config.TailRouterRouteID {
+				if r, ok := s.routes.Get(routeID); ok {
+					newEnabled := !r.Enabled
+					s.routes.SetTailRouterRouteEnabled(newEnabled)
+					go func() {
+						if newEnabled {
+							_ = s.tailscale.ConfigureServeGateway(s.port)
+						} else {
+							_ = s.tailscale.ResetServe()
+						}
+					}()
+					actionMsg := "Đã bật route TailRouter"
+					if !newEnabled {
+						actionMsg = "Đã tắt route TailRouter"
+					}
+					route, _ := s.routes.Get(routeID)
+					s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+						"success": true,
+						"message": actionMsg,
+						"enabled": newEnabled,
+						"route":   route,
+					})
+					return
+				}
+			}
+
 			route, err := s.routes.Toggle(routeID)
 			if err != nil {
 				s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{
@@ -395,10 +441,18 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 				return
 			}
 			go func() {
-				if route.Enabled {
-					_ = s.tailscale.ApplyRoute(route.Path, route.TargetHost, route.TargetPort, route.Mode)
+				if route.Path == "/" || route.ID == config.TailRouterRouteID {
+					if route.Enabled {
+						_ = s.tailscale.ConfigureServeGateway(s.port)
+					} else {
+						_ = s.tailscale.ResetServe()
+					}
 				} else {
-					_ = s.tailscale.RemoveRoute(route.Path)
+					if route.Enabled {
+						_ = s.tailscale.ApplyRoute(route.Path, route.TargetHost, route.TargetPort, route.Mode)
+					} else {
+						_ = s.tailscale.RemoveRoute(route.Path)
+					}
 				}
 			}()
 			actionMsg := "Đã bật route"
@@ -502,12 +556,7 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			Action string `json:"action"` // "serve_router" or "serve_all"
 		}
 		_ = json.NewDecoder(r.Body).Decode(&req)
-		var err error
-		if req.Target == "gateway" || req.Action == "serve_all" || req.Action == "gateway" {
-			err = s.tailscale.ConfigureServeGateway(s.port)
-		} else {
-			err = s.tailscale.ConfigureServeRouter(s.port)
-		}
+		err := s.tailscale.ConfigureServeGateway(s.port)
 		if err != nil {
 			msg := err.Error()
 			if strings.Contains(msg, "Access denied") || strings.Contains(msg, "operator") {
@@ -516,7 +565,8 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": false, "error": msg, "message": msg})
 			return
 		}
-		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã cấu hình Tailscale Serve thành công"})
+		s.routes.EnsureTailRouterRoute(s.port)
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã cấu hình Tailscale Serve cho TailRouter thành công"})
 
 	case "reset":
 		if r.Method != http.MethodPost {
@@ -531,6 +581,7 @@ func (s *Server) handleAPITailscale(w http.ResponseWriter, r *http.Request, subP
 			s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": false, "error": msg, "message": msg})
 			return
 		}
+		s.routes.RemoveTailRouterRoute()
 		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Đã đặt lại Tailscale Serve thành công"})
 
 	case "sync":

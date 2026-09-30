@@ -58,9 +58,9 @@ TailRouter provides dedicated platform branches with optimized guides, service s
   - **Serve**: Encrypted, authenticated access strictly within your private Tailnet (`https://<node-name>.ts.net/<path>`).
   - **Funnel**: Fully public HTTPS route accessible across the Internet without port forwarding or public IPv4.
   - Switch between Serve and Funnel in 1 click or via CLI!
-- 🖥️ **Embedded Web Dashboard (`/router`)**:
+- 🖥️ **Embedded Web Dashboard**:
   - Responsive dark-mode SPA embedded inside the binary via `embed.FS`.
-  - Accessible locally at `http://localhost:65534/router` and over Tailnet at `https://<node-name>.ts.net/router`.
+  - Accessible locally at `http://localhost:65534` and over Tailnet at `https://<node-name>.ts.net/`.
 - 🔍 **Host Port Discovery Scanner**:
   - Scans active TCP listening ports across the host system.
   - Probes HTTP titles and signatures automatically to pre-fill route names and paths.
@@ -84,7 +84,7 @@ Internet / Tailnet
 └──────────────────────────────┬───────────────────────────────┘
                                │
                 ┌──────────────┴───────────────┐
-                ▼ (Serve / Funnel)              ▼ (/router Web Dashboard)
+                ▼ (Serve / Funnel)              ▼ (Web Dashboard)
 ┌──────────────────────────────────────────────────────────────┐
 │ TailRouter Native Engine (Port 65534)                        │
 │  - Dual-stack IPv4/IPv6 reverse proxy                         │
@@ -109,7 +109,7 @@ tailrouter
 ```
 * The gateway automatically starts on port `65534`.
 * Your default web browser immediately opens the Web Dashboard at:
-  👉 **`http://localhost:65534/router`**
+  👉 **`http://localhost:65534`**
 
 ### 2. Running as a Permanent Background Service
 To make TailRouter start automatically every time your computer boots:
@@ -151,7 +151,7 @@ tailrouter routes delete <id|path>
 tailrouter routes delete /bambu
 
 # Automatic Tailscale Serve configuration
-tailrouter serve router     # Expose /router web interface over Tailscale Serve
+tailrouter serve router     # Expose TailRouter web interface over Tailscale Serve
 tailrouter serve gateway    # Forward entire host gateway via Tailscale Serve
 tailrouter serve reset      # Reset Tailscale Serve configuration
 

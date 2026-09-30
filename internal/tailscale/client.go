@@ -215,9 +215,9 @@ func (c *Client) GetStatus() (*StatusInfo, error) {
 
 	if info.ServeConfigured {
 		if info.FQDN != "" {
-			info.RemoteRouterURL = fmt.Sprintf("https://%s/router", info.FQDN)
+			info.RemoteRouterURL = fmt.Sprintf("https://%s", info.FQDN)
 		} else if len(info.IPs) > 0 {
-			info.RemoteRouterURL = fmt.Sprintf("https://%s/router", info.IPs[0])
+			info.RemoteRouterURL = fmt.Sprintf("https://%s", info.IPs[0])
 		}
 	}
 
@@ -225,10 +225,7 @@ func (c *Client) GetStatus() (*StatusInfo, error) {
 }
 
 func (c *Client) ConfigureServeRouter(port int) error {
-	// Map /router to 127.0.0.1:port/router
-	target := fmt.Sprintf("http://127.0.0.1:%d/router", port)
-	_, err := c.RunCmd("serve", "--bg", "--yes", "--https=443", "--set-path=/router", target)
-	return err
+	return c.ConfigureServeGateway(port)
 }
 
 func (c *Client) ConfigureServeGateway(port int) error {

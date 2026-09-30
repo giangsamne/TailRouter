@@ -176,8 +176,8 @@ func (m *Manager) loadLocked() error {
 		if r == nil || r.ID == "" {
 			continue
 		}
-		// Strict filter: Never allow routing to port 65534 or reserved paths
-		if r.TargetPort == 65534 || ReservedPaths[r.Path] {
+		// Strict filter: Never allow routing to port 65534 or reserved paths unless it's TailRouter itself
+		if r.ID != TailRouterRouteID && (r.TargetPort == 65534 || ReservedPaths[r.Path]) {
 			continue
 		}
 		m.routes[r.ID] = r
@@ -482,7 +482,7 @@ func (m *Manager) FindMatchingRoute(reqPath string) (*Route, string, bool) {
 	var bestMatch string
 
 	for _, r := range m.routes {
-		if !r.Enabled {
+		if !r.Enabled || r.ID == TailRouterRouteID || r.Path == "/" {
 			continue
 		}
 		p := r.Path
@@ -548,3 +548,52 @@ func (m *Manager) PingRoute(id string) (string, float64, error) {
 	_ = m.Save()
 	return status, latency, nil
 }
+
+const TailRouterRouteID = "system-tailrouter-gateway"
+
+func (m *Manager) EnsureTailRouterRoute(port int) *Route {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if r, ok := m.routes[TailRouterRouteID]; ok {
+		r.Enabled = true
+		r.TargetPort = port
+		r.LastStatus = "online"
+		_ = m.saveLocked()
+		return r
+	}
+
+	r := &Route{
+		ID:          TailRouterRouteID,
+		Name:        "⚡ TailRouter Gateway",
+		Path:        "/",
+		TargetHost:  "127.0.0.1",
+		TargetPort:  port,
+		StripPrefix: false,
+		Enabled:     true,
+		CreatedAt:   time.Now().UTC().Format(time.RFC3339),
+		LastStatus:  "online",
+		Mode:        "serve",
+		Notes:       "Trang điều khiển chính TailRouter trên cổng HTTPS",
+	}
+	m.routes[TailRouterRouteID] = r
+	_ = m.saveLocked()
+	return r
+}
+
+func (m *Manager) RemoveTailRouterRoute() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.routes, TailRouterRouteID)
+	_ = m.saveLocked()
+}
+
+func (m *Manager) SetTailRouterRouteEnabled(enabled bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if r, ok := m.routes[TailRouterRouteID]; ok {
+		r.Enabled = enabled
+		_ = m.saveLocked()
+	}
+}
+

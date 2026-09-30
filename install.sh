@@ -87,14 +87,14 @@ case "$OS" in
     echo "==> Checking gateway status..."
     "$TARGET_BIN" status || true
     echo "=========================================================="
-    echo "💡 Web Dashboard accessible at: http://localhost:65534/router"
+    echo "💡 Web Dashboard accessible at: http://localhost:65534"
     if [ "$TARGET_BIN" = "$HOME/.local/bin/tailrouter" ]; then
       echo ""
       echo "📌 NOTE: To use 'tailrouter' command directly in this current terminal, run:"
       echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
       echo "   (or: source ~/.zprofile)"
     fi
-    open "http://localhost:65534/router" 2>/dev/null || true
+    open "http://localhost:65534" 2>/dev/null || true
     ;;
 
   Linux)
@@ -160,7 +160,7 @@ case "$OS" in
     echo "==> Checking gateway status..."
     "$TARGET_BIN" status || true
     echo "=========================================================="
-    echo "💡 Web Dashboard accessible at: http://localhost:65534/router"
+    echo "💡 Web Dashboard accessible at: http://localhost:65534"
     if [ "$TARGET_BIN" = "$HOME/.local/bin/tailrouter" ]; then
       echo ""
       echo "📌 NOTE: To use 'tailrouter' command directly in this current terminal, run:"
