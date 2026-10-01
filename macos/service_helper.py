@@ -467,3 +467,17 @@ def disable_autostart() -> Tuple[bool, str]:
         return True, "Đã tắt tự khởi động trên Windows."
 
     return False, f"Nền tảng {plat} chưa được hỗ trợ."
+
+
+if __name__ == "__main__":
+    action = sys.argv[1].lower() if len(sys.argv) > 1 else "status"
+    if action in ["enable", "on", "install"]:
+        ok, msg = enable_autostart()
+        print(f"[{'OK' if ok else 'FAIL'}] {msg}")
+    elif action in ["disable", "off", "uninstall"]:
+        ok, msg = disable_autostart()
+        print(f"[{'OK' if ok else 'FAIL'}] {msg}")
+    else:
+        import json
+        st = get_service_status()
+        print(json.dumps(st, indent=2, ensure_ascii=False))
