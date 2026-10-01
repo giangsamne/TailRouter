@@ -22,60 +22,58 @@ Run a single command in your terminal or PowerShell — it automatically detects
 
 * **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.sh | bash
   ```
-  *(Or specify release: `curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.sh | bash`)*
 
 * **🪟 Windows** (PowerShell):
   ```powershell
-  irm https://raw.githubusercontent.com/giangsamne/TailRouter/main/install.ps1 | iex
+  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.ps1 | iex
   ```
-  *(Or specify release: `irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.ps1 | iex`)*
 
 ---
 
-## 🆕 Những Điểm Nâng Cấp Nổi Bật (What's New in v2.1.0 & v1.1.0)
+## 🆕 What's New in v2.1.0 & v1.1.0
 
-Phiên bản **v2.1.0** (Go Native Bare-Metal) và **v1.1.0** (Python Edition) mang đến trải nghiệm điều phối cổng và định tuyến hoàn toàn mới với các nâng cấp quan trọng:
+Version **v2.1.0** (Go Native Bare-Metal) and **v1.1.0** (Python Edition) bring a completely redesigned management workflow, cleaner UI architecture, and robust system lifecycle controls:
 
-### 1. ⚙️ Tab Thứ 5: Cài Đặt Hệ Thống & Quản Trị (Settings Tab)
-Giao diện Web Dashboard được chuẩn hóa thành 5 tab điều hướng chuyên nghiệp. Toàn bộ các cấu hình hệ thống được quy tụ về tab **⚙️ Cài Đặt (Settings)**:
-- **Tối giản Dashboard chính**: Di chuyển toàn bộ các banner chiếm dụng diện tích (`Tailscale Serve`, `Tự Động Bật Khi Mở Máy`, `Cảnh báo Operator`) vào gọn gàng trong Settings. Trang chủ giữ được thiết kế thanh thoát, hiện đại và không bị che lấp.
-- **🌐 Điều Khiển Từ Xa (Tailscale Serve)**: Bật/tắt ánh xạ `/router` qua tên miền MagicDNS Tailscale chuẩn cổng HTTPS 443 (không cần gõ `:65534`), tự động sinh link truy cập trực tiếp.
-- **🚀 Tự Động Bật Khi Mở Máy (Auto-Start on Boot)**: Quản lý bật/tắt dịch vụ chạy ngầm độc lập khi máy khởi động (hỗ trợ Linux `systemd` & `openrc`, macOS `launchd`, Windows `Registry`).
-- **⚠️ Khu Vực Nguy Hiểm & Quản Trị Hệ Thống (Danger Zone)**:
-  - 🗑️ **Đặt Lại Cấu Hình Router**: Xóa sạch toàn bộ routes đang quản lý về 0 router và tự động tắt Tailscale Serve.
-  - 🧹 **Xóa Sạch Nhật Ký Proxy**: Dọn dẹp bộ nhớ đệm và làm mới lịch sử traffic logs.
-  - 💥 **Gỡ Cài Đặt & Xóa Sạch Toàn Bộ TailRouter Khỏi Máy (Uninstall App & Full Data Wipe)**: 
-    - Tự động tắt và hoàn trả cấu hình Tailscale Serve / Funnel.
-    - Gỡ bỏ hoàn toàn dịch vụ autostart khởi động cùng hệ thống.
-    - Xóa sạch toàn bộ thư mục cấu hình `~/.config/tailrouter/`, file `routes.json` và toàn bộ nhật ký log.
-    - Gỡ bỏ file thực thi nhị phân `tailrouter`.
-    - Dừng an toàn tiến trình Gateway và giải phóng cổng `65534`, hiển thị màn hình thông báo giải phóng cổng hoàn tất trên trình duyệt.
-- **ℹ️ Thông Tin Dự Án (About & Repo Info)**: Hiển thị phiên bản, loại Engine, bản quyền tác giả **Giang3DLab / Giang Sam (MIT License)** và liên kết trực tiếp tới GitHub Repository chính thức.
+### 1. ⚙️ 5th Tab: System Settings & Control (Settings Tab)
+The Web Dashboard has been standardized with a dedicated 5th tab navigation. All configuration panels are neatly organized inside **⚙️ Settings**:
+- **Clutter-Free Main Dashboard**: Relocated all persistent banners (`Tailscale Serve`, `Auto-Start on Boot`, `Operator Warning`) inside the Settings tab. The main overview dashboard remains sleek, uncluttered, and modern.
+- **🌐 Remote Access via Tailscale Serve**: One-click enable/disable for `/router` mapped to your Tailscale MagicDNS domain over standard HTTPS (port 443 without typing `:65534`), with direct live link generation.
+- **🚀 Auto-Start on Boot Management**: Easily configure background daemon autostart across Linux (`systemd`, `openrc`), macOS (`launchd`), and Windows (`Registry`).
+- **⚠️ Danger Zone & System Reset**:
+  - 🗑️ **Reset Router Configuration**: Clear all registered routes back to 0 and automatically turn off Tailscale Serve mappings.
+  - 🧹 **Clear Proxy Logs**: Purge in-memory live traffic inspection logs.
+  - 💥 **Complete App Uninstall & Data Wipe**: 
+    - Automatically resets and turns off Tailscale Serve / Funnel.
+    - Unregisters and cleans all autostart services across all operating systems.
+    - Wipes configuration directories (`~/.config/tailrouter`), `routes.json`, and all log files.
+    - Unlinks and removes the `tailrouter` binary executable.
+    - Gracefully stops the Gateway process, frees port `65534`, and presents a confirmation screen on the browser.
+- **ℹ️ Project & Repository Info**: Displays engine type, version, author **Giang3DLab / Giang Sam (MIT License)**, and direct link to the GitHub repository.
 
-### 2. 🔍 Quét Cổng Tự Động Sắp Xếp Tăng Dần (Ascending Port Auto-Scan)
-- Danh mục cổng TCP và dịch vụ phát hiện trên máy thật (và Docker Containers) được **tự động sắp xếp tăng dần từ bé đến lớn** theo thứ tự số hiệu cổng (`22 -> 80 -> 443 -> 3000 -> 8080...`).
-- Giúp người dùng theo dõi và tìm kiếm dịch vụ trực quan, nhanh chóng.
+### 2. 🔍 Ascending Numerical Port Order (Auto-Scan)
+- Active host TCP listening ports and Docker containers are **automatically sorted in ascending numeric order** (`22 -> 80 -> 443 -> 3000 -> 8080...`).
+- Makes browsing, locating, and mapping host services fast and effortless.
 
-### 3. ⌨️ Dòng Lệnh CLI Mạnh Mẽ & Đầy Đủ Hơn
-- Bổ sung lệnh `tailrouter stop`: Dừng nhanh tiến trình Gateway đang chiếm cổng 65534.
-- Bổ sung lệnh `tailrouter uninstall [-y]`: Cho phép người quản trị gỡ cài đặt sạch sẽ toàn bộ TailRouter và mọi dữ liệu liên quan trực tiếp từ terminal.
+### 3. ⌨️ Expanded CLI Commands
+- `tailrouter stop`: Stop running gateway process occupying port 65534.
+- `tailrouter uninstall [-y]`: Completely uninstall TailRouter and purge all data and binaries directly from the terminal.
 
-### 4. 📡 REST API Chuẩn Hóa Mới
-- `POST /api/routes/reset`: Đặt lại danh sách route về 0.
-- `POST /api/logs/clear`: Làm sạch nhật ký truy cập proxy.
-- `POST /api/system/uninstall`: Gỡ cài đặt và dọn dẹp hệ thống toàn diện qua API.
+### 4. 📡 New REST API Endpoints
+- `POST /api/routes/reset`: Reset all routes to 0.
+- `POST /api/logs/clear`: Purge proxy traffic logs.
+- `POST /api/system/uninstall`: Full system uninstallation and graceful shutdown.
 
 ---
 
 ### 🌿 Dedicated OS Branches
 
-TailRouter cung cấp các nhánh nền tảng chuyên biệt lưu trữ dữ liệu thô và cấu hình tối ưu cho từng hệ điều hành:
+TailRouter provides dedicated platform branches with optimized guides, raw data, and service setups:
 
 | Branch | Platform | Features | Direct Link |
 | :--- | :--- | :--- | :--- |
-| **`main`** | 🌐 Multi-Platform (Hub) | Default hub: Go Native v2.1.0, multi-OS installers, release artifacts | [**View `main` branch 👉**](https://github.com/giangsamne/TailRouter/tree/main) |
+| **`main`** | 🌐 Multi-Platform (Hub) | Go Native v2.1.0, multi-OS installers, release artifacts | [**View `main` branch 👉**](https://github.com/giangsamne/TailRouter/tree/main) |
 | **`linux`** | 🐧 Linux | Raw data & Linux scripts, systemd & OpenRC (Alpine/Ubuntu/Arch) | [**View `linux` branch 👉**](https://github.com/giangsamne/TailRouter/tree/linux) |
 | **`windows`** | 🪟 Windows | Raw data & Windows scripts, PowerShell installer, Startup autostart | [**View `windows` branch 👉**](https://github.com/giangsamne/TailRouter/tree/windows) |
 | **`macos`** | 🍏 macOS | Raw data & macOS scripts, launchd agent, Apple Silicon & Intel | [**View `macos` branch 👉**](https://github.com/giangsamne/TailRouter/tree/macos) |
@@ -165,7 +163,7 @@ tailrouter service install
 
 ### 3. Uninstalling TailRouter Completely
 If you ever want to completely remove TailRouter from your machine:
-- **Via Web Dashboard**: Navigate to **⚙️ Cài Đặt (Settings)** -> **Danger Zone** -> Click **💥 Gỡ Cài Đặt & Xoá Toàn Bộ TailRouter Khỏi Máy**.
+- **Via Web Dashboard**: Navigate to **⚙️ Settings** -> **Danger Zone** -> Click **💥 Uninstall & Completely Remove TailRouter from Machine**.
 - **Via CLI Terminal**:
   ```bash
   tailrouter uninstall -y
