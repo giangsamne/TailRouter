@@ -21,14 +21,24 @@ Run a single command in your terminal or PowerShell — it automatically detects
 
 * **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v1.0.0/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v1.0.1/install.sh | bash
   ```
 * **🪟 Windows** (PowerShell):
   ```powershell
-  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v1.0.0/install.ps1 | iex
+  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v1.0.1/install.ps1 | iex
   ```
 
 ---
+
+
+---
+
+## 🆕 What's New in v1.0.1
+
+- 🔢 **Ascending Port Order**: Automatically sorts active host listening ports by numeric port number ascending (e.g. `22 -> 80 -> 443 -> 3000 -> 8080...`).
+- 🐧 **Universal Autostart Support**: Comprehensive boot autostart across `systemd`, `openrc` (Alpine Linux), and user cron fallbacks.
+- 🔍 **Real-Time Signature Probing**: Probes HTTP page titles and application signatures for fast one-click route registration.
+- ⚡ **Pure Standard Library**: 100% Python standard library (`asyncio`, `socket`, `urllib`), zero external dependencies.
 
 ### 🌿 Dedicated OS Branches
 
