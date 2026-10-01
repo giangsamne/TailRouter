@@ -4,18 +4,14 @@
 TailRouter CLI (Python Edition v1.0.1)
 =====================================
 Zero-Dependency Pure Python Gateway for Tailscale Serve & Funnel.
-Cho phép gõ 'tailrouter' từ bất kỳ thư mục nào để bật nhanh, kiểm tra trạng thái,
-quản lý dịch vụ hoặc khởi động lại.
 """
 
-import asyncio
 import json
 import os
 import signal
 import subprocess
 import sys
 import time
-import urllib.error
 import urllib.request
 from typing import Any, Dict, Optional
 
@@ -23,14 +19,17 @@ VERSION = "1.0.0"
 DEFAULT_PORT = 65534
 
 BANNER = f"""
-  ⚡ TailRouter CLI (Python Edition v{VERSION})
-  ==========================================
-  Zero-Dependency Pure Python Tailscale Gateway
+  ⚡ TailRouter Native Engine v{VERSION}
+  ==================================
+  Zero-Dependency Bare-Metal Gateway
 """
 
 
+def now_str() -> str:
+    return time.strftime("%Y/%m/%d %H:%M:%S")
+
+
 def get_base_dir() -> str:
-    """Xác định thư mục cài đặt gốc của TailRouter."""
     # 1. Thư mục chứa chính file script này (giải mã symlink)
     script_path = os.path.realpath(__file__)
     dir_path = os.path.dirname(script_path)
@@ -58,11 +57,10 @@ def get_base_dir() -> str:
 
 
 def check_server_status(port: int = DEFAULT_PORT) -> Optional[Dict[str, Any]]:
-    """Kiểm tra server có đang phản hồi tại /api/status không."""
     try:
         url = f"http://127.0.0.1:{port}/api/status"
         req = urllib.request.Request(url, headers={"User-Agent": "TailRouter-CLI"})
-        with urllib.request.urlopen(req, timeout=1.5) as resp:
+        with urllib.request.urlopen(req, timeout=1.2) as resp:
             if resp.status == 200:
                 return json.loads(resp.read().decode("utf-8"))
     except Exception:
@@ -71,7 +69,6 @@ def check_server_status(port: int = DEFAULT_PORT) -> Optional[Dict[str, Any]]:
 
 
 def get_pid_from_file(base_dir: str) -> Optional[int]:
-    """Đọc PID từ file server.pid."""
     pid_file = os.path.join(base_dir, "server.pid")
     if os.path.exists(pid_file):
         try:
@@ -85,7 +82,6 @@ def get_pid_from_file(base_dir: str) -> Optional[int]:
 
 
 def find_existing_pid(port: int = DEFAULT_PORT) -> Optional[int]:
-    """Tìm PID đang lắng nghe trên cổng nếu có."""
     try:
         res = subprocess.run(["ss", "-tulpn"], capture_output=True, text=True, timeout=2)
         if res.returncode == 0:
@@ -108,8 +104,7 @@ def find_existing_pid(port: int = DEFAULT_PORT) -> Optional[int]:
     return None
 
 
-def cmd_start(args: list) -> None:
-    """Khởi động TailRouter."""
+def run_or_start(foreground: bool = False) -> None:
     base_dir = get_base_dir()
     server_py = os.path.join(base_dir, "server.py")
     log_file = os.path.join(base_dir, "server.log")
@@ -117,47 +112,35 @@ def cmd_start(args: list) -> None:
 
     if not os.path.exists(server_py):
         print(f"❌ Không tìm thấy 'server.py' tại: {base_dir}")
-        print("💡 Gợi ý: Hãy đặt biến môi trường TAILROUTER_DIR=/path/to/tailrouter")
         sys.exit(1)
 
-    # Kiểm tra xem đã chạy chưa
+    # 1. Kiểm tra xem cổng 65534 có đang bị chiếm dụng không
     status_data = check_server_status(DEFAULT_PORT)
     existing_pid = get_pid_from_file(base_dir) or find_existing_pid(DEFAULT_PORT)
 
     if status_data or existing_pid:
-        pid = (status_data.get("pid") if status_data else None) or existing_pid or "N/A"
+        pid = (status_data.get("pid") if status_data else None) or existing_pid or "đang chạy"
+        print(BANNER.strip("\n"))
+        print(f"⚠️  Cổng {DEFAULT_PORT} đã có tiến trình đang chạy (PID: {pid}).")
+        print(f"👉 Truy cập ngay tại: http://localhost:{DEFAULT_PORT}/router")
         ts_info = (status_data.get("tailscale") if status_data else {}) or {}
         fqdn = ts_info.get("fqdn")
-        ts_ip = ts_info.get("ipv4")
-
-        print(BANNER)
-        print(f"⚠️  TailRouter đã ĐANG CHẠY trên cổng {DEFAULT_PORT} (PID: {pid})!")
-        print("------------------------------------------------------------")
-        print(f"👉 Localhost:    http://localhost:{DEFAULT_PORT}/router")
         if fqdn:
-            print(f"👉 Tailscale:    https://{fqdn}/router")
-        elif ts_ip:
-            print(f"👉 Tailscale IP: http://{ts_ip}:{DEFAULT_PORT}/router")
-        print(f"📄 Log file:     {log_file}")
-        print("💡 Gõ 'tailrouter restart' để khởi động lại hoặc 'tailrouter stop' để tắt.")
-        print("============================================================")
+            print(f"👉 Tailscale Serve:   https://{fqdn}/router")
         return
 
-    # Chế độ chạy trực tiếp Foreground (-f hoặc --foreground)
-    if "-f" in args or "--foreground" in args:
-        print(BANNER)
-        print(f"🚀 Đang khởi động TailRouter ở chế độ Foreground (Port {DEFAULT_PORT})...")
+    # 2. Cổng chưa bị chiếm dụng: Khởi chạy TailRouter
+    print(BANNER.strip("\n"))
+    print(f"[TailRouter] {now_str()} Khởi chạy TailRouter Native Engine trên cổng {DEFAULT_PORT} (Dual-Stack IPv4/IPv6)...")
+
+    if foreground:
         try:
             os.execv(sys.executable, [sys.executable, server_py])
         except Exception as e:
-            print(f"❌ Lỗi khởi chạy: {e}")
+            print(f"[Lỗi] {e}")
             sys.exit(1)
 
-    # Chế độ chạy ngầm Daemon / Background
-    print(BANNER)
-    print(f"🚀 Đang khởi động nhanh TailRouter chạy nền trên cổng {DEFAULT_PORT}...")
-
-    # Khởi động process tách biệt
+    # Chạy nền (daemon)
     with open(log_file, "a", encoding="utf-8") as out:
         if sys.platform != "win32":
             proc = subprocess.Popen(
@@ -182,56 +165,44 @@ def cmd_start(args: list) -> None:
     with open(pid_file, "w") as f:
         f.write(str(server_pid))
 
-    # Chờ server khởi động thành công (tối đa 4 giây)
-    started = False
+    # Chờ server sẵn sàng (tối đa 3 giây)
     status_data = None
-    for _ in range(8):
+    for _ in range(6):
         time.sleep(0.5)
         status_data = check_server_status(DEFAULT_PORT)
         if status_data:
-            started = True
             break
 
-    if started:
-        ts_info = status_data.get("tailscale", {})
-        fqdn = ts_info.get("fqdn")
-        ts_ip = ts_info.get("ipv4")
+    # Cấu hình Tailscale serve trong background nếu có
+    try:
+        subprocess.run(
+            ["tailscale", "serve", "--bg", "--set-path", "/router", f"http://127.0.0.1:{DEFAULT_PORT}/router"],
+            capture_output=True,
+            timeout=3,
+        )
+    except Exception:
+        pass
 
-        # Kích hoạt serve cho /router nếu có tailscale
-        try:
-            subprocess.run(
-                ["tailscale", "serve", "--bg", "--set-path", "/router", f"http://127.0.0.1:{DEFAULT_PORT}/router"],
-                capture_output=True,
-                timeout=3,
-            )
-        except Exception:
-            pass
-
-        print("============================================================")
-        print(f"✅ Khởi động THÀNH CÔNG! (PID: {server_pid})")
-        print(f"👉 Bảng Quản Trị Local:     http://localhost:{DEFAULT_PORT}/router")
+    print(f"[TailRouter] {now_str()} TailRouter Gateway sẵn sàng tại: http://localhost:{DEFAULT_PORT}/router")
+    if status_data:
+        fqdn = status_data.get("tailscale", {}).get("fqdn")
         if fqdn:
-            print(f"👉 Bảng Quản Trị Tailscale: https://{fqdn}/router")
-        elif ts_ip:
-            print(f"👉 Bảng Quản Trị Tailscale: http://{ts_ip}:{DEFAULT_PORT}/router")
-        print(f"📄 File Log hoạt động:      {log_file}")
-        print("🛑 Để dừng dịch vụ:         tailrouter stop")
-        print("============================================================")
-    else:
-        print("⚠️  Tiến trình đã được gọi nhưng chưa phản hồi trên cổng 65534.")
-        print(f"📄 Vui lòng kiểm tra log tại: {log_file}")
+            print(f"[TailRouter] {now_str()} Tailscale Serve sẵn sàng tại: https://{fqdn}/router")
 
 
 def cmd_stop() -> None:
-    """Dừng dịch vụ TailRouter."""
     base_dir = get_base_dir()
     pid_file = os.path.join(base_dir, "server.pid")
     pid = get_pid_from_file(base_dir) or find_existing_pid(DEFAULT_PORT)
 
     if not pid:
-        print("ℹ️  TailRouter hiện không chạy (không tìm thấy tiến trình trên cổng 65534).")
+        print(BANNER.strip("\n"))
+        print(f"⚠️  TailRouter Gateway hiện KHÔNG CHẠY trên cổng {DEFAULT_PORT}.")
         if os.path.exists(pid_file):
-            os.remove(pid_file)
+            try:
+                os.remove(pid_file)
+            except Exception:
+                pass
         return
 
     print(f"🛑 Đang dừng tiến trình TailRouter (PID: {pid})...")
@@ -244,10 +215,9 @@ def cmd_stop() -> None:
             except OSError:
                 break
         else:
-            # Force kill nếu quá 3 giây chưa thoát
             os.kill(pid, signal.SIGKILL)
     except Exception as e:
-        print(f"⚠️  Không thể gửi tín hiệu dừng: {e}")
+        print(f"⚠️  Lỗi khi dừng: {e}")
 
     if os.path.exists(pid_file):
         try:
@@ -258,208 +228,71 @@ def cmd_stop() -> None:
     print("✅ Đã dừng thành công dịch vụ TailRouter!")
 
 
-def cmd_restart(args: list) -> None:
-    """Khởi động lại TailRouter."""
-    print("🔄 Đang khởi động lại TailRouter...")
-    cmd_stop()
-    time.sleep(1)
-    cmd_start(args)
-
-
 def cmd_status() -> None:
-    """Hiển thị trạng thái chi tiết của Gateway."""
     base_dir = get_base_dir()
     status_data = check_server_status(DEFAULT_PORT)
     pid = get_pid_from_file(base_dir) or find_existing_pid(DEFAULT_PORT)
 
-    print(BANNER)
     if not status_data and not pid:
-        print("● Trạng thái:        ⚪ ĐÃ TẮT (OFFLINE)")
-        print("● Cổng lắng nghe:    65534 (chưa kết nối)")
-        print("\n👉 Để khởi động ngay, gõ lệnh: tailrouter start")
-        print("============================================================")
+        print(BANNER.strip("\n"))
+        print(f"⚠️  TailRouter Gateway hiện KHÔNG CHẠY trên cổng {DEFAULT_PORT}.")
+        print("👉 Gõ 'tailrouter' để khởi động ngay.")
         return
 
-    print("● Trạng thái:        🟢 ĐANG HOẠT ĐỘNG (ONLINE)")
-    print(f"● PID:               {pid or 'Đang chạy'}")
-    print(f"● Phiên bản:         v{status_data.get('version', VERSION) if status_data else VERSION} (Python Stdlib)")
-    print(f"● Cổng lắng nghe:    {DEFAULT_PORT}")
-
+    print(BANNER.strip("\n"))
+    print("🟢 TailRouter Gateway: Đang chạy (Active)")
+    print(f"   Phiên bản: {status_data.get('version', VERSION) if status_data else VERSION}")
+    print(f"   PID:       {pid or 'Đang chạy'}")
     if status_data:
-        uptime = status_data.get("uptime_seconds", 0)
-        mins, secs = divmod(uptime, 60)
-        hours, mins = divmod(mins, 60)
-        days, hours = divmod(hours, 24)
-        uptime_str = f"{days}d {hours}h {mins}m {secs}s" if days > 0 else (f"{hours}h {mins}m {secs}s" if hours > 0 else f"{mins}m {secs}s")
-        print(f"● Thời gian chạy:    {uptime_str}")
-
+        print(f"   Uptime:    {status_data.get('uptime_seconds', 0)} giây")
+        print(f"   Routes:    {status_data.get('total_routes', 0)} ({status_data.get('active_routes', 0)} đang bật)")
+    print(f"   Dashboard: http://localhost:{DEFAULT_PORT}/router")
+    if status_data:
         ts = status_data.get("tailscale", {})
-        if ts.get("installed") and ts.get("running"):
-            print(f"● Tailscale Node:    {ts.get('node_name', 'Homelab')} ({ts.get('ipv4', '127.0.0.1')})")
-            if ts.get("fqdn"):
-                print(f"● MagicDNS FQDN:     {ts.get('fqdn')}")
-                print(f"● URL Quản Trị:      https://{ts.get('fqdn')}/router")
-            else:
-                print(f"● URL Quản Trị:      http://{ts.get('ipv4')}:{DEFAULT_PORT}/router")
-        else:
-            print("● Tailscale:         Chưa kết nối hoặc tắt")
-
-        print(f"● URL Nội Bộ:        http://localhost:{DEFAULT_PORT}/router")
-        print(f"● Tổng số Routes:    {status_data.get('total_routes', 0)} ({status_data.get('active_routes', 0)} đang bật)")
-
-        auto = status_data.get("autostart", {})
-        if auto.get("enabled"):
-            print(f"● Tự khởi động:      🟢 ĐÃ BẬT ({auto.get('method', 'system')})")
-        else:
-            print(f"● Tự khởi động:      ⚪ CHƯA BẬT ({auto.get('description', 'Chưa thiết lập')})")
-
-    print(f"● Thư mục gốc:       {base_dir}")
-    print(f"● Log file:          {os.path.join(base_dir, 'server.log')}")
-    print("============================================================")
-
-
-def cmd_scan() -> None:
-    """Quét cổng máy chủ và in danh sách theo thứ tự tăng dần."""
-    base_dir = get_base_dir()
-    sys.path.insert(0, base_dir)
-
-    print("🔍 Đang dò quét toàn bộ cổng mở trên hệ thống (ss -tulpn & Docker)...")
-    try:
-        from port_scanner import scan_active_ports
-
-        ports = asyncio.run(scan_active_ports())
-        if not ports:
-            print("ℹ️  Không tìm thấy cổng nào đang mở.")
-            return
-
-        print(f"\n✅ Đã tìm thấy {len(ports)} cổng (sắp xếp tăng dần theo thứ tự số hiệu):")
-        print(f"{'CỔNG':<8} {'DỊCH VỤ / TIẾN TRÌNH':<28} {'LOẠI':<8} {'ĐỘ TRỄ':<10} {'GỢI Ý ROUTE'}")
-        print("-" * 75)
-        for p in ports:
-            port_num = p.get("port")
-            svc = p.get("service_name") or p.get("process") or "Unknown"
-            svc = (svc[:25] + "..") if len(svc) > 27 else svc
-            proto = "HTTP" if p.get("is_http") else "TCP"
-            lat = f"{p.get('latency_ms', '-')} ms" if p.get("latency_ms") else "-"
-            sug = p.get("suggested_path") or f"/port-{port_num}"
-            conf = " [Đã Gán]" if p.get("is_configured") else ""
-            print(f"{port_num:<8} {svc:<28} {proto:<8} {lat:<10} {sug}{conf}")
-        print("-" * 75)
-    except Exception as e:
-        print(f"❌ Lỗi quét cổng: {e}")
-
-
-def cmd_autostart(args: list) -> None:
-    """Quản lý tự khởi động cùng máy tính."""
-    base_dir = get_base_dir()
-    sys.path.insert(0, base_dir)
-    try:
-        from service_helper import disable_autostart, enable_autostart, get_autostart_status
-
-        action = args[0] if args else "status"
-        if action in ["enable", "on", "install"]:
-            ok, msg = enable_autostart()
-            if ok:
-                print(f"✅ Bật tự khởi động thành công: {msg}")
-            else:
-                print(f"❌ Không thể bật tự khởi động: {msg}")
-        elif action in ["disable", "off", "uninstall"]:
-            ok, msg = disable_autostart()
-            if ok:
-                print(f"✅ Đã tắt tự khởi động: {msg}")
-            else:
-                print(f"❌ Không thể tắt tự khởi động: {msg}")
-        else:
-            st = get_autostart_status()
-            print(BANNER)
-            print(f"● Trạng thái tự khởi động: {'🟢 ĐÃ BẬT' if st.get('enabled') else '⚪ CHƯA BẬT'}")
-            print(f"● Cơ chế:                  {st.get('method', 'N/A')} ({st.get('service_type', 'N/A')})")
-            print(f"● Chi tiết:                {st.get('description', '')}")
-            print("\n💡 Cách dùng:")
-            print("   tailrouter autostart enable   (Bật tự khởi động khi mở máy)")
-            print("   tailrouter autostart disable  (Tắt tự khởi động)")
-    except Exception as e:
-        print(f"❌ Lỗi xử lý autostart: {e}")
-
-
-def cmd_logs() -> None:
-    """Xem log trực tiếp."""
-    base_dir = get_base_dir()
-    log_file = os.path.join(base_dir, "server.log")
-    if not os.path.exists(log_file):
-        print(f"ℹ️  Chưa có file log tại: {log_file}")
-        return
-
-    print(f"📄 Đang theo dõi log ({log_file}). Bấm Ctrl+C để thoát:\n")
-    try:
-        subprocess.run(["tail", "-n", "30", "-f", log_file])
-    except KeyboardInterrupt:
-        pass
-    except Exception:
-        with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
-            lines = f.readlines()
-            print("".join(lines[-30:]))
+        if ts.get("fqdn"):
+            print(f"   Tailscale: https://{ts.get('fqdn')}/router")
 
 
 def print_help() -> None:
-    """In hướng dẫn sử dụng."""
-    print(BANNER)
-    print("""Cách sử dụng:
-  tailrouter [lệnh] [tùy chọn]
+    print(BANNER.strip("\n"))
+    print("""
+Sử dụng: tailrouter [lệnh]
 
-Các lệnh thông dụng:
-  tailrouter                  Bật chạy nhanh TailRouter (hoặc xem trạng thái nếu đang chạy)
-  tailrouter start [-f]       Khởi chạy nền TailRouter (-f để chạy trực tiếp trên terminal)
-  tailrouter stop             Dừng dịch vụ TailRouter đang chạy
-  tailrouter restart          Khởi động lại toàn bộ dịch vụ TailRouter
-  tailrouter status           Kiểm tra chi tiết trạng thái, cổng, Tailscale, URL & PID
-  tailrouter scan             Dò quét các cổng đang mở trên máy thật (sắp xếp từ bé đến lớn)
-  tailrouter autostart        Quản lý tự chạy khi bật máy (enable / disable / status)
-  tailrouter logs             Xem nhật ký hoạt động trực tiếp (live log)
-  tailrouter version          Xem phiên bản TailRouter
-  tailrouter help             Hiển thị hướng dẫn này
-
-Ví dụ nhanh:
-  tailrouter                  # Bật chạy ngay lập tức
-  tailrouter status           # Xem link bảng điều khiển Web
-  tailrouter autostart enable # Kích hoạt tự chạy khi mở máy
+Các lệnh có sẵn:
+  (không tham số)   Khởi chạy nhanh Gateway (hoặc báo bận nếu cổng đã có tiến trình)
+  start             Khởi chạy Gateway chạy ngầm (-f để chạy foreground)
+  stop              Dừng tiến trình Gateway đang chạy
+  restart           Khởi động lại Gateway
+  status            Kiểm tra trạng thái hoạt động của Gateway & Tailscale
+  version           Xem thông tin phiên bản
+  help              Hiển thị trợ giúp này
 """)
 
 
 def main() -> None:
     args = sys.argv[1:]
     if not args:
-        # Không có tham số: khởi động nhanh nếu đang tắt, hoặc in trạng thái nếu đang bật
-        status = check_server_status(DEFAULT_PORT)
-        if not status and not find_existing_pid(DEFAULT_PORT):
-            cmd_start([])
-        else:
-            cmd_status()
+        run_or_start(foreground=False)
         return
 
-    subcmd = args[0].lower()
-    rest = args[1:]
-
-    if subcmd in ["start", "run", "up", "boot"]:
-        cmd_start(rest)
-    elif subcmd in ["stop", "down", "kill"]:
+    cmd = args[0].lower()
+    if cmd in ["start", "run", "boot", "up"]:
+        foreground = ("-f" in args[1:] or "--foreground" in args[1:])
+        run_or_start(foreground=foreground)
+    elif cmd in ["stop", "kill", "down"]:
         cmd_stop()
-    elif subcmd in ["restart", "reload"]:
-        cmd_restart(rest)
-    elif subcmd in ["status", "info", "st"]:
+    elif cmd in ["restart", "reload"]:
+        cmd_stop()
+        time.sleep(1)
+        run_or_start(foreground=False)
+    elif cmd in ["status", "info", "st"]:
         cmd_status()
-    elif subcmd in ["scan", "ports"]:
-        cmd_scan()
-    elif subcmd in ["autostart", "service"]:
-        cmd_autostart(rest)
-    elif subcmd in ["logs", "log"]:
-        cmd_logs()
-    elif subcmd in ["version", "-v", "--version"]:
-        print(f"TailRouter v{VERSION} (Pure Python Standard Library Edition)")
-    elif subcmd in ["help", "-h", "--help"]:
+    elif cmd in ["version", "-v", "--version"]:
+        print(f"TailRouter Native Engine v{VERSION}")
+    elif cmd in ["help", "-h", "--help"]:
         print_help()
     else:
-        print(f"⚠️  Lệnh không hợp lệ: '{subcmd}'")
+        print(f"Lệnh không xác định: {cmd}")
         print_help()
         sys.exit(1)
 
