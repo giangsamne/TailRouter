@@ -354,7 +354,7 @@ def cmd_autostart(args: list) -> None:
     base_dir = get_base_dir()
     sys.path.insert(0, base_dir)
     try:
-        from service_helper import disable_autostart, enable_autostart, get_service_status
+        from service_helper import disable_autostart, enable_autostart, get_autostart_status
 
         action = args[0] if args else "status"
         if action in ["enable", "on", "install"]:
@@ -370,7 +370,7 @@ def cmd_autostart(args: list) -> None:
             else:
                 print(f"❌ Không thể tắt tự khởi động: {msg}")
         else:
-            st = get_service_status()
+            st = get_autostart_status()
             print(BANNER)
             print(f"● Trạng thái tự khởi động: {'🟢 ĐÃ BẬT' if st.get('enabled') else '⚪ CHƯA BẬT'}")
             print(f"● Cơ chế:                  {st.get('method', 'N/A')} ({st.get('service_type', 'N/A')})")

@@ -469,6 +469,9 @@ def disable_autostart() -> Tuple[bool, str]:
     return False, f"Nền tảng {plat} chưa được hỗ trợ."
 
 
+get_service_status = get_autostart_status
+
+
 if __name__ == "__main__":
     action = sys.argv[1].lower() if len(sys.argv) > 1 else "status"
     if action in ["enable", "on", "install"]:
@@ -479,5 +482,5 @@ if __name__ == "__main__":
         print(f"[{'OK' if ok else 'FAIL'}] {msg}")
     else:
         import json
-        st = get_service_status()
+        st = get_autostart_status()
         print(json.dumps(st, indent=2, ensure_ascii=False))
