@@ -119,7 +119,11 @@ func (s *Server) Start() error {
 		return fmt.Errorf("không thể mở cổng %d: %w", s.port, err)
 	}
 
-	s.logger.Printf("TailRouter Gateway sẵn sàng tại: http://localhost:%d", s.port)
+	s.logger.Printf("TailRouter Gateway sẵn sàng tại: http://localhost:%d/router", s.port)
+	ts := tailscale.NewClient()
+	if tsStat, err := ts.GetStatus(); err == nil && tsStat.Running && tsStat.FQDN != "" {
+		s.logger.Printf("Tailscale Serve sẵn sàng tại: https://%s/router", tsStat.FQDN)
+	}
 	return s.httpServer.Serve(listener)
 }
 
@@ -220,6 +224,7 @@ func (s *Server) handleAPIStatus(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{
 		"status":         "online",
 		"version":        Version,
+		"pid":            os.Getpid(),
 		"uptime_seconds": int(time.Since(s.startTime).Seconds()),
 		"routes_count":   len(routesList),
 		"routes":         routesList,
