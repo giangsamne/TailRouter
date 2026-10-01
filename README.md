@@ -31,26 +31,26 @@ Run a single command in your terminal or PowerShell — it installs and starts T
 
 ---
 
-## 🆕 Những Điểm Nâng Cấp Nổi Bật Trên v1.1.0 (What's New in v1.1.0)
+## 🆕 What's New in v1.1.0
 
-Phiên bản **v1.1.0 (Python Edition)** kế thừa đầy đủ kiến trúc trải nghiệm người dùng hiện đại:
+Version **v1.1.0 (Python Edition)** brings modern dashboard architecture and system lifecycle controls:
 
-### 1. ⚙️ Tab Thứ 5: Cài Đặt Hệ Thống & Quản Trị (Settings Tab)
-- **Tối giản hóa Dashboard chính**: Toàn bộ banner cấu hình (`Tailscale Serve`, `Tự Động Bật Khi Mở Máy`, `Cảnh báo Operator`) được chuyển vào bên trong tab Cài Đặt. Không còn banner che lấp bảng điều khiển.
-- **🌐 Điều Khiển Từ Xa (Tailscale Serve)**: Bật/tắt ánh xạ `/router` qua tên miền MagicDNS Tailscale cổng chuẩn HTTPS 443.
-- **🚀 Tự Động Bật Khi Mở Máy (Auto-Start on Boot)**: Quản lý tự khởi động cùng hệ thống trên macOS (`launchd`), Linux (`systemd`, `openrc`, `crontab`).
-- **⚠️ Khu Vực Nguy Hiểm (Danger Zone)**:
-  - 🗑️ **Đặt Lại Cấu Hình Router**: Xóa sạch toàn bộ routes đang quản lý về 0 router và tự động tắt Tailscale Serve.
-  - 🧹 **Xóa Sạch Nhật Ký Proxy**: Dọn dẹp bộ nhớ đệm và làm mới lịch sử traffic logs.
-  - 💥 **Gỡ Bỏ TailRouter Khỏi Máy**: Dọn dẹp sạch sẽ toàn bộ cấu hình và giải phóng cổng 65534.
-- **ℹ️ Thông Tin Dự Án (About & Repo Info)**: Phiên bản v1.1.0, tác giả **Giang3DLab / Giang Sam (MIT License)** và link GitHub Repository.
+### 1. ⚙️ 5th Tab: System Settings & Control (Settings Tab)
+- **Clutter-Free Main Dashboard**: Relocated all persistent banners (`Tailscale Serve`, `Auto-Start on Boot`, `Operator Warning`) inside the Settings tab.
+- **🌐 Remote Access via Tailscale Serve**: Enable/disable `/router` mapped to your Tailscale MagicDNS domain over standard HTTPS (port 443).
+- **🚀 Auto-Start on Boot Management**: Configure background daemon autostart on macOS (`launchd`) and Linux (`systemd`, `openrc`, `crontab`).
+- **⚠️ Danger Zone & System Reset**:
+  - 🗑️ **Reset Router Configuration**: Clear all registered routes back to 0 and reset Tailscale Serve.
+  - 🧹 **Clear Proxy Logs**: Purge in-memory live traffic inspection logs.
+  - 💥 **Clean App Removal**: Remove configuration files and release port 65534.
+- **ℹ️ Project & Repository Info**: Displays engine version, author **Giang3DLab / Giang Sam (MIT License)**, and official GitHub link.
 
-### 2. 🔍 Quét Cổng Tự Động Sắp Xếp Tăng Dần (Ascending Port Auto-Scan)
-- Toàn bộ các cổng TCP và dịch vụ đang lắng nghe trên máy thật (và Docker Containers) được **tự động sắp xếp tăng dần từ bé đến lớn** theo số hiệu cổng (`22 -> 80 -> 443 -> 3000 -> 8080...`).
+### 2. 🔍 Ascending Numerical Port Order (Auto-Scan)
+- Active host TCP listening ports and Docker containers are **automatically sorted in ascending numeric order** (`22 -> 80 -> 443 -> 3000 -> 8080...`).
 
-### 3. 📡 Bổ Sung API Quản Trị Mới
-- `POST /api/routes/reset`: Đặt lại toàn bộ routes về 0.
-- `POST /api/logs/clear`: Xóa sạch nhật ký proxy logs.
+### 3. 📡 New Management REST APIs
+- `POST /api/routes/reset`: Reset all routes to 0.
+- `POST /api/logs/clear`: Purge proxy traffic logs.
 
 ---
 
