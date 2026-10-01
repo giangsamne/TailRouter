@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -65,6 +66,9 @@ func main() {
 	case "service":
 		runService(os.Args[2:])
 
+	case "uninstall", "remove", "purge":
+		runUninstall(os.Args[2:])
+
 	case "version", "-v", "--version":
 		fmt.Printf("TailRouter Native Engine v%s (%s/%s)\n", gateway.Version, os.Getenv("GOOS"), os.Getenv("GOARCH"))
 
@@ -102,6 +106,7 @@ Các lệnh có sẵn:
                               Cấu hình Tailscale Serve tự động
   service [install|uninstall|status]
                               Quản lý tự khởi động cùng hệ điều hành (systemd/launchd)
+  uninstall [-y]              Gỡ cài đặt và xóa sạch toàn bộ dữ liệu TailRouter khỏi máy
   version                     Xem thông tin phiên bản
   help                        Hiển thị trợ giúp này
 `)
@@ -520,4 +525,78 @@ func runService(args []string) {
 	default:
 		fmt.Println("Cú pháp: tailrouter service [install|uninstall|status]")
 	}
+}
+
+func runUninstall(args []string) {
+	force := false
+	for _, a := range args {
+		if a == "-y" || a == "--yes" || a == "-f" || a == "--force" {
+			force = true
+			break
+		}
+	}
+
+	fmt.Print(Banner)
+	if !force {
+		fmt.Println("⚠️  CẢNH BÁO: BẠN CÓ CHẮC CHẮN MUỐN GỠ CÀI ĐẶT TAILROUTER KHỎI MÁY?")
+		fmt.Println("   Thao tác này sẽ xóa sạch cấu hình, nhật ký log, dịch vụ chạy ngầm,")
+		fmt.Println("   đặt lại Tailscale Serve và xóa bỏ file thực thi tailrouter.")
+		fmt.Print("\n👉 Bạn có muốn tiếp tục? (y/N): ")
+		var resp string
+		_, _ = fmt.Scanln(&resp)
+		resp = strings.ToLower(strings.TrimSpace(resp))
+		if resp != "y" && resp != "yes" {
+			fmt.Println("Đã hủy bỏ thao tác gỡ cài đặt.")
+			return
+		}
+	}
+
+	fmt.Println("\n💥 Đang tiến hành gỡ cài đặt và dọn dẹp sạch sẽ...")
+
+	// 1. Dừng daemon nếu đang chạy
+	occupied, pid := checkPortOccupied(gateway.DefaultPort)
+	if occupied || pid > 0 {
+		fmt.Println("🛑 Đang dừng tiến trình TailRouter...")
+		runStop(gateway.DefaultPort)
+	}
+
+	// 2. Đặt lại Tailscale Serve
+	fmt.Println("🌐 Đang đặt lại cấu hình Tailscale Serve...")
+	ts := tailscale.NewClient()
+	_ = ts.ResetServe()
+
+	// 3. Vô hiệu hóa service autostart
+	fmt.Println("🚀 Đang gỡ bỏ dịch vụ tự khởi động cùng hệ thống...")
+	svcMgr := service.NewManager()
+	_ = svcMgr.Disable()
+
+	// 4. Xóa cấu hình
+	fmt.Println("🗑️  Đang xóa cấu hình routes.json và thư mục dữ liệu...")
+	cfgDir := filepath.Dir(config.DefaultConfigPath())
+	if cfgDir != "" && cfgDir != "/" && cfgDir != "." {
+		_ = os.RemoveAll(cfgDir)
+	}
+	home, _ := os.UserHomeDir()
+	if home != "" {
+		_ = os.RemoveAll(filepath.Join(home, ".config", "tailrouter"))
+		_ = os.RemoveAll(filepath.Join(home, ".tailrouter"))
+		_ = os.Remove(filepath.Join(home, ".tailrouter.log"))
+	}
+
+	// 5. Xóa log
+	execDir, err := os.Executable()
+	if err == nil {
+		execDir = filepath.Dir(execDir)
+		_ = os.Remove(filepath.Join(execDir, "tailrouter.log"))
+		_ = os.Remove(filepath.Join(execDir, "tailrouter.log.1"))
+	}
+	_ = os.Remove("/tmp/tailrouter.err.log")
+	_ = os.Remove("/tmp/tailrouter.out.log")
+
+	// 6. Xóa binary
+	fmt.Println("📦 Đang gỡ bỏ file thực thi TailRouter...")
+	_ = svcMgr.UninstallBinary()
+
+	fmt.Println("\n✅ Đã hoàn tất gỡ cài đặt TailRouter!")
+	fmt.Println("🎉 Toàn bộ dữ liệu, dịch vụ và file thực thi đã được xóa sạch khỏi máy.")
 }

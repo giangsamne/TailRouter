@@ -239,6 +239,8 @@ func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
 		s.handleAPIAutostart(w, r)
 	case "logs":
 		s.handleAPILogs(w, r, parts[1:])
+	case "system":
+		s.handleAPISystem(w, r, parts[1:])
 	default:
 		s.jsonResponse(w, http.StatusNotFound, map[string]string{"error": "API endpoint không tồn tại"})
 	}
@@ -737,6 +739,95 @@ func (s *Server) handleAPIAutostart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Phương thức không được hỗ trợ", "success": false})
+}
+
+func (s *Server) Uninstall() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// 1. Reset Tailscale Serve
+	_ = s.tailscale.ResetServe()
+
+	// 2. Disable & remove system autostart services
+	_ = s.service.Disable()
+
+	// 3. Delete all routes & config directory
+	s.routes.DeleteAll()
+	cfgDir := s.routes.GetConfigDir()
+	if cfgDir != "" && cfgDir != "/" && cfgDir != "." {
+		_ = os.RemoveAll(cfgDir)
+	}
+
+	home, _ := os.UserHomeDir()
+	if home != "" {
+		_ = os.RemoveAll(filepath.Join(home, ".config", "tailrouter"))
+		_ = os.RemoveAll(filepath.Join(home, ".tailrouter"))
+		_ = os.Remove(filepath.Join(home, ".tailrouter.log"))
+	}
+
+	// 4. Close log file and remove logs
+	if s.logFile != nil {
+		_ = s.logFile.Close()
+		s.logFile = nil
+	}
+	execDir, err := os.Executable()
+	if err == nil {
+		execDir = filepath.Dir(execDir)
+		_ = os.Remove(filepath.Join(execDir, "tailrouter.log"))
+		_ = os.Remove(filepath.Join(execDir, "tailrouter.log.1"))
+	}
+	_ = os.Remove("/tmp/tailrouter.err.log")
+	_ = os.Remove("/tmp/tailrouter.out.log")
+
+	// 5. Remove installed binary
+	_ = s.service.UninstallBinary()
+
+	return nil
+}
+
+func (s *Server) handleAPISystem(w http.ResponseWriter, r *http.Request, subParts []string) {
+	if len(subParts) == 0 {
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{"status": "online"})
+		return
+	}
+
+	action := subParts[0]
+	switch action {
+	case "uninstall", "purge":
+		if r.Method != http.MethodPost && r.Method != http.MethodDelete {
+			s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{
+				"success": false,
+				"error":   "Cần phương thức POST hoặc DELETE",
+			})
+			return
+		}
+
+		s.logger.Println("⚠️  Nhận yêu cầu gỡ cài đặt và dọn dẹp sạch toàn bộ dữ liệu TailRouter...")
+		err := s.Uninstall()
+		if err != nil {
+			s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   err.Error(),
+				"message": "Gặp lỗi khi gỡ cài đặt: " + err.Error(),
+			})
+			return
+		}
+
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success": true,
+			"message": "TailRouter đã được gỡ cài đặt và xóa sạch toàn bộ dữ liệu khỏi máy thành công. Cổng 65534 đã được giải phóng.",
+		})
+
+		// Schedule graceful shutdown after 1 second so response finishes sending
+		go func() {
+			time.Sleep(1 * time.Second)
+			s.Close()
+			os.Exit(0)
+		}()
+
+	default:
+		s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{"error": "Lệnh hệ thống không hợp lệ"})
+	}
 }
 
 func (s *Server) handleReverseProxy(w http.ResponseWriter, r *http.Request) {

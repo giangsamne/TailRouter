@@ -125,6 +125,14 @@ func NewManager(configPath string) *Manager {
 	return m
 }
 
+func (m *Manager) GetConfigPath() string {
+	return m.configPath
+}
+
+func (m *Manager) GetConfigDir() string {
+	return filepath.Dir(m.configPath)
+}
+
 func (m *Manager) Load() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

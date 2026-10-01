@@ -421,6 +421,38 @@ func (m *Manager) Disable() error {
 	return nil
 }
 
+// UninstallBinary removes installed tailrouter executable files from standard installation directories
+func (m *Manager) UninstallBinary() error {
+	var candidates []string
+
+	home, _ := os.UserHomeDir()
+	if home != "" {
+		candidates = append(candidates,
+			filepath.Join(home, ".local", "bin", "tailrouter"),
+			filepath.Join(home, ".local", "bin", "tailrouter-arm64"),
+			filepath.Join(home, ".local", "bin", "tailrouter-amd64"),
+		)
+	}
+	candidates = append(candidates,
+		"/usr/local/bin/tailrouter",
+		"/usr/local/bin/tailrouter-arm64",
+		"/usr/local/bin/tailrouter-amd64",
+		"/usr/bin/tailrouter",
+	)
+
+	if execPath, err := os.Executable(); err == nil {
+		execPath, _ = filepath.Abs(execPath)
+		candidates = append(candidates, execPath)
+	}
+
+	for _, p := range candidates {
+		if fileExists(p) {
+			_ = os.Remove(p)
+		}
+	}
+	return nil
+}
+
 func fileExists(p string) bool {
 	_, err := os.Stat(p)
 	return err == nil

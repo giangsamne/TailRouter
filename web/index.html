@@ -917,6 +917,9 @@ http://100.100.1.3:65534/bambu</pre>
             <button class="btn btn-secondary btn-sm" onclick="clearLogsAction()">
               <span data-i18n="btn_clear_logs">🧹 Xóa Sạch Nhật Ký Proxy</span>
             </button>
+            <button class="btn btn-danger btn-sm" style="background: #991b1b; border-color: #ef4444;" onclick="uninstallAppAction()">
+              <span data-i18n="btn_uninstall_app">💥 Gỡ Cài Đặt & Xoá Toàn Bộ TailRouter Khỏi Máy</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1173,7 +1176,13 @@ http://100.100.1.3:65534/bambu</pre>
       btn_refresh: "🔄 Cập Nhật",
       confirm_reset_routes: "Bạn có chắc chắn muốn xóa TOÀN BỘ routes và đặt lại gateway về 0 router không?",
       confirm_clear_logs: "Bạn có chắc chắn muốn xóa sạch toàn bộ nhật ký proxy không?",
-      toast_resetting_routes: "Đang đặt lại cấu hình router..."
+      toast_resetting_routes: "Đang đặt lại cấu hình router...",
+      btn_uninstall_app: "💥 Gỡ Cài Đặt & Xoá Toàn Bộ TailRouter Khỏi Máy",
+      confirm_uninstall_app: "⚠️ CẢNH BÁO NGUY HIỂM: BẠN CÓ CHẮC CHẮN MUỐN GỠ CÀI ĐẶT TAILROUTER KHỎI MÁY?\n\nThao tác này sẽ:\n- Tắt và đặt lại Tailscale Serve / Funnel\n- Gỡ bỏ tự khởi động cùng hệ điều hành (systemd / OpenRC / launchd / cron)\n- Xoá sạch toàn bộ cấu hình (~/.config/tailrouter) và các routes\n- Xoá sạch nhật ký log\n- Xoá file thực thi TailRouter\n- Dừng hoàn toàn tiến trình Gateway và giải phóng cổng 65534\n\nHành động này KHÔNG THỂ HOÀN TÁC! Nhấn OK để tiến hành gỡ cài đặt vĩnh viễn.",
+      toast_uninstalling: "Đang tiến hành gỡ cài đặt TailRouter khỏi máy...",
+      uninstall_complete_title: "TailRouter Đã Được Gỡ Cài Đặt Hoàn Toàn",
+      uninstall_complete_desc: "Toàn bộ dữ liệu, cấu hình, dịch vụ khởi động cùng hệ thống và file nhị phân của TailRouter đã được dọn sạch khỏi máy tính. Cổng 65534 đã được giải phóng thành công.",
+      uninstall_can_close_tab: "Bạn có thể đóng tab trình duyệt này ngay bây giờ."
     },
     en: {
       sub_title: "Homelab Port Router & Reverse Proxy Gateway",
@@ -1306,7 +1315,13 @@ http://100.100.1.3:65534/bambu</pre>
       btn_refresh: "🔄 Refresh",
       confirm_reset_routes: "Are you sure you want to delete ALL routes and reset gateway to 0 routes?",
       confirm_clear_logs: "Are you sure you want to clear all proxy logs?",
-      toast_resetting_routes: "Resetting routes configuration..."
+      toast_resetting_routes: "Resetting routes configuration...",
+      btn_uninstall_app: "💥 Uninstall & Completely Remove TailRouter from Machine",
+      confirm_uninstall_app: "⚠️ DANGER WARNING: ARE YOU SURE YOU WANT TO UNINSTALL TAILROUTER?\n\nThis will:\n- Reset and turn off Tailscale Serve / Funnel\n- Remove auto-start on boot services (systemd / OpenRC / launchd / cron)\n- Delete all configs (~/.config/tailrouter) and routes\n- Delete all proxy logs\n- Delete the TailRouter binary executable\n- Stop the Gateway process and release port 65534\n\nThis action CANNOT BE UNDONE! Click OK to permanently uninstall.",
+      toast_uninstalling: "Uninstalling and purging TailRouter...",
+      uninstall_complete_title: "TailRouter Has Been Completely Uninstalled",
+      uninstall_complete_desc: "All data, configurations, system services, and binary files of TailRouter have been completely removed from this computer. Port 65534 has been released.",
+      uninstall_can_close_tab: "You can close this browser tab now."
     },
     zh: {
       sub_title: "家庭实验室端口网关与反向代理服务",
@@ -1438,7 +1453,13 @@ http://100.100.1.3:65534/bambu</pre>
       btn_refresh: "🔄 刷新",
       confirm_reset_routes: "确定要删除所有路由并将网关重置为 0 路由吗？",
       confirm_clear_logs: "确定要清空全部代理访问日志吗？",
-      toast_resetting_routes: "正在重置路由配置..."
+      toast_resetting_routes: "正在重置路由配置...",
+      btn_uninstall_app: "💥 卸载并彻底清除本机的 TailRouter",
+      confirm_uninstall_app: "⚠️ 危险警告：确定要彻底卸载 TailRouter 吗？\n\n此操作将：\n- 重置并关闭 Tailscale Serve / Funnel\n- 移除开机自启系统服务 (systemd / OpenRC / launchd / cron)\n- 删除全部配置文件 (~/.config/tailrouter) 和路由记录\n- 清除全部日志文件\n- 删除 TailRouter 可执行二进制文件\n- 停止网关进程并释放 65534 端口\n\n此操作不可逆！点击“确定”永久卸载。",
+      toast_uninstalling: "正在彻底卸载 TailRouter...",
+      uninstall_complete_title: "TailRouter 已彻底卸载",
+      uninstall_complete_desc: "TailRouter 的所有数据、配置、开机自启服务和二进制可执行文件均已从计算机中完全清除。端口 65534 已成功释放。",
+      uninstall_can_close_tab: "您现在可以关闭此浏览器标签页。"
     },
     ja: {
       sub_title: "ホームラボポートルーター＆リバースプロキシ",
@@ -1571,7 +1592,13 @@ http://100.100.1.3:65534/bambu</pre>
       btn_refresh: "🔄 更新",
       confirm_reset_routes: "すべてのルートを削除してゲートウェイを 0 ルートにリセットしてもよろしいですか？",
       confirm_clear_logs: "すべてのプロキシログを消去してもよろしいですか？",
-      toast_resetting_routes: "ルート構成をリセット中..."
+      toast_resetting_routes: "ルート構成をリセット中...",
+      btn_uninstall_app: "💥 TailRouter をアンインストールして完全に削除",
+      confirm_uninstall_app: "⚠️ 警告：TailRouter を完全にアンインストールしてもよろしいですか？\n\nこの操作により以下が実行されます：\n- Tailscale Serve / Funnel のリセットと無効化\n- システム自動起動サービス (systemd / OpenRC / launchd / cron) の削除\n- すべての設定ファイル (~/.config/tailrouter) とルートの削除\n- すべてのログファイルの削除\n- TailRouter 実行ファイルの削除\n- ゲートウェイプロセスの停止とポート 65534 の解放\n\nこの操作は元に戻せません！「OK」をクリックしてアンインストールを実行してください。",
+      toast_uninstalling: "TailRouter をアンインストール中...",
+      uninstall_complete_title: "TailRouter は完全にアンインストールされました",
+      uninstall_complete_desc: "TailRouter のすべてのデータ、設定、自動起動サービス、およびバイナリ実行ファイルが完全に削除されました。ポート 65534 は正常に解放されました。",
+      uninstall_can_close_tab: "このブラウザタブを閉じても問題ありません。"
     }
 
   };
@@ -1880,6 +1907,61 @@ http://${tailscaleIp}:${PORT}/bambu`;
       }
     } catch (e) {
       showToast("Lỗi: " + e, "error");
+    }
+  }
+
+  // Full App Uninstall & Wipe (Danger Zone)
+  async function uninstallAppAction() {
+    const confirmMsg = t('confirm_uninstall_app') || 
+      "⚠️ CẢNH BÁO NGUY HIỂM: BẠN CÓ CHẮC CHẮN MUỐN GỠ CÀI ĐẶT TAILROUTER KHỎI MÁY?\n\n" +
+      "Hành động này sẽ thực hiện:\n" +
+      "- Tắt và đặt lại cấu hình Tailscale Serve / Funnel\n" +
+      "- Gỡ bỏ tự động khởi động cùng hệ điều hành (systemd / OpenRC / launchd / cron)\n" +
+      "- Xoá sạch toàn bộ file cấu hình (~/.config/tailrouter) và các routes\n" +
+      "- Xoá sạch toàn bộ nhật ký log\n" +
+      "- Xoá file thực thi TailRouter\n" +
+      "- Dừng hoàn toàn tiến trình Gateway và giải phóng cổng 65534\n\n" +
+      "Hành động này KHÔNG THỂ HOÀN TÁC! Nhấn OK để tiến hành gỡ cài đặt vĩnh viễn.";
+
+    if (!confirm(confirmMsg)) {
+      return;
+    }
+
+    showToast("💥 " + (t('toast_uninstalling') || "Đang tiến hành gỡ cài đặt TailRouter khỏi máy..."), "error");
+    try {
+      const res = await fetch(`${API_BASE}/system/uninstall`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+
+      // Stop polling intervals
+      if (typeof statusInterval !== 'undefined') clearInterval(statusInterval);
+      if (typeof logsInterval !== 'undefined') clearInterval(logsInterval);
+
+      // Display farewell screen
+      document.body.innerHTML = `
+        <div style="min-height: 100vh; background: #080c14; color: #f8fafc; display: flex; align-items: center; justify-content: center; padding: 2rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 2.5rem; max-width: 580px; width: 100%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);">
+            <div style="font-size: 3.5rem; margin-bottom: 1rem;">👋</div>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: #38bdf8; margin-bottom: 0.75rem;">
+              ${t('uninstall_complete_title') || "TailRouter Đã Được Gỡ Cài Đặt Hoàn Toàn"}
+            </h2>
+            <p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">
+              ${t('uninstall_complete_desc') || "Toàn bộ dữ liệu, cấu hình, dịch vụ khởi động cùng hệ thống và file nhị phân của TailRouter đã được dọn sạch khỏi máy tính. Cổng 65534 đã được giải phóng thành công."}
+            </p>
+            <div style="background: #1e293b; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: #cbd5e1; text-align: left; line-height: 1.8;">
+              <div>✅ Đã đặt lại cấu hình Tailscale Serve</div>
+              <div>✅ Đã gỡ bỏ dịch vụ tự khởi động (systemd / OpenRC / crontab / launchd)</div>
+              <div>✅ Đã xoá thư mục cấu hình và nhật ký proxy</div>
+              <div>✅ Đã gỡ bỏ file thực thi tailrouter</div>
+              <div>✅ Đã dừng tiến trình Gateway trên cổng 65534</div>
+            </div>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 0;">
+              ${t('uninstall_can_close_tab') || "Bạn có thể đóng tab trình duyệt này ngay bây giờ."}
+            </p>
+          </div>
+        </div>
+      `;
+    } catch (e) {
+      showToast("Lỗi khi gửi yêu cầu gỡ cài đặt: " + e, "error");
     }
   }
 
