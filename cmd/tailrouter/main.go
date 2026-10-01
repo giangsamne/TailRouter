@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
@@ -44,6 +46,9 @@ func main() {
 		openFlag := runCmd.Bool("open", false, "Tự động mở Web Dashboard trên trình duyệt")
 		_ = runCmd.Parse(os.Args[2:])
 		runServer(*portFlag, *configFlag, *openFlag)
+
+	case "stop", "kill", "down":
+		runStop(gateway.DefaultPort)
 
 	case "scan":
 		runScan()
@@ -86,6 +91,7 @@ Sử dụng: tailrouter [lệnh] [tùy chọn]
 Các lệnh có sẵn:
   (không tham số)             Khởi chạy máy chủ và tự động mở Web Dashboard
   run [--port 65534] [--open] Khởi chạy máy chủ Gateway
+  stop                        Dừng dịch vụ Gateway đang chạy
   scan                        Quét toàn bộ cổng TCP & Docker đang mở trên máy thật
   status                      Kiểm tra trạng thái hoạt động của Gateway & Tailscale
   routes list                 Xem danh sách các tuyến đường đã cấu hình
@@ -101,14 +107,138 @@ Các lệnh có sẵn:
 `)
 }
 
+func findPIDByPort(port int) int {
+	// 1. Thử fuser (nhanh và chuẩn xác nhất trên Linux)
+	if out, err := exec.Command("fuser", fmt.Sprintf("%d/tcp", port)).CombinedOutput(); err == nil {
+		fields := strings.Fields(strings.TrimSpace(string(out)))
+		for _, f := range fields {
+			if p, err := strconv.Atoi(f); err == nil && p > 0 {
+				return p
+			}
+		}
+	}
+	// 2. Thử ss -ltnp
+	if out, err := exec.Command("ss", "-ltnp", fmt.Sprintf("sport = :%d", port)).Output(); err == nil {
+		for _, line := range strings.Split(string(out), "\n") {
+			if strings.Contains(line, "pid=") {
+				idx := strings.Index(line, "pid=")
+				sub := line[idx+4:]
+				end := strings.IndexAny(sub, ",)")
+				if end != -1 {
+					sub = sub[:end]
+				}
+				if p, err := strconv.Atoi(sub); err == nil && p > 0 {
+					return p
+				}
+			}
+		}
+	}
+	// 3. Thử ss -tulpn chung
+	if out, err := exec.Command("ss", "-tulpn").Output(); err == nil {
+		for _, line := range strings.Split(string(out), "\n") {
+			if strings.Contains(line, fmt.Sprintf(":%d ", port)) && strings.Contains(line, "pid=") {
+				idx := strings.Index(line, "pid=")
+				sub := line[idx+4:]
+				end := strings.IndexAny(sub, ",)")
+				if end != -1 {
+					sub = sub[:end]
+				}
+				if p, err := strconv.Atoi(sub); err == nil && p > 0 {
+					return p
+				}
+			}
+		}
+	}
+	// 4. Thử lsof lắng nghe TCP
+	if out, err := exec.Command("lsof", "-iTCP:"+strconv.Itoa(port), "-sTCP:LISTEN", "-t").Output(); err == nil {
+		lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+		for _, line := range lines {
+			if p, err := strconv.Atoi(strings.TrimSpace(line)); err == nil && p > 0 {
+				return p
+			}
+		}
+	}
+	return 0
+}
+
+func checkPortOccupied(port int) (bool, int) {
+	client := &http.Client{Timeout: 1 * time.Second}
+	resp, err := client.Get(fmt.Sprintf("http://127.0.0.1:%d/api/status", port))
+	if err == nil {
+		defer resp.Body.Close()
+		var data map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&data); err == nil {
+			if p, ok := data["pid"].(float64); ok && p > 0 {
+				return true, int(p)
+			}
+		}
+		pid := findPIDByPort(port)
+		return true, pid
+	}
+
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 500*time.Millisecond)
+	if err == nil {
+		_ = conn.Close()
+		pid := findPIDByPort(port)
+		return true, pid
+	}
+	return false, 0
+}
+
+func runStop(port int) {
+	occupied, pid := checkPortOccupied(port)
+	if !occupied && pid <= 0 {
+		fmt.Print(Banner)
+		fmt.Printf("⚠️  TailRouter Gateway hiện KHÔNG CHẠY trên cổng %d.\n", port)
+		return
+	}
+	if pid <= 0 {
+		pid = findPIDByPort(port)
+	}
+	if pid > 0 {
+		fmt.Printf("🛑 Đang dừng tiến trình TailRouter (PID: %d)...\n", pid)
+		p, err := os.FindProcess(pid)
+		if err == nil {
+			_ = p.Signal(syscall.SIGTERM)
+			for i := 0; i < 6; i++ {
+				time.Sleep(500 * time.Millisecond)
+				if err := p.Signal(syscall.Signal(0)); err != nil {
+					break
+				}
+			}
+			_ = p.Signal(syscall.SIGKILL)
+		}
+		fmt.Println("✅ Đã dừng thành công dịch vụ TailRouter!")
+	} else {
+		_ = exec.Command("pkill", "-f", "tailrouter").Run()
+		fmt.Println("✅ Đã dừng thành công dịch vụ TailRouter!")
+	}
+}
+
 func runServer(port int, configPath string, openBrowser bool) {
+	occupied, pid := checkPortOccupied(port)
+	if occupied {
+		fmt.Print(Banner)
+		if pid > 0 {
+			fmt.Printf("⚠️  Cổng %d đã có tiến trình đang chạy (PID: %d).\n", port, pid)
+		} else {
+			fmt.Printf("⚠️  Cổng %d đã có tiến trình đang chạy.\n", port)
+		}
+		fmt.Printf("👉 Truy cập ngay tại: http://localhost:%d/router\n", port)
+		ts := tailscale.NewClient()
+		if tsStat, err := ts.GetStatus(); err == nil && tsStat.Running && tsStat.FQDN != "" {
+			fmt.Printf("👉 Tailscale Serve:   https://%s/router\n", tsStat.FQDN)
+		}
+		return
+	}
+
 	fmt.Print(Banner)
 	srv := gateway.NewServer(port, configPath)
 
 	if openBrowser {
 		go func() {
 			time.Sleep(500 * time.Millisecond)
-			dashboardURL := fmt.Sprintf("http://localhost:%d", port)
+			dashboardURL := fmt.Sprintf("http://localhost:%d/router", port)
 			_ = browser.Open(dashboardURL)
 		}()
 	}
