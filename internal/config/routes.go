@@ -417,6 +417,13 @@ func (m *Manager) Delete(id string) (*Route, error) {
 	return r, nil
 }
 
+func (m *Manager) DeleteAll() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.routes = make(map[string]*Route)
+	_ = m.saveLocked()
+}
+
 func (m *Manager) Toggle(id string) (*Route, error) {
 	m.mu.Lock()
 	m.checkReloadLocked()

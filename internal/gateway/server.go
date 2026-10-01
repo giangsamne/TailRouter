@@ -26,9 +26,18 @@ import (
 
 const (
 	DefaultPort = 65534
-	Version = "2.0.1-go-native"
+	Version     = "2.1.0-go-native"
 	MaxLogSize  = 5 * 1024 * 1024 // 5MB max log file
 )
+
+type ProxyLog struct {
+	Time      string `json:"time"`
+	Method    string `json:"method"`
+	Path      string `json:"path"`
+	Target    string `json:"target"`
+	Status    int    `json:"status"`
+	LatencyMs int64  `json:"latency_ms"`
+}
 
 type Server struct {
 	port       int
@@ -41,6 +50,30 @@ type Server struct {
 	logger     *log.Logger
 	mu         sync.Mutex
 	httpServer *http.Server
+	recentLogs []ProxyLog
+}
+
+func (s *Server) addLog(l ProxyLog) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.recentLogs = append(s.recentLogs, l)
+	if len(s.recentLogs) > 100 {
+		s.recentLogs = s.recentLogs[len(s.recentLogs)-100:]
+	}
+}
+
+func (s *Server) getLogs() []ProxyLog {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	res := make([]ProxyLog, len(s.recentLogs))
+	copy(res, s.recentLogs)
+	return res
+}
+
+func (s *Server) clearLogs() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.recentLogs = make([]ProxyLog, 0)
 }
 
 func NewServer(port int, configPath string) *Server {
@@ -204,6 +237,8 @@ func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
 		s.handleAPITailscale(w, r, parts[1:])
 	case "autostart":
 		s.handleAPIAutostart(w, r)
+	case "logs":
+		s.handleAPILogs(w, r, parts[1:])
 	default:
 		s.jsonResponse(w, http.StatusNotFound, map[string]string{"error": "API endpoint không tồn tại"})
 	}
@@ -232,8 +267,29 @@ func (s *Server) handleAPIStatus(w http.ResponseWriter, r *http.Request) {
 		"arch":           runtime.GOARCH,
 		"tailscale":      tsStatus,
 		"autostart":      autoStatus,
+		"logs":           s.getLogs(),
 	}
 	s.jsonResponse(w, http.StatusOK, data)
+}
+
+func (s *Server) handleAPILogs(w http.ResponseWriter, r *http.Request, subParts []string) {
+	if r.Method == http.MethodDelete || (r.Method == http.MethodPost && len(subParts) > 0 && subParts[0] == "clear") {
+		s.clearLogs()
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success": true,
+			"message": "Đã xóa sạch nhật ký proxy",
+			"logs":    s.getLogs(),
+		})
+		return
+	}
+	if r.Method == http.MethodGet {
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success": true,
+			"logs":    s.getLogs(),
+		})
+		return
+	}
+	s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Phương thức không được hỗ trợ"})
 }
 
 func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subParts []string) {
@@ -338,6 +394,22 @@ func (s *Server) handleAPIRoutes(w http.ResponseWriter, r *http.Request, subPart
 	}
 
 	routeID := subParts[0]
+
+	// Handle /api/routes/reset
+	if routeID == "reset" {
+		if r.Method != http.MethodPost && r.Method != http.MethodDelete {
+			s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Cần phương thức POST hoặc DELETE", "success": false})
+			return
+		}
+		s.routes.DeleteAll()
+		_ = s.tailscale.ResetServe()
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success": true,
+			"message": "Đã đặt lại cấu hình router về 0 route và tắt Tailscale Serve",
+			"routes":  s.routes.List(),
+		})
+		return
+	}
 
 	// Handle /api/routes/sync-tailscale
 	if routeID == "sync-tailscale" {
@@ -718,8 +790,19 @@ func (s *Server) handleReverseProxy(w http.ResponseWriter, r *http.Request) {
 		req.Header.Set("X-TailRouter-Hop", strconv.Itoa(hops+1))
 	}
 
+	startReq := time.Now()
+	sw := &statusWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
 	proxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {
 		s.routes.UpdateStatus(route.ID, "offline", 0)
+		s.addLog(ProxyLog{
+			Time:      time.Now().Format("15:04:05"),
+			Method:    req.Method,
+			Path:      req.URL.Path,
+			Target:    fmt.Sprintf("%s:%d", route.TargetHost, route.TargetPort),
+			Status:    http.StatusBadGateway,
+			LatencyMs: time.Since(startReq).Milliseconds(),
+		})
 		rw.Header().Set("Content-Type", "text/html; charset=utf-8")
 		rw.WriteHeader(http.StatusBadGateway)
 		fmt.Fprintf(rw, `<!DOCTYPE html>
@@ -733,7 +816,27 @@ h1{color:#ef4444;margin:0 0 1rem;}p{color:#94a3b8;line-height:1.5;}</style></hea
 <p style="font-size:0.875rem;color:#64748b;">TailRouter Native Gateway</p></div></body></html>`, route.TargetHost, route.TargetPort)
 	}
 
-	proxy.ServeHTTP(w, r)
+	proxy.ServeHTTP(sw, r)
+	if sw.statusCode != http.StatusBadGateway {
+		s.addLog(ProxyLog{
+			Time:      time.Now().Format("15:04:05"),
+			Method:    r.Method,
+			Path:      r.URL.Path,
+			Target:    fmt.Sprintf("%s:%d", route.TargetHost, route.TargetPort),
+			Status:    sw.statusCode,
+			LatencyMs: time.Since(startReq).Milliseconds(),
+		})
+	}
+}
+
+type statusWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (w *statusWriter) WriteHeader(code int) {
+	w.statusCode = code
+	w.ResponseWriter.WriteHeader(code)
 }
 
 func (s *Server) jsonResponse(w http.ResponseWriter, status int, data interface{}) {
