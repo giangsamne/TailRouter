@@ -2020,6 +2020,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   }
 
   function openEditModal(route) {
+    const isSystem = route.id === 'system-tailrouter-gateway' || Boolean(route.is_system);
     document.getElementById('modal-title').textContent = `${t('modal_title_edit')}: ${route.name}`;
     document.getElementById('form-route-id').value = route.id;
     document.getElementById('form-name').value = route.name || "";
@@ -2032,10 +2033,23 @@ http://${tailscaleIp}:${PORT}/bambu`;
     document.getElementById('form-enabled').checked = Boolean(route.enabled);
     document.getElementById('preview-url-text').textContent = `https://${tailscaleFqdn}${route.path}`;
 
+    document.getElementById('form-path').readOnly = isSystem;
+    document.getElementById('form-host').readOnly = isSystem;
+    document.getElementById('form-port').readOnly = isSystem;
+    document.getElementById('form-path').style.opacity = isSystem ? '0.6' : '1';
+    document.getElementById('form-host').style.opacity = isSystem ? '0.6' : '1';
+    document.getElementById('form-port').style.opacity = isSystem ? '0.6' : '1';
+
     document.getElementById('route-modal').classList.add('active');
   }
 
   function closeModal() {
+    document.getElementById('form-path').readOnly = false;
+    document.getElementById('form-host').readOnly = false;
+    document.getElementById('form-port').readOnly = false;
+    document.getElementById('form-path').style.opacity = '1';
+    document.getElementById('form-host').style.opacity = '1';
+    document.getElementById('form-port').style.opacity = '1';
     document.getElementById('route-modal').classList.remove('active');
   }
 

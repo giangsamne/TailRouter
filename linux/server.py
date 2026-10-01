@@ -15,7 +15,7 @@ import urllib.parse
 from typing import Any, Dict, List, Optional, Tuple
 
 from port_scanner import scan_active_ports
-from routes_manager import RoutesManager
+from routes_manager import RoutesManager, SYSTEM_ROUTE_ID
 from tailscale_helper import (
     apply_route_tailscale,
     configure_serve_gateway,
@@ -217,33 +217,16 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
             routes_mgr.sync_from_tailscale(cli_routes)
 
         ts_info = get_tailscale_info()
-        routes = list(routes_mgr.list_routes())
         uptime_sec = int(time.time() - START_TIME)
-
-        total_hits = sum(r.get("hits", 0) for r in routes)
 
         # Tự động ghim route hệ thống TailRouter Gateway vào danh sách nếu Serve đang bật
         if ts_info.get("serve_configured"):
-            has_system = any(r.get("id") == "system-tailrouter-gateway" or r.get("path") == "/router" for r in routes)
-            if not has_system:
-                system_route = {
-                    "id": "system-tailrouter-gateway",
-                    "name": "TailRouter Gateway",
-                    "path": "/router",
-                    "target_host": "127.0.0.1",
-                    "target_port": PORT,
-                    "service_name": "TailRouter Gateway",
-                    "is_docker": False,
-                    "docker_container": None,
-                    "is_system": True,
-                    "mode": "serve",
-                    "enabled": True,
-                    "hits": total_hits,
-                    "last_status": "online",
-                    "last_latency_ms": 0.5,
-                }
-                routes.insert(0, system_route)
+            routes_mgr.ensure_tailrouter_route(PORT)
+        elif SYSTEM_ROUTE_ID in routes_mgr._routes and not ts_info.get("serve_configured"):
+            routes_mgr.set_tailrouter_route_enabled(False)
 
+        routes = routes_mgr.list_routes()
+        total_hits = sum(r.get("hits", 0) for r in routes)
         active_cnt = sum(1 for r in routes if r.get("enabled", True))
         data = {
             "version": "1.0.0",
@@ -326,28 +309,11 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
                 routes_mgr.sync_from_tailscale(cli_routes)
             await routes_mgr.check_all_health()
             ts_info = get_tailscale_info()
-            routes = list(routes_mgr.list_routes())
             if ts_info.get("serve_configured"):
-                has_system = any(r.get("id") == "system-tailrouter-gateway" or r.get("path") == "/router" for r in routes)
-                if not has_system:
-                    system_route = {
-                        "id": "system-tailrouter-gateway",
-                        "name": "TailRouter Gateway",
-                        "path": "/router",
-                        "target_host": "127.0.0.1",
-                        "target_port": PORT,
-                        "service_name": "TailRouter Gateway",
-                        "is_docker": False,
-                        "docker_container": None,
-                        "is_system": True,
-                        "mode": "serve",
-                        "enabled": True,
-                        "hits": sum(r.get("hits", 0) for r in routes),
-                        "last_status": "online",
-                        "last_latency_ms": 0.5,
-                    }
-                    routes.insert(0, system_route)
-            await send_json_response(writer, 200, {"routes": routes})
+                routes_mgr.ensure_tailrouter_route(PORT)
+            elif SYSTEM_ROUTE_ID in routes_mgr._routes and not ts_info.get("serve_configured"):
+                routes_mgr.set_tailrouter_route_enabled(False)
+            await send_json_response(writer, 200, {"routes": routes_mgr.list_routes()})
             return True
         elif method == "POST":
             try:
@@ -372,6 +338,19 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
         sub_action = route_match.group(2)
 
         if sub_action == "toggle" and method == "POST":
+            if route_id == SYSTEM_ROUTE_ID:
+                ok, msg, new_state = routes_mgr.toggle_route(route_id)
+                if ok:
+                    if new_state:
+                        r = routes_mgr._routes.get(SYSTEM_ROUTE_ID, {})
+                        configure_serve_router(PORT)
+                        if r.get("mode") == "funnel":
+                            apply_route_tailscale("/router", f"http://127.0.0.1:{PORT}/router", mode="funnel")
+                    else:
+                        reset_serve_config()
+                await send_json_response(writer, 200 if ok else 400, {"success": ok, "message": "Đã bật route TailRouter" if new_state else "Đã tắt route TailRouter", "enabled": new_state})
+                return True
+
             ok, msg, new_state = routes_mgr.toggle_route(route_id)
             if ok:
                 for r in routes_mgr.list_routes():
@@ -386,6 +365,13 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
             return True
 
         if sub_action == "toggle-mode" and method == "POST":
+            if route_id == SYSTEM_ROUTE_ID:
+                ok, msg, new_mode = routes_mgr.toggle_mode(route_id)
+                if ok:
+                    apply_route_tailscale("/router", f"http://127.0.0.1:{PORT}/router", mode=new_mode)
+                await send_json_response(writer, 200 if ok else 400, {"success": ok, "message": f"Đã chuyển chế độ sang {new_mode.upper()}", "mode": new_mode})
+                return True
+
             ok, msg, new_mode = routes_mgr.toggle_mode(route_id)
             if ok:
                 for r in routes_mgr.list_routes():
@@ -398,6 +384,10 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
             return True
 
         if sub_action == "ping" and method == "POST":
+            if route_id == SYSTEM_ROUTE_ID:
+                await send_json_response(writer, 200, {"success": True, "online": True, "latency_ms": 0.5})
+                return True
+
             for r in routes_mgr.list_routes():
                 if r["id"] == route_id:
                     online, latency = await routes_mgr.ping_target(r["target_host"], r["target_port"])
@@ -410,6 +400,12 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
             return True
 
         if method == "DELETE":
+            if route_id == SYSTEM_ROUTE_ID:
+                reset_serve_config()
+                routes_mgr.remove_tailrouter_route()
+                await send_json_response(writer, 200, {"success": True, "message": "Đã xóa route TailRouter và tắt Tailscale Serve"})
+                return True
+
             for r in routes_mgr.list_routes():
                 if r["id"] == route_id:
                     remove_route_tailscale(r["path"])
@@ -423,14 +419,21 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
                 body_json = json.loads(req.body.decode("utf-8")) if req.body else {}
                 ok, msg = routes_mgr.update_route(route_id, body_json)
                 if ok:
-                    for r in routes_mgr.list_routes():
-                        if r["id"] == route_id:
-                            target = f"http://{r['target_host']}:{r['target_port']}"
-                            if r.get("enabled", True):
-                                apply_route_tailscale(r["path"], target, mode=r.get("mode", "serve"))
-                            else:
-                                remove_route_tailscale(r["path"])
-                            break
+                    if route_id == SYSTEM_ROUTE_ID:
+                        r = routes_mgr._routes.get(SYSTEM_ROUTE_ID, {})
+                        if r.get("enabled", True):
+                            apply_route_tailscale("/router", f"http://127.0.0.1:{PORT}/router", mode=r.get("mode", "serve"))
+                        else:
+                            reset_serve_config()
+                    else:
+                        for r in routes_mgr.list_routes():
+                            if r["id"] == route_id:
+                                target = f"http://{r['target_host']}:{r['target_port']}"
+                                if r.get("enabled", True):
+                                    apply_route_tailscale(r["path"], target, mode=r.get("mode", "serve"))
+                                else:
+                                    remove_route_tailscale(r["path"])
+                                break
                 await send_json_response(writer, 200 if ok else 400, {"success": ok, "message": msg})
             except Exception as e:
                 await send_json_response(writer, 400, {"success": False, "message": str(e)})

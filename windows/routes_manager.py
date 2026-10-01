@@ -14,6 +14,7 @@ CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "routes.json")
 
 RESERVED_PATHS = ["/", "/router", "/api", "/favicon.ico", "/favicon.svg"]
+SYSTEM_ROUTE_ID = "system-tailrouter-gateway"
 
 
 class RoutesManager:
@@ -39,7 +40,7 @@ class RoutesManager:
                 for r_id, r in self._routes.items():
                     p = r.get("path", "")
                     port = r.get("target_port", 0)
-                    if port == 65534 or p in ("/", "/router"):
+                    if r_id != SYSTEM_ROUTE_ID and (port == 65534 or p in ("/", "/router")):
                         continue
                     valid_routes[r_id] = r
                 
@@ -59,6 +60,48 @@ class RoutesManager:
     def _init_defaults(self) -> None:
         """Khởi tạo danh sách route trống cho người dùng mới."""
         self._routes = {}
+
+    def ensure_tailrouter_route(self, port: int = 65534, mode: str = "serve") -> Dict[str, Any]:
+        """Đảm bảo route hệ thống TailRouter Gateway luôn tồn tại khi Tailscale Serve kích hoạt."""
+        if SYSTEM_ROUTE_ID in self._routes:
+            r = self._routes[SYSTEM_ROUTE_ID]
+            r["target_port"] = port
+            r["last_status"] = "online"
+            r["last_latency_ms"] = 0.5
+            return r
+        r = {
+            "id": SYSTEM_ROUTE_ID,
+            "name": "⚡ TailRouter Gateway",
+            "path": "/router",
+            "target_host": "127.0.0.1",
+            "target_port": port,
+            "service_name": "TailRouter Gateway",
+            "is_docker": False,
+            "docker_container": None,
+            "is_system": True,
+            "mode": mode,
+            "enabled": True,
+            "hits": 0,
+            "last_status": "online",
+            "last_latency_ms": 0.5,
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "notes": "Trang điều khiển TailRouter qua Tailscale Serve (/router)",
+        }
+        self._routes[SYSTEM_ROUTE_ID] = r
+        self.save()
+        return r
+
+    def remove_tailrouter_route(self) -> None:
+        """Xóa route hệ thống TailRouter Gateway."""
+        if SYSTEM_ROUTE_ID in self._routes:
+            del self._routes[SYSTEM_ROUTE_ID]
+            self.save()
+
+    def set_tailrouter_route_enabled(self, enabled: bool) -> None:
+        """Bật hoặc tắt route hệ thống TailRouter Gateway."""
+        if SYSTEM_ROUTE_ID in self._routes:
+            self._routes[SYSTEM_ROUTE_ID]["enabled"] = enabled
+            self.save()
 
 
     def save(self) -> bool:
@@ -149,6 +192,20 @@ class RoutesManager:
 
         route = self._routes[route_id]
 
+        if route_id == SYSTEM_ROUTE_ID:
+            if "name" in data and data["name"].strip():
+                route["name"] = data["name"].strip()
+                route["service_name"] = data["name"].strip()
+            if "mode" in data:
+                m = str(data["mode"]).strip().lower()
+                route["mode"] = "funnel" if m == "funnel" else "serve"
+            if "enabled" in data:
+                route["enabled"] = bool(data["enabled"])
+            if "notes" in data:
+                route["notes"] = data["notes"].strip()
+            self.save()
+            return True, "Cập nhật tuyến đường thành công."
+
         if "path" in data:
             new_path = "/" + data["path"].strip().lstrip("/").rstrip("/")
             if not new_path:
@@ -232,7 +289,7 @@ class RoutesManager:
         best_len = -1
 
         for route in self._routes.values():
-            if not route.get("enabled", True):
+            if not route.get("enabled", True) or route.get("id") == SYSTEM_ROUTE_ID or route.get("path") in ("/", "/router"):
                 continue
             rpath = route["path"]
 
