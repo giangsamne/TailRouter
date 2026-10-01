@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TailRouter CLI (Python Edition v1.0.1)
+TailRouter CLI (Python Edition v1.1.0)
 =====================================
 Zero-Dependency Pure Python Gateway for Tailscale Serve & Funnel.
 """
@@ -15,13 +15,13 @@ import time
 import urllib.request
 from typing import Any, Dict, Optional
 
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 DEFAULT_PORT = 65534
 
 BANNER = f"""
   ⚡ TailRouter Native Engine v{VERSION}
   ==================================
-  Zero-Dependency Bare-Metal Gateway
+  Zero-Dependency Pure Python Gateway
 """
 
 

@@ -191,6 +191,7 @@ async def send_html_response(writer: asyncio.StreamWriter, html_content: str, st
 
 async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, client_ip: str) -> bool:
     """Xử lý các endpoint REST API cho giao diện quản trị."""
+    global recent_logs
     path = req.path
     method = req.method
 
@@ -229,7 +230,7 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
         total_hits = sum(r.get("hits", 0) for r in routes)
         active_cnt = sum(1 for r in routes if r.get("enabled", True))
         data = {
-            "version": "1.0.1",
+            "version": "1.1.0",
             "uptime_seconds": uptime_sec,
             "port": PORT,
             "tailscale": ts_info,
@@ -268,6 +269,23 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
                 "autostart": get_autostart_status(),
             })
             return True
+
+    # 1.6. API Quản lý nhật ký proxy
+    if (path == "/api/logs/clear" and method == "POST") or (path == "/api/logs" and method == "DELETE"):
+        recent_logs.clear()
+        await send_json_response(writer, 200, {
+            "success": True,
+            "message": "Đã xóa sạch nhật ký proxy",
+            "logs": [],
+        })
+        return True
+
+    if path == "/api/logs" and method == "GET":
+        await send_json_response(writer, 200, {
+            "success": True,
+            "logs": recent_logs[-50:],
+        })
+        return True
 
     # 2. API Quét cổng tự động (Auto Scan)
     if path == "/api/scan" and method == "GET":
@@ -330,6 +348,17 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
             except Exception as e:
                 await send_json_response(writer, 400, {"success": False, "message": f"Dữ liệu không hợp lệ: {e}"})
             return True
+
+    # 3.5. API Đặt lại cấu hình Router (Reset all routes)
+    if path == "/api/routes/reset" and method in ("POST", "DELETE"):
+        routes_mgr.delete_all_routes()
+        reset_serve_config()
+        await send_json_response(writer, 200, {
+            "success": True,
+            "message": "Đã đặt lại cấu hình router về 0 route và tắt Tailscale Serve",
+            "routes": routes_mgr.list_routes(),
+        })
+        return True
 
     # 4. API Thao tác trên từng Route cụ thể (/api/routes/<id>...)
     route_match = re.match(r"^/api/routes/([^/]+)(?:/(toggle|toggle-mode|ping))?$", path)

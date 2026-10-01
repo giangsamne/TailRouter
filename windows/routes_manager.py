@@ -266,6 +266,11 @@ class RoutesManager:
             return True, "Đã xóa route."
         return False, "Route không tồn tại."
 
+    def delete_all_routes(self) -> None:
+        """Xóa toàn bộ route khỏi cấu hình (đặt lại về 0 route)."""
+        self._routes.clear()
+        self.save()
+
     def toggle_route(self, route_id: str) -> Tuple[bool, str, bool]:
         """Bật/tắt trạng thái route."""
         if route_id in self._routes:

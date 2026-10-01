@@ -626,7 +626,7 @@
     <div class="brand">
       <div class="brand-icon">⚡</div>
       <div class="brand-title">
-        <h1>⚡ TailRouter <span class="port-badge">Port 65534</span> <span class="badge" id="app-version-badge" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 9999px; vertical-align: middle; margin-left: 6px;">v1.0.1</span></h1>
+        <h1>⚡ TailRouter <span class="port-badge">Port 65534</span> <span class="badge" id="app-version-badge" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 9999px; vertical-align: middle; margin-left: 6px;">v1.1.0</span></h1>
         <p id="sub-title" data-i18n="sub_title">Gateway điều phối cổng & định tuyến dịch vụ Homelab</p>
       </div>
     </div>
@@ -648,70 +648,8 @@
     </div>
   </header>
 
-  <!-- REMOTE CONTROL & TAILSCALE SERVE BANNER -->
-  <div id="ts-serve-banner" style="background: #182238; border: 1px solid #2a3b5c; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;">
-    <div style="display: flex; align-items: center; gap: 0.85rem;">
-      <div style="font-size: 1.8rem;" id="serve-icon">🌐</div>
-      <div>
-        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-          <strong style="font-size: 1rem; color: #fff;" data-i18n="remote_control">Điều Khiển Từ Xa (Tailscale Serve):</strong>
-          <span id="serve-status-badge" class="badge" style="background: #1e293b; color: #94a3b8;" data-i18n="checking">Đang kiểm tra...</span>
-        </div>
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;" id="serve-url-line">
-          <span data-i18n="remote_access_via">Truy cập từ xa trực tiếp qua:</span> <a href="#" id="serve-remote-link" target="_blank" style="color: #38bdf8; font-weight: 600; text-decoration: none;">...</a>
-        </div>
-      </div>
-    </div>
-    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-      <button class="btn btn-primary btn-sm" onclick="triggerServe('serve_tailrouter')">
-        <span data-i18n="btn_serve_tailrouter">⚡ Bật Serve Cho TailRouter</span>
-      </button>
-      <button id="btn-reset-serve" class="btn btn-secondary btn-sm" onclick="triggerResetServe()" style="display:none; color: #f87171; border-color: rgba(239, 68, 68, 0.4);" title="Tắt Tailscale Serve">
-        <span data-i18n="btn_reset_serve">🛑 Tắt Serve</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- AUTO-START ON BOOT CONTROL BANNER -->
-  <div id="autostart-banner" style="background: #182238; border: 1px solid #2a3b5c; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;">
-    <div style="display: flex; align-items: center; gap: 0.85rem;">
-      <div style="font-size: 1.8rem;" id="autostart-icon">🚀</div>
-      <div>
-        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-          <strong style="font-size: 1rem; color: #fff;" data-i18n="autostart_title">Tự Động Bật Khi Mở Máy (Auto-Start on Boot):</strong>
-          <span id="autostart-badge" class="badge" style="background: #1e293b; color: #94a3b8;" data-i18n="checking">Đang kiểm tra...</span>
-        </div>
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;" id="autostart-desc">
-          <span data-i18n="autostart_desc">Dịch vụ chạy ngầm độc lập ngay khi máy tính bật nguồn (hỗ trợ macOS launchd / Linux systemd).</span>
-        </div>
-      </div>
-    </div>
-    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-      <button id="btn-toggle-autostart" class="btn btn-primary btn-sm" onclick="toggleAutostartAction()">
-        <span id="btn-autostart-text" data-i18n="btn_enable_autostart">⚡ Bật Tự Khởi Động</span>
-      </button>
-    </div>
-  </div>
-
-  <div id="operator-warning-banner" style="display:none; background: #2e1d0f; border: 1px solid #f59e0b; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
-    <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
-      <span style="font-size: 1.5rem;">⚠️</span>
-      <div style="flex: 1;">
-        <strong style="color: #f59e0b; font-size: 0.95rem;" data-i18n="operator_warning_title">Cần cấp quyền Operator cho Tailscale (1 lần duy nhất) để tự động hóa:</strong>
-        <p style="font-size: 0.85rem; color: #cbd5e1; margin: 0.3rem 0 0.6rem;" data-i18n="operator_warning_desc">
-          Để gateway có thể tự động bật/tắt tailscale serve cho TailRouter từ xa khi máy khởi động mà không cần gõ mật khẩu root, hãy chạy lệnh sau một lần trên terminal máy thật:
-        </p>
-        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-          <code style="background: #0b0f19; color: #38bdf8; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid #334155; font-size: 0.9rem;">sudo tailscale set --operator=$USER</code>
-          <button class="btn btn-secondary btn-sm" onclick="copyOperatorCmd()" data-i18n="btn_copy_cmd">📋 Sao Chép Lệnh</button>
-          <button class="btn btn-success btn-sm" onclick="triggerServe('serve_tailrouter')" data-i18n="btn_ran_cmd">🔄 Tôi Đã Chạy - Kích Hoạt Ngay</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Navigation Tabs -->
-  <div class="tabs">
+  <div class="tabs" style="margin-top: 1.5rem;">
     <button class="tab-btn active" onclick="switchTab('routes')">
       <span data-i18n="tab_routes">📌 Danh Sách Router</span>
       <span id="badge-routes-count" style="background:#1e293b; padding:0.1rem 0.4rem; border-radius:10px; font-size:0.75rem;">0</span>
@@ -725,6 +663,9 @@
     </button>
     <button class="tab-btn" onclick="switchTab('logs')">
       <span data-i18n="tab_logs">📋 Nhật Ký Proxy (Live Logs)</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('settings')">
+      <span data-i18n="tab_settings">⚙️ Cài Đặt (Settings)</span>
     </button>
   </div>
 
@@ -884,6 +825,131 @@ http://100.100.1.3:65534/bambu</pre>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: SETTINGS -->
+  <div id="tab-settings" style="display: none;">
+    <div class="section-header">
+      <div class="section-title" data-i18n="settings_title">⚙️ Cài Đặt Hệ Thống & Quản Trị TailRouter</div>
+      <button class="btn btn-secondary btn-sm" onclick="fetchStatus()"><span data-i18n="btn_refresh">🔄 Cập Nhật</span></button>
+    </div>
+
+    <!-- 1. Tailscale Serve Remote Access Card -->
+    <div class="stat-card" style="margin-bottom: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+          <div style="font-size: 2rem;">🌐</div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <strong style="font-size: 1.05rem; color: #fff;" data-i18n="settings_serve_title">Truy Cập Từ Xa Qua Tailscale Serve (/router)</strong>
+              <span id="settings-serve-badge" class="badge" style="background: #1e293b; color: #94a3b8;">Đang kiểm tra...</span>
+            </div>
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0.35rem 0 0.5rem;" data-i18n="settings_serve_desc">
+              Ánh xạ giao diện quản trị TailRouter lên tên miền MagicDNS Tailscale qua cổng HTTPS chuẩn 443 (không cần gõ cổng 65534).
+            </p>
+            <div style="font-size: 0.85rem; color: #cbd5e1;" id="settings-serve-url-box">
+              <span data-i18n="remote_access_via">Đường dẫn truy cập:</span> <a href="#" id="settings-serve-remote-link" target="_blank" style="color: #38bdf8; font-weight: 600; text-decoration: none;">...</a>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <button class="btn btn-primary btn-sm" id="btn-settings-enable-serve" onclick="triggerServe('serve_tailrouter')">
+            <span data-i18n="btn_serve_tailrouter">⚡ Bật Serve Cho TailRouter</span>
+          </button>
+          <button class="btn btn-danger btn-sm" id="btn-settings-reset-serve" onclick="triggerResetServe()" style="display: none;">
+            <span data-i18n="btn_reset_serve">🛑 Tắt Serve</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Operator Warning Box inside Settings -->
+      <div id="settings-operator-box" style="display: none; background: #2e1d0f; border: 1px solid #f59e0b; border-radius: 8px; padding: 0.85rem 1rem; margin-top: 1rem;">
+        <strong style="color: #f59e0b; font-size: 0.9rem;" data-i18n="operator_warning_title">Cần cấp quyền Operator cho Tailscale (1 lần duy nhất) để tự động hóa:</strong>
+        <p style="font-size: 0.85rem; color: #cbd5e1; margin: 0.25rem 0 0.5rem;" data-i18n="operator_warning_desc">
+          Để gateway có thể tự động cấu hình serve từ xa mà không cần gõ mật khẩu sudo:
+        </p>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <code style="background: #0b0f19; color: #38bdf8; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem;">sudo tailscale set --operator=$USER</code>
+          <button class="btn btn-secondary btn-sm" onclick="copyOperatorCmd()" data-i18n="btn_copy_cmd">📋 Sao Chép Lệnh</button>
+          <button class="btn btn-success btn-sm" onclick="triggerServe('serve_tailrouter')" data-i18n="btn_ran_cmd">🔄 Kích Hoạt Ngay</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Auto-Start On Boot Card -->
+    <div class="stat-card" style="margin-bottom: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+          <div style="font-size: 2rem;">🚀</div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <strong style="font-size: 1.05rem; color: #fff;" data-i18n="autostart_title">Tự Động Bật Khi Mở Máy (Auto-Start on Boot)</strong>
+              <span id="settings-autostart-badge" class="badge" style="background: #1e293b; color: #94a3b8;">Đang kiểm tra...</span>
+            </div>
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0.35rem 0 0;" id="settings-autostart-desc" data-i18n="autostart_desc">
+              Dịch vụ chạy ngầm độc lập ngay khi máy tính bật nguồn (hỗ trợ macOS launchd / Linux systemd).
+            </p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <button id="btn-settings-toggle-autostart" class="btn btn-primary btn-sm" onclick="toggleAutostartAction()">
+            <span id="btn-settings-autostart-text" data-i18n="btn_enable_autostart">⚡ Bật Tự Khởi Động</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Danger Zone / Reset & Clean -->
+    <div class="stat-card" style="margin-bottom: 1.25rem; border-color: rgba(239, 68, 68, 0.35);">
+      <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+        <div style="font-size: 2rem;">⚠️</div>
+        <div style="flex: 1;">
+          <strong style="font-size: 1.05rem; color: #ef4444;" data-i18n="danger_zone_title">Khu Vực Nguy Hiểm & Đặt Lại Hệ Thống</strong>
+          <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0.35rem 0 0.75rem;" data-i18n="danger_zone_desc">
+            Các thao tác dọn dẹp bộ nhớ đệm, đặt lại cấu hình cổng hoặc xóa nhật ký proxy của TailRouter.
+          </p>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button class="btn btn-danger btn-sm" onclick="resetAllRoutesAction()">
+              <span data-i18n="btn_reset_routes">🗑️ Đặt Lại Cấu Hình Router (0 Route)</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="clearLogsAction()">
+              <span data-i18n="btn_clear_logs">🧹 Xóa Sạch Nhật Ký Proxy</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. About & Repo Info -->
+    <div class="stat-card" style="margin-bottom: 1.25rem;">
+      <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+        <div style="font-size: 2rem;">ℹ️</div>
+        <div style="flex: 1;">
+          <strong style="font-size: 1.05rem; color: #fff;" data-i18n="about_title">Thông Tin Dự Án & Mã Nguồn TailRouter</strong>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 0.75rem;">
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);" data-i18n="lbl_version">Phiên Bản Hiện Tại</div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem;">
+                <span id="settings-version-badge" class="badge" style="background:#0284c7; color:#fff; font-weight:700;">v1.1.0</span>
+                <span style="font-size: 0.8rem; color: #94a3b8;" id="settings-engine-name">Zero-Dependency Pure Python Gateway</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);" data-i18n="lbl_author">Tác Giả & Bản Quyền</div>
+              <div style="font-weight: 600; color: #fff; margin-top: 0.2rem;">Giang3DLab / Giang Sam (MIT License)</div>
+            </div>
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);" data-i18n="lbl_repository">Kho Mã Nguồn GitHub</div>
+              <div style="margin-top: 0.2rem;">
+                <a href="https://github.com/giangsamne/TailRouter" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;">
+                  <span>github.com/giangsamne/TailRouter</span> ↗
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1091,7 +1157,23 @@ http://100.100.1.3:65534/bambu</pre>
       autostart_disabled: "CHƯA BẬT",
       autostart_active_desc: "Dịch vụ đã được đăng ký chạy ngầm tự động cùng hệ điều hành:",
       toast_enabling_autostart: "Đang thiết lập tự khởi động cùng hệ thống...",
-      toast_disabling_autostart: "Đang tắt tự khởi động..."
+      toast_disabling_autostart: "Đang tắt tự khởi động...",
+      tab_settings: "⚙️ Cài Đặt (Settings)",
+      settings_title: "⚙️ Cài Đặt Hệ Thống & Quản Trị TailRouter",
+      settings_serve_title: "Truy Cập Từ Xa Qua Tailscale Serve (/router)",
+      settings_serve_desc: "Ánh xạ giao diện quản trị TailRouter lên tên miền MagicDNS Tailscale qua cổng HTTPS chuẩn 443 (không cần gõ cổng 65534).",
+      danger_zone_title: "Khu Vực Nguy Hiểm & Đặt Lại Hệ Thống",
+      danger_zone_desc: "Các thao tác dọn dẹp bộ nhớ đệm, đặt lại cấu hình cổng hoặc xóa nhật ký proxy của TailRouter.",
+      btn_reset_routes: "🗑️ Đặt Lại Cấu Hình Router (0 Route)",
+      btn_clear_logs: "🧹 Xóa Sạch Nhật Ký Proxy",
+      about_title: "Thông Tin Dự Án & Mã Nguồn TailRouter",
+      lbl_version: "Phiên Bản Hiện Tại",
+      lbl_author: "Tác Giả & Bản Quyền",
+      lbl_repository: "Kho Mã Nguồn GitHub",
+      btn_refresh: "🔄 Cập Nhật",
+      confirm_reset_routes: "Bạn có chắc chắn muốn xóa TOÀN BỘ routes và đặt lại gateway về 0 router không?",
+      confirm_clear_logs: "Bạn có chắc chắn muốn xóa sạch toàn bộ nhật ký proxy không?",
+      toast_resetting_routes: "Đang đặt lại cấu hình router..."
     },
     en: {
       sub_title: "Homelab Port Router & Reverse Proxy Gateway",
@@ -1208,7 +1290,23 @@ http://100.100.1.3:65534/bambu</pre>
       autostart_disabled: "DISABLED",
       autostart_active_desc: "Registered as a background service with operating system:",
       toast_enabling_autostart: "Configuring auto-start on boot...",
-      toast_disabling_autostart: "Disabling auto-start..."
+      toast_disabling_autostart: "Disabling auto-start...",
+      tab_settings: "⚙️ Settings",
+      settings_title: "⚙️ System Settings & TailRouter Management",
+      settings_serve_title: "Remote Access via Tailscale Serve (/router)",
+      settings_serve_desc: "Exposes the TailRouter dashboard on your Tailscale MagicDNS domain via standard HTTPS (port 443) without specifying port 65534.",
+      danger_zone_title: "Danger Zone & System Reset",
+      danger_zone_desc: "Operations for clearing logs, resetting route configurations (0 routes), or resetting gateway settings.",
+      btn_reset_routes: "🗑️ Reset Routes (0 Routes)",
+      btn_clear_logs: "🧹 Clear Proxy Logs",
+      about_title: "Project & Source Code Information",
+      lbl_version: "Current Version",
+      lbl_author: "Author & License",
+      lbl_repository: "GitHub Repository",
+      btn_refresh: "🔄 Refresh",
+      confirm_reset_routes: "Are you sure you want to delete ALL routes and reset gateway to 0 routes?",
+      confirm_clear_logs: "Are you sure you want to clear all proxy logs?",
+      toast_resetting_routes: "Resetting routes configuration..."
     },
     zh: {
       sub_title: "家庭实验室端口网关与反向代理服务",
@@ -1324,7 +1422,23 @@ http://100.100.1.3:65534/bambu</pre>
       autostart_disabled: "未开启",
       autostart_active_desc: "已成功注册为后台系统自启服务:",
       toast_enabling_autostart: "正在配置开机自启...",
-      toast_disabling_autostart: "正在关闭开机自启..."
+      toast_disabling_autostart: "正在关闭开机自启...",
+      tab_settings: "⚙️ 系统设置",
+      settings_title: "⚙️ 系统设置与 TailRouter 管理",
+      settings_serve_title: "通过 Tailscale Serve 远程访问 (/router)",
+      settings_serve_desc: "通过标准 HTTPS (443端口) 将 TailRouter 管理面板映射到 Tailscale MagicDNS 域名（无需输入 65534 端口）。",
+      danger_zone_title: "危险操作与系统重置",
+      danger_zone_desc: "清理缓存日志、重置端口路由配置（重置为 0 路由）等系统级操作。",
+      btn_reset_routes: "🗑️ 重置所有路由 (0 路由)",
+      btn_clear_logs: "🧹 清空代理日志",
+      about_title: "项目与源码信息",
+      lbl_version: "当前版本",
+      lbl_author: "作者与开源协议",
+      lbl_repository: "GitHub 开源仓库",
+      btn_refresh: "🔄 刷新",
+      confirm_reset_routes: "确定要删除所有路由并将网关重置为 0 路由吗？",
+      confirm_clear_logs: "确定要清空全部代理访问日志吗？",
+      toast_resetting_routes: "正在重置路由配置..."
     },
     ja: {
       sub_title: "ホームラボポートルーター＆リバースプロキシ",
@@ -1441,7 +1555,23 @@ http://100.100.1.3:65534/bambu</pre>
       autostart_disabled: "無効",
       autostart_active_desc: "OSバックグラウンドサービスとして自動起動登録済み:",
       toast_enabling_autostart: "自動起動を設定中...",
-      toast_disabling_autostart: "自動起動を無効化中..."
+      toast_disabling_autostart: "自動起動を無効化中...",
+      tab_settings: "⚙️ 設定 (Settings)",
+      settings_title: "⚙️ システム設定 & TailRouter 管理",
+      settings_serve_title: "Tailscale Serve 経由のリモートアクセス (/router)",
+      settings_serve_desc: "ポート 65534 を入力することなく、標準 HTTPS (443) の Tailscale MagicDNS ドメインに TailRouter ダッシュボードをマッピングします。",
+      danger_zone_title: "危険ゾーン & システムリセット",
+      danger_zone_desc: "ログの消去、ルート設定のリセット（0 ルート）、ゲートウェイ設定のリセットなどのシステム操作。",
+      btn_reset_routes: "🗑️ ルート構成をリセット (0 ルート)",
+      btn_clear_logs: "🧹 プロキシログを全消去",
+      about_title: "プロジェクト情報とソースコード",
+      lbl_version: "現在のバージョン",
+      lbl_author: "作成者 & ライセンス",
+      lbl_repository: "GitHub リポジトリ",
+      btn_refresh: "🔄 更新",
+      confirm_reset_routes: "すべてのルートを削除してゲートウェイを 0 ルートにリセットしてもよろしいですか？",
+      confirm_clear_logs: "すべてのプロキシログを消去してもよろしいですか？",
+      toast_resetting_routes: "ルート構成をリセット中..."
     }
 
   };
@@ -1521,7 +1651,7 @@ http://100.100.1.3:65534/bambu</pre>
     const activeBtn = el || (typeof event !== 'undefined' && event && event.currentTarget) || document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
     if (activeBtn) activeBtn.classList.add('active');
 
-    ['routes', 'scanner', 'tailscale', 'logs'].forEach(id => {
+    ['routes', 'scanner', 'tailscale', 'logs', 'settings'].forEach(id => {
       const tabEl = document.getElementById(`tab-${id}`);
       if (tabEl) tabEl.style.display = (id === tabId) ? 'block' : 'none';
     });
@@ -1552,6 +1682,10 @@ http://100.100.1.3:65534/bambu</pre>
         if (verBadge) {
           verBadge.textContent = (data.version.startsWith('v') ? '' : 'v') + data.version;
         }
+        const settingsVerBadge = document.getElementById('settings-version-badge');
+        if (settingsVerBadge) {
+          settingsVerBadge.textContent = (data.version.startsWith('v') ? '' : 'v') + data.version;
+        }
       }
 
       if (data.tailscale) {
@@ -1575,37 +1709,55 @@ http://100.100.1.3:65534/bambu</pre>
           `http://${tailscaleIp}:${PORT}
 http://${tailscaleIp}:${PORT}/bambu`;
 
-        // Update Remote Serve Status Banner
-        const serveBanner = document.getElementById('ts-serve-banner');
-        const serveBadge = document.getElementById('serve-status-badge');
-        const serveLink = document.getElementById('serve-remote-link');
-        const opWarning = document.getElementById('operator-warning-banner');
-        const btnResetServe = document.getElementById('btn-reset-serve');
+        // Update Remote Serve Status inside Settings Tab
+        const settingsServeBadge = document.getElementById('settings-serve-badge');
+        const settingsServeLink = document.getElementById('settings-serve-remote-link');
+        const settingsOpWarning = document.getElementById('settings-operator-box');
+        const btnSettingsEnableServe = document.getElementById('btn-settings-enable-serve');
+        const btnSettingsResetServe = document.getElementById('btn-settings-reset-serve');
 
         const tailrouterRoute = (data.routes || []).find(r => r.id === 'system-tailrouter-gateway' || (r.path === '/router' && r.target_port === PORT));
         const isServeActive = !!(data.tailscale.serve_configured && (!tailrouterRoute || tailrouterRoute.enabled));
 
         if (isServeActive) {
-          if (serveBanner) serveBanner.style.display = 'none';
-          if (opWarning) opWarning.style.display = 'none';
+          if (settingsServeBadge) {
+            settingsServeBadge.style.background = '#064e3b';
+            settingsServeBadge.style.color = '#6ee7b7';
+            settingsServeBadge.textContent = t('serve_active') || '🟢 Đang Kích Hoạt HTTPS';
+          }
+          if (settingsServeLink) {
+            const url = `https://${tailscaleFqdn}/router`;
+            settingsServeLink.textContent = url;
+            settingsServeLink.href = url;
+          }
+          if (btnSettingsEnableServe) btnSettingsEnableServe.style.display = 'none';
+          if (btnSettingsResetServe) btnSettingsResetServe.style.display = 'inline-flex';
+          if (settingsOpWarning) settingsOpWarning.style.display = 'none';
         } else {
-          if (serveBanner) serveBanner.style.display = 'flex';
+          if (btnSettingsEnableServe) btnSettingsEnableServe.style.display = 'inline-flex';
+          if (btnSettingsResetServe) btnSettingsResetServe.style.display = 'none';
           if (data.tailscale.needs_operator) {
-            serveBadge.style.background = '#451a03';
-            serveBadge.style.color = '#fcd34d';
-            serveBadge.textContent = '⚠️ Cần quyền operator';
-            serveLink.textContent = 'Chưa bật (xem hướng dẫn bên dưới)';
-            serveLink.removeAttribute('href');
-            if (btnResetServe) btnResetServe.style.display = 'none';
-            if (opWarning) opWarning.style.display = 'block';
+            if (settingsServeBadge) {
+              settingsServeBadge.style.background = '#451a03';
+              settingsServeBadge.style.color = '#fcd34d';
+              settingsServeBadge.textContent = '⚠️ Cần quyền operator';
+            }
+            if (settingsServeLink) {
+              settingsServeLink.textContent = 'Chưa bật (cần cấp quyền operator bên dưới)';
+              settingsServeLink.removeAttribute('href');
+            }
+            if (settingsOpWarning) settingsOpWarning.style.display = 'block';
           } else {
-            serveBadge.style.background = '#1e293b';
-            serveBadge.style.color = '#94a3b8';
-            serveBadge.textContent = '⚪ Chưa kích hoạt';
-            serveLink.textContent = 'Chưa thiết lập';
-            serveLink.removeAttribute('href');
-            if (btnResetServe) btnResetServe.style.display = 'none';
-            if (opWarning) opWarning.style.display = 'none';
+            if (settingsServeBadge) {
+              settingsServeBadge.style.background = '#1e293b';
+              settingsServeBadge.style.color = '#94a3b8';
+              settingsServeBadge.textContent = '⚪ Chưa kích hoạt';
+            }
+            if (settingsServeLink) {
+              settingsServeLink.textContent = 'Chưa thiết lập';
+              settingsServeLink.removeAttribute('href');
+            }
+            if (settingsOpWarning) settingsOpWarning.style.display = 'none';
           }
         }
       }
@@ -1629,13 +1781,13 @@ http://${tailscaleIp}:${PORT}/bambu`;
       const elBadgeCount = document.getElementById('badge-routes-count');
       if (elBadgeCount) elBadgeCount.textContent = totalRoutes;
 
-      // Auto-Start on Boot status update
+      // Auto-Start on Boot status update inside Settings Tab
       if (data.autostart) {
         autostartEnabled = !!data.autostart.enabled;
-        const autoBadge = document.getElementById('autostart-badge');
-        const autoBtnText = document.getElementById('btn-autostart-text');
-        const autoBtn = document.getElementById('btn-toggle-autostart');
-        const autoDesc = document.getElementById('autostart-desc');
+        const autoBadge = document.getElementById('settings-autostart-badge');
+        const autoBtnText = document.getElementById('btn-settings-autostart-text');
+        const autoBtn = document.getElementById('btn-settings-toggle-autostart');
+        const autoDesc = document.getElementById('settings-autostart-desc');
 
         if (autoBadge && autoBtnText && autoBtn && autoDesc) {
           if (autostartEnabled) {
@@ -1686,6 +1838,45 @@ http://${tailscaleIp}:${PORT}/bambu`;
         fetchStatus();
       } else {
         showToast(data.message || data.error || "Lỗi thiết lập", "error");
+      }
+    } catch (e) {
+      showToast("Lỗi: " + e, "error");
+    }
+  }
+
+  // Reset All Routes (Danger Zone)
+  async function resetAllRoutesAction() {
+    if (!confirm(t('confirm_reset_routes') || "Bạn có chắc chắn muốn xóa TOÀN BỘ routes và đặt lại gateway về 0 router không?")) {
+      return;
+    }
+    showToast(t('toast_resetting_routes') || "Đang đặt lại cấu hình router...");
+    try {
+      const res = await fetch(`${API_BASE}/routes/reset`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (data.success || res.ok) {
+        showToast("✅ " + (data.message || "Đã đặt lại 0 routes thành công"));
+        fetchStatus();
+      } else {
+        showToast(data.message || data.error || "Lỗi đặt lại router", "error");
+      }
+    } catch (e) {
+      showToast("Lỗi: " + e, "error");
+    }
+  }
+
+  // Clear Proxy Logs (Danger Zone)
+  async function clearLogsAction() {
+    if (!confirm(t('confirm_clear_logs') || "Bạn có chắc chắn muốn xóa sạch toàn bộ nhật ký proxy không?")) {
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/logs/clear`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (data.success || res.ok) {
+        showToast("✅ " + (data.message || "Đã xóa sạch nhật ký"));
+        fetchStatus();
+      } else {
+        showToast(data.message || data.error || "Lỗi xóa nhật ký", "error");
       }
     } catch (e) {
       showToast("Lỗi: " + e, "error");
@@ -1771,7 +1962,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
         <div class="route-card ${r.enabled ? '' : 'disabled'}" id="card-${r.id}">
           <div class="route-info">
             <div class="route-header-line">
-              <span class="route-name">${r.name || r.service_name || 'TailRouter Gateway'}</span>
+              <span class="route-name">${r.name}</span>
               <span class="route-path-badge">${r.path}</span>
               ${modeBadge}
               ${r.strip_prefix ? '<span class="badge" style="background:#1e293b; color:#cbd5e1;">Strip Prefix</span>' : ''}
@@ -1977,7 +2168,8 @@ http://${tailscaleIp}:${PORT}/bambu`;
     try {
       const res = await fetch(`${API_BASE}/scan`);
       const data = await res.json();
-      currentScanPorts = (data.ports || []).sort((a, b) => (a.port || 0) - (b.port || 0));
+      currentScanPorts = data.ports || [];
+      currentScanPorts.sort((a, b) => (a.port || 0) - (b.port || 0));
       document.getElementById('badge-scan-count').textContent = `${currentScanPorts.length}`;
       renderScanPorts(currentScanPorts);
     } catch (e) {
@@ -2020,7 +2212,6 @@ http://${tailscaleIp}:${PORT}/bambu`;
   }
 
   function openEditModal(route) {
-    const isSystem = route.id === 'system-tailrouter-gateway' || Boolean(route.is_system);
     document.getElementById('modal-title').textContent = `${t('modal_title_edit')}: ${route.name}`;
     document.getElementById('form-route-id').value = route.id;
     document.getElementById('form-name').value = route.name || "";
@@ -2033,23 +2224,10 @@ http://${tailscaleIp}:${PORT}/bambu`;
     document.getElementById('form-enabled').checked = Boolean(route.enabled);
     document.getElementById('preview-url-text').textContent = `https://${tailscaleFqdn}${route.path}`;
 
-    document.getElementById('form-path').readOnly = isSystem;
-    document.getElementById('form-host').readOnly = isSystem;
-    document.getElementById('form-port').readOnly = isSystem;
-    document.getElementById('form-path').style.opacity = isSystem ? '0.6' : '1';
-    document.getElementById('form-host').style.opacity = isSystem ? '0.6' : '1';
-    document.getElementById('form-port').style.opacity = isSystem ? '0.6' : '1';
-
     document.getElementById('route-modal').classList.add('active');
   }
 
   function closeModal() {
-    document.getElementById('form-path').readOnly = false;
-    document.getElementById('form-host').readOnly = false;
-    document.getElementById('form-port').readOnly = false;
-    document.getElementById('form-path').style.opacity = '1';
-    document.getElementById('form-host').style.opacity = '1';
-    document.getElementById('form-port').style.opacity = '1';
     document.getElementById('route-modal').classList.remove('active');
   }
 
