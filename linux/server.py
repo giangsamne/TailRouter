@@ -229,7 +229,7 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
         total_hits = sum(r.get("hits", 0) for r in routes)
         active_cnt = sum(1 for r in routes if r.get("enabled", True))
         data = {
-            "version": "1.0.0",
+            "version": "1.0.1",
             "uptime_seconds": uptime_sec,
             "port": PORT,
             "tailscale": ts_info,

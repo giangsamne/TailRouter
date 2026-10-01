@@ -626,7 +626,7 @@
     <div class="brand">
       <div class="brand-icon">⚡</div>
       <div class="brand-title">
-        <h1>⚡ TailRouter <span class="port-badge">Port 65534</span> <span class="badge" id="app-version-badge" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 9999px; vertical-align: middle; margin-left: 6px;">v1.0.0</span></h1>
+        <h1>⚡ TailRouter <span class="port-badge">Port 65534</span> <span class="badge" id="app-version-badge" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 9999px; vertical-align: middle; margin-left: 6px;">v1.0.1</span></h1>
         <p id="sub-title" data-i18n="sub_title">Gateway điều phối cổng & định tuyến dịch vụ Homelab</p>
       </div>
     </div>
@@ -1977,7 +1977,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
     try {
       const res = await fetch(`${API_BASE}/scan`);
       const data = await res.json();
-      currentScanPorts = data.ports || [];
+      currentScanPorts = (data.ports || []).sort((a, b) => (a.port || 0) - (b.port || 0));
       document.getElementById('badge-scan-count').textContent = `${currentScanPorts.length}`;
       renderScanPorts(currentScanPorts);
     } catch (e) {
