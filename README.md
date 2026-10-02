@@ -4,7 +4,7 @@
 
 **High-performance, zero-dependency bare-metal gateway & web dashboard for Tailscale Serve and Funnel.**
 
-[![Release](https://img.shields.io/badge/Release-v2.1.0-blue.svg?logo=github)](https://github.com/giangsamne/TailRouter/releases)
+[![Release](https://img.shields.io/badge/Release-v2.1.1-blue.svg?logo=github)](https://github.com/giangsamne/TailRouter/releases)
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8.svg?logo=go&logoColor=white)](https://golang.org)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg?logo=tailscale&logoColor=white)](https://tailscale.com)
@@ -22,21 +22,28 @@ Run a single command in your terminal or PowerShell — it automatically detects
 
 * **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.1/install.sh | bash
   ```
 
 * **🪟 Windows** (PowerShell):
   ```powershell
-  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.0/install.ps1 | iex
+  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.1/install.ps1 | iex
   ```
 
 ---
 
-## 🆕 What's New in v2.1.0 & v1.1.0
+## 🆕 What's New in v2.1.1 & v1.1.1
 
-Version **v2.1.0** (Go Native Bare-Metal) and **v1.1.0** (Python Edition) bring a completely redesigned management workflow, cleaner UI architecture, and robust system lifecycle controls:
+Version **v2.1.1** (Go Native Bare-Metal) and **v1.1.1** (Python Edition) bring essential scan synchronization improvements, full application lifecycle controls, and standardized system settings:
 
-### 1. ⚙️ 5th Tab: System Settings & Control (Settings Tab)
+### 1. 🔍 Two-Way Auto-Scan Port Synchronization & Assigned Badge (v2.1.1 & v1.1.1)
+- **Resolved Unassigned Status Bug**: Fixed an issue where ports previously added to the Router continued to display `Unassigned` (`Chưa gán`) with the `+ Add to Router` (`+ Thêm vào Router`) button after page reload.
+- **Real-Time Bidirectional Cross-Referencing**: The Auto-Scan engine actively cross-references detected host listening ports with the configured routing table (`routes.json`).
+- **Visual Status Badges**: Configured ports immediately display a prominent green **`✓ Assigned` (`✓ Đã gán route`)** status badge alongside active Tailscale route path tags (**`⚡ Route: /ssh`**, **`⚡ Route: /port-3389`**).
+- **Safe Action Control**: The action button automatically locks into a disabled **`Added` (`Đã thêm`)** state to prevent duplicate route mappings.
+- **Dynamic Reactive Refresh**: The scan table re-renders in real-time when routes are added, deleted, or whenever status polls without requiring a manual rescan.
+
+### 2. ⚙️ 5th Tab: System Settings & Control (Settings Tab)
 The Web Dashboard has been standardized with a dedicated 5th tab navigation. All configuration panels are neatly organized inside **⚙️ Settings**:
 - **Clutter-Free Main Dashboard**: Relocated all persistent banners (`Tailscale Serve`, `Auto-Start on Boot`, `Operator Warning`) inside the Settings tab. The main overview dashboard remains sleek, uncluttered, and modern.
 - **🌐 Remote Access via Tailscale Serve**: One-click enable/disable for `/router` mapped to your Tailscale MagicDNS domain over standard HTTPS (port 443 without typing `:65534`), with direct live link generation.
@@ -52,15 +59,15 @@ The Web Dashboard has been standardized with a dedicated 5th tab navigation. All
     - Gracefully stops the Gateway process, frees port `65534`, and presents a confirmation screen on the browser.
 - **ℹ️ Project & Repository Info**: Displays engine type, version, author **Giang3DLab / Giang Sam (MIT License)**, and direct link to the GitHub repository.
 
-### 2. 🔍 Ascending Numerical Port Order (Auto-Scan)
+### 3. 🔍 Ascending Numerical Port Order (Auto-Scan)
 - Active host TCP listening ports and Docker containers are **automatically sorted in ascending numeric order** (`22 -> 80 -> 443 -> 3000 -> 8080...`).
 - Makes browsing, locating, and mapping host services fast and effortless.
 
-### 3. ⌨️ Expanded CLI Commands
+### 4. ⌨️ Expanded CLI Commands
 - `tailrouter stop`: Stop running gateway process occupying port 65534.
 - `tailrouter uninstall [-y]`: Completely uninstall TailRouter and purge all data and binaries directly from the terminal.
 
-### 4. 📡 New REST API Endpoints
+### 5. 📡 New REST API Endpoints
 - `POST /api/routes/reset`: Reset all routes to 0.
 - `POST /api/logs/clear`: Purge proxy traffic logs.
 - `POST /api/system/uninstall`: Full system uninstallation and graceful shutdown.
@@ -73,7 +80,7 @@ TailRouter provides dedicated platform branches with optimized guides, raw data,
 
 | Branch | Platform | Features | Direct Link |
 | :--- | :--- | :--- | :--- |
-| **`main`** | 🌐 Multi-Platform (Hub) | Go Native v2.1.0, multi-OS installers, release artifacts | [**View `main` branch 👉**](https://github.com/giangsamne/TailRouter/tree/main) |
+| **`main`** | 🌐 Multi-Platform (Hub) | Go Native v2.1.1, multi-OS installers, release artifacts | [**View `main` branch 👉**](https://github.com/giangsamne/TailRouter/tree/main) |
 | **`linux`** | 🐧 Linux | Raw data & Linux scripts, systemd & OpenRC (Alpine/Ubuntu/Arch) | [**View `linux` branch 👉**](https://github.com/giangsamne/TailRouter/tree/linux) |
 | **`windows`** | 🪟 Windows | Raw data & Windows scripts, PowerShell installer, Startup autostart | [**View `windows` branch 👉**](https://github.com/giangsamne/TailRouter/tree/windows) |
 | **`macos`** | 🍏 macOS | Raw data & macOS scripts, launchd agent, Apple Silicon & Intel | [**View `macos` branch 👉**](https://github.com/giangsamne/TailRouter/tree/macos) |
