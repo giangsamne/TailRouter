@@ -124,7 +124,31 @@ class RoutesManager:
 
     def get_configured_ports(self) -> List[int]:
         """Lấy danh sách các port đã được cấu hình trong router."""
-        return [r["target_port"] for r in self._routes.values() if "target_port" in r]
+        ports = []
+        for r in self._routes.values():
+            try:
+                p = int(r.get("target_port", 0))
+                if p > 0 and p not in ports:
+                    ports.append(p)
+            except Exception:
+                pass
+        return ports
+
+    def get_route_port_map(self) -> Dict[int, List[str]]:
+        """Lấy bản đồ ánh xạ port -> danh sách route paths."""
+        res = {}
+        for r in self._routes.values():
+            try:
+                p = int(r.get("target_port", 0))
+                if p > 0:
+                    path = r.get("path", "")
+                    if p not in res:
+                        res[p] = []
+                    if path and path not in res[p]:
+                        res[p].append(path)
+            except Exception:
+                pass
+        return res
 
     def add_route(self, data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
         """Thêm route mới với kiểm tra ràng buộc đường dẫn và cổng."""

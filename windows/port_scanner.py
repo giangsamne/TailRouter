@@ -328,7 +328,7 @@ async def probe_http_service(port: int, host: str = "127.0.0.1", timeout: float 
     return result
 
 
-async def scan_active_ports(configured_ports: Optional[List[int]] = None) -> List[Dict[str, Any]]:
+async def scan_active_ports(configured_ports: Optional[List[int]] = None, route_port_map: Optional[Dict[int, List[str]]] = None) -> List[Dict[str, Any]]:
     """Quét toàn bộ cổng đang mở trên máy chủ và bổ sung thông tin chi tiết."""
     if configured_ports is None:
         configured_ports = []
@@ -406,7 +406,12 @@ async def scan_active_ports(configured_ports: Optional[List[int]] = None) -> Lis
         except Exception:
             pass
 
-        is_conf = (p in configured_ports) or bool(ts_routes)
+        if route_port_map and p in route_port_map:
+            for path in route_port_map[p]:
+                if path not in ts_routes:
+                    ts_routes.append(path)
+
+        is_conf = (p in configured_ports) or bool(ts_routes) or (route_port_map and p in route_port_map)
 
         if docker_info:
             info["process"] = f"docker:{docker_info['container_name']}"

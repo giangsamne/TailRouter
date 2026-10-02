@@ -230,7 +230,7 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
         total_hits = sum(r.get("hits", 0) for r in routes)
         active_cnt = sum(1 for r in routes if r.get("enabled", True))
         data = {
-            "version": "1.1.0",
+            "version": "1.1.1",
             "uptime_seconds": uptime_sec,
             "port": PORT,
             "tailscale": ts_info,
@@ -295,7 +295,8 @@ async def handle_api_request(req: HTTPRequest, writer: asyncio.StreamWriter, cli
             routes_mgr.sync_from_tailscale(cli_routes)
 
         configured_ports = routes_mgr.get_configured_ports()
-        scan_results = await scan_active_ports(configured_ports)
+        route_port_map = routes_mgr.get_route_port_map()
+        scan_results = await scan_active_ports(configured_ports, route_port_map=route_port_map)
         await send_json_response(writer, 200, {"ports": scan_results, "count": len(scan_results)})
         return True
 
