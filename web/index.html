@@ -1840,6 +1840,9 @@ http://${tailscaleIp}:${PORT}/bambu`;
       // Routes
       currentRoutes = routesList;
       renderRoutes(currentRoutes);
+      if (typeof currentScanPorts !== 'undefined' && currentScanPorts && currentScanPorts.length > 0) {
+        renderScanPorts(currentScanPorts);
+      }
 
       // Logs
       renderLogs(data.logs || data.recent_logs || []);
@@ -2200,18 +2203,24 @@ http://${tailscaleIp}:${PORT}/bambu`;
       let typeBadge = p.is_http ? '<span class="badge badge-http">HTTP</span>' : '<span class="badge badge-tcp">TCP</span>';
       if (p.is_docker) typeBadge += ' <span class="badge badge-docker">Docker</span>';
 
-      const hasTs = p.tailscale_routes && p.tailscale_routes.length > 0;
+      // Cross-check with current active routes
+      const matchingRoutes = (currentRoutes || []).filter(r => Number(r.target_port) === Number(p.port));
+      const isConfigured = Boolean(p.is_configured || matchingRoutes.length > 0);
+
+      const tsRoutes = (p.tailscale_routes && p.tailscale_routes.length > 0)
+        ? p.tailscale_routes
+        : matchingRoutes.map(r => r.path);
       let tsBadge = '';
-      if (hasTs) {
-        tsBadge = `<div style="margin-top:4px;"><span class="badge" style="background:#581c87; color:#f3e8ff; border:1px solid #9333ea; font-size:0.75rem;">⚡ Tailscale: ${p.tailscale_routes.join(', ')}</span></div>`;
+      if (tsRoutes.length > 0) {
+        tsBadge = `<div style="margin-top:4px;"><span class="badge" style="background:#581c87; color:#f3e8ff; border:1px solid #9333ea; font-size:0.75rem;">⚡ Route: ${tsRoutes.join(', ')}</span></div>`;
       }
 
-      const configuredBadge = p.is_configured 
+      const configuredBadge = isConfigured 
         ? `<span class="badge badge-configured">${t('badge_assigned')}</span>`
         : `<span class="badge" style="background:#1e293b; color:#94a3b8;">${t('badge_unassigned')}</span>`;
 
-      const btnAdd = p.is_configured
-        ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.6;">${t('btn_added')}</button>`
+      const btnAdd = isConfigured
+        ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.6; cursor:not-allowed;">${t('btn_added')}</button>`
         : `<button class="btn btn-primary btn-sm" onclick='prefillFromScan(${JSON.stringify(p)})'>${t('btn_add_to_router')}</button>`;
 
       const procBadge = p.process && p.process !== '-' ? `<span class="badge" style="background:#1e3a5f; color:#93c5fd; font-weight:600; margin-left:6px;">⚙️ ${p.process}${p.pid ? ' ('+p.pid+')' : ''}</span>` : '';

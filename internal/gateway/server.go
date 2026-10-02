@@ -614,6 +614,23 @@ func (s *Server) handleAPIScan(w http.ResponseWriter, r *http.Request) {
 		s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{"error": err.Error(), "message": err.Error(), "success": false})
 		return
 	}
+
+	// Đánh dấu các cổng đã được gán vào danh sách routes
+	routes := s.routes.List()
+	routePortMap := make(map[int][]string)
+	for _, rt := range routes {
+		if rt.TargetPort > 0 {
+			routePortMap[rt.TargetPort] = append(routePortMap[rt.TargetPort], rt.Path)
+		}
+	}
+
+	for i := range ports {
+		if paths, ok := routePortMap[ports[i].Port]; ok && len(paths) > 0 {
+			ports[i].IsConfigured = true
+			ports[i].TailscaleRoutes = paths
+		}
+	}
+
 	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"success": true,
 		"ports":   ports,

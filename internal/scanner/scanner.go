@@ -32,10 +32,12 @@ type PortItem struct {
 	Title           string `json:"title"`
 	Container       string `json:"container,omitempty"`
 	DockerContainer string `json:"docker_container,omitempty"`
-	IsDocker        bool   `json:"is_docker,omitempty"`
-	IsHTTP          bool   `json:"is_http,omitempty"`
-	SuggestedPath   string `json:"suggested_path"`
-	SuggestedName   string `json:"suggested_name"`
+	IsDocker        bool     `json:"is_docker,omitempty"`
+	IsHTTP          bool     `json:"is_http,omitempty"`
+	IsConfigured    bool     `json:"is_configured"`
+	TailscaleRoutes []string `json:"tailscale_routes,omitempty"`
+	SuggestedPath   string   `json:"suggested_path"`
+	SuggestedName   string   `json:"suggested_name"`
 }
 
 type Scanner struct{}
