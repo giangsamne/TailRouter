@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -363,7 +364,15 @@ func runRoutes(args []string) {
 		if isDaemonRunning {
 			resp, err := client.Get(apiURL + "/routes")
 			if err == nil && resp.StatusCode == http.StatusOK {
-				_ = json.NewDecoder(resp.Body).Decode(&routes)
+				data, _ := io.ReadAll(resp.Body)
+				var res struct {
+					Routes []*config.Route `json:"routes"`
+				}
+				if err := json.Unmarshal(data, &res); err == nil && len(res.Routes) > 0 {
+					routes = res.Routes
+				} else {
+					_ = json.Unmarshal(data, &routes)
+				}
 				_ = resp.Body.Close()
 			}
 		} else {
