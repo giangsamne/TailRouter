@@ -11,8 +11,10 @@ echo "=========================================================="
 echo "⚡ TailRouter - Packaging All-in-One Snapshot for: $TAG"
 echo "=========================================================="
 
-TMP_INDEX="/tmp/tailrouter_snapshot_index_$$"
-rm -f "$TMP_INDEX"
+TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tailrouter_snap.XXXXXXXXXX")"
+chmod 700 "$TMP_DIR"
+TMP_INDEX="$TMP_DIR/index"
+trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 
 echo "==> [1/4] Gathering code from all platform branches into folders..."
 GIT_INDEX_FILE="$TMP_INDEX" git read-tree --prefix=main/ origin/main

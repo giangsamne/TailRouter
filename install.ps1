@@ -4,15 +4,21 @@
 # ==============================================================================
 
 param(
-    [string]$Tag = "v2.1.1"
+    [string]$Tag = "v2.1.2"
 )
+
+$ErrorActionPreference = "Stop"
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
 $Repo = "giangsamne/TailRouter"
 $ReleaseTag = $Tag
 $ArchiveName = "TailRouter-Windows.zip"
 $DownloadUrl = "https://github.com/$Repo/releases/download/$ReleaseTag/$ArchiveName"
 $InstallDir = "$env:LOCALAPPDATA\TailRouter"
-$TempZip = "$env:TEMP\TailRouter-Windows.zip"
+$RandomSuffix = [System.IO.Path]::GetRandomFileName()
+$TempDir = Join-Path $env:TEMP "tailrouter_$RandomSuffix"
+New-Item -ItemType Directory -Path $TempDir -Force | Out-Null
+$TempZip = Join-Path $TempDir "TailRouter-Windows.zip"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "⚡ TailRouter Windows Installer ($ReleaseTag)" -ForegroundColor Cyan
@@ -34,7 +40,7 @@ if (!(Test-Path -Path $InstallDir)) {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 }
 Expand-Archive -Path $TempZip -DestinationPath $InstallDir -Force
-Remove-Item -Path $TempZip -Force
+Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # 4. Create Desktop Shortcut and Startup Registry
 Write-Host "==> [4/4] Setting up PATH and Autostart..." -ForegroundColor Yellow

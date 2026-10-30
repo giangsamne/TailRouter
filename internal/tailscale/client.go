@@ -36,13 +36,19 @@ func NewClient() *Client {
 }
 
 func (c *Client) findBinary() string {
-	// 1. Check PATH
-	if p, err := exec.LookPath("tailscale"); err == nil {
-		return p
-	}
-
-	// 2. OS specific known paths
+	// 1. Check OS specific root-owned known paths first for security
 	switch runtime.GOOS {
+	case "linux":
+		paths := []string{
+			"/usr/bin/tailscale",
+			"/bin/tailscale",
+			"/usr/local/bin/tailscale",
+		}
+		for _, p := range paths {
+			if _, err := os.Stat(p); err == nil {
+				return p
+			}
+		}
 	case "darwin":
 		paths := []string{
 			"/Applications/Tailscale.app/Contents/MacOS/Tailscale",
@@ -65,17 +71,11 @@ func (c *Client) findBinary() string {
 				return p
 			}
 		}
-	case "linux":
-		paths := []string{
-			"/usr/bin/tailscale",
-			"/usr/local/bin/tailscale",
-			"/bin/tailscale",
-		}
-		for _, p := range paths {
-			if _, err := os.Stat(p); err == nil {
-				return p
-			}
-		}
+	}
+
+	// 2. Fallback to PATH lookup
+	if p, err := exec.LookPath("tailscale"); err == nil {
+		return p
 	}
 	return ""
 }
@@ -95,16 +95,6 @@ func (c *Client) RunCmd(args ...string) (string, error) {
 	out, err := cmd.CombinedOutput()
 	outputStr := string(out)
 	if err != nil {
-		if strings.Contains(outputStr, "Access denied") || strings.Contains(outputStr, "operator") {
-			if sudoPath, sErr := exec.LookPath("sudo"); sErr == nil {
-				sudoArgs := append([]string{"-n", bin}, args...)
-				sCmd := exec.Command(sudoPath, sudoArgs...)
-				sCmd.Env = append(os.Environ(), "SHLVL=1")
-				if sOut, sErr2 := sCmd.CombinedOutput(); sErr2 == nil {
-					return string(sOut), nil
-				}
-			}
-		}
 		cleanOut := strings.TrimSpace(outputStr)
 		if cleanOut != "" {
 			return outputStr, errors.New(cleanOut)
@@ -252,7 +242,8 @@ func (c *Client) ApplyRoute(path string, targetHost string, targetPort int, mode
 		_, err := c.RunCmd("funnel", "--bg", "--yes", "--https=443", fmt.Sprintf("--set-path=%s", cleanPath), target)
 		return err
 	}
-	// mode serve
+	// mode serve: ensure funnel is turned off for this path, then apply serve
+	_, _ = c.RunCmd("funnel", "--https=443", fmt.Sprintf("--set-path=%s", cleanPath), "off")
 	_, err := c.RunCmd("serve", "--bg", "--yes", "--https=443", fmt.Sprintf("--set-path=%s", cleanPath), target)
 	return err
 }

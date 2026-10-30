@@ -27,14 +27,11 @@ def get_token():
     token = os.environ.get("GITHUB_TOKEN")
     if not token:
         try:
-            out = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], cwd=BASE_DIR, text=True).strip()
-            m = re.search(r'://[^:]+:([^@]+)@', out)
-            if m:
-                token = m.group(1)
+            token = subprocess.check_output(["gh", "auth", "token"], text=True).strip()
         except Exception:
             pass
     if not token:
-        print("❌ Cannot find GitHub token in GITHUB_TOKEN or git remote.origin.url")
+        print("❌ Cannot find GitHub token in GITHUB_TOKEN environment variable or 'gh auth token'")
         sys.exit(1)
     return token
 

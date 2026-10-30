@@ -173,6 +173,15 @@ func (m *Manager) GetStatus() *Status {
 }
 
 func cleanFileLines(filePath string, keywords ...string) error {
+	fi, err := os.Lstat(filePath)
+	if err != nil {
+		return err
+	}
+	// Never follow symlinks to avoid symlink TOCTOU attacks
+	if fi.Mode()&os.ModeSymlink != 0 || !fi.Mode().IsRegular() {
+		return nil
+	}
+
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
@@ -196,7 +205,7 @@ func cleanFileLines(filePath string, keywords ...string) error {
 	if !hasChanged {
 		return nil
 	}
-	return os.WriteFile(filePath, []byte(strings.Join(newLines, "\n")), 0644)
+	return os.WriteFile(filePath, []byte(strings.Join(newLines, "\n")), fi.Mode().Perm())
 }
 
 func updateCrontabFile(lines []string) error {
@@ -395,12 +404,6 @@ func (m *Manager) Disable() error {
 		if os.Geteuid() == 0 {
 			for _, f := range []string{".profile", ".ashrc", ".bashrc", ".bash_profile"} {
 				profiles = append(profiles, filepath.Join("/root", f))
-			}
-			userHomes, _ := filepath.Glob("/home/*")
-			for _, uh := range userHomes {
-				for _, f := range []string{".profile", ".ashrc", ".bashrc", ".bash_profile"} {
-					profiles = append(profiles, filepath.Join(uh, f))
-				}
 			}
 		}
 		for _, p := range profiles {

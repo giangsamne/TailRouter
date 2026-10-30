@@ -1042,6 +1042,62 @@ http://100.100.1.3:65534/bambu</pre>
   const PORT = 65534;
   const API_BASE = window.location.pathname.startsWith('/router') ? '/router/api' : '/api';
 
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  async function apiFetch(url, options = {}) {
+    options.headers = options.headers || {};
+    options.headers['X-TailRouter-Client'] = 'webui';
+    return fetch(url, options);
+  }
+
+  function copyOperatorCmd() {
+    const cmd = "sudo tailscale set --operator=$USER";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cmd).then(() => showToast(`${t('toast_copied')} ${cmd}`)).catch(() => {
+        prompt(t('toast_copied'), cmd);
+      });
+    } else {
+      prompt(t('toast_copied'), cmd);
+    }
+  }
+
+  function openEditModalById(encodedId) {
+    const id = decodeURIComponent(encodedId);
+    const r = currentRoutes.find(x => x.id === id);
+    if (r) openEditModal(r);
+  }
+
+  function deleteRouteById(encodedId) {
+    const id = decodeURIComponent(encodedId);
+    const r = currentRoutes.find(x => x.id === id);
+    const name = r ? r.name : id;
+    deleteRoute(id, name);
+  }
+
+  function prefillFromScanPort(port) {
+    const p = currentScanPorts.find(x => Number(x.port) === Number(port));
+    if (p) prefillFromScan(p);
+  }
+
+  function copyRouteLink(encodedUrl) {
+    const u = decodeURIComponent(encodedUrl);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(u).then(() => showToast(`${t('toast_copied')} ${u}`)).catch(() => {
+        prompt(t('toast_copied'), u);
+      });
+    } else {
+      prompt(t('toast_copied'), u);
+    }
+  }
+
 
   // I18n Multi-language Dictionary
   const translations = {
@@ -1663,8 +1719,16 @@ http://100.100.1.3:65534/bambu</pre>
     }
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span> <span>${msg}</span>`;
+    const safeType = type === 'error' ? 'error' : 'success';
+    toast.className = `toast ${safeType}`;
+
+    const iconSpan = document.createElement('span');
+    iconSpan.textContent = safeType === 'success' ? '✅' : '⚠️';
+    const textSpan = document.createElement('span');
+    textSpan.textContent = ' ' + String(msg);
+
+    toast.appendChild(iconSpan);
+    toast.appendChild(textSpan);
     container.appendChild(toast);
     setTimeout(() => {
       toast.style.opacity = '0';
@@ -1701,7 +1765,7 @@ http://100.100.1.3:65534/bambu</pre>
   // Fetch Status
   async function fetchStatus() {
     try {
-      const res = await fetch(`${API_BASE}/status`);
+      const res = await apiFetch(`${API_BASE}/status`);
       const data = await res.json();
 
       if (data.version) {
@@ -1857,7 +1921,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
     const willEnable = !autostartEnabled;
     showToast(willEnable ? (t('toast_enabling_autostart') || "Đang thiết lập tự khởi động cùng hệ thống...") : (t('toast_disabling_autostart') || "Đang tắt tự khởi động..."));
     try {
-      const res = await fetch(`${API_BASE}/autostart`, {
+      const res = await apiFetch(`${API_BASE}/autostart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enable: willEnable, enabled: willEnable })
@@ -1881,7 +1945,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
     }
     showToast(t('toast_resetting_routes') || "Đang đặt lại cấu hình router...");
     try {
-      const res = await fetch(`${API_BASE}/routes/reset`, { method: 'POST' });
+      const res = await apiFetch(`${API_BASE}/routes/reset`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast("✅ " + (data.message || "Đã đặt lại 0 routes thành công"));
@@ -1900,7 +1964,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/logs/clear`, { method: 'POST' });
+      const res = await apiFetch(`${API_BASE}/logs/clear`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast("✅ " + (data.message || "Đã xóa sạch nhật ký"));
@@ -1932,7 +1996,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
 
     showToast("💥 " + (t('toast_uninstalling') || "Đang tiến hành gỡ cài đặt TailRouter khỏi máy..."), "error");
     try {
-      const res = await fetch(`${API_BASE}/system/uninstall`, { method: 'POST' });
+      const res = await apiFetch(`${API_BASE}/system/uninstall`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
 
       // Stop polling intervals
@@ -1973,7 +2037,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function triggerServe(action) {
     showToast("Đang kích hoạt Tailscale Serve cho TailRouter...");
     try {
-      const res = await fetch(`${API_BASE}/tailscale/serve`, {
+      const res = await apiFetch(`${API_BASE}/tailscale/serve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: action || 'serve_router', target: 'router', port: PORT })
@@ -1994,7 +2058,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function triggerResetServe() {
     showToast("Đang tắt cấu hình Tailscale Serve...");
     try {
-      const res = await fetch(`${API_BASE}/tailscale/reset`, { method: 'POST' });
+      const res = await apiFetch(`${API_BASE}/tailscale/reset`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast("✅ " + (data.message || "Đã tắt Tailscale Serve!"));
@@ -2033,7 +2097,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
     container.innerHTML = routes.map(r => {
       const isOnline = r.last_status === 'online';
       const statusBadge = isOnline 
-        ? `<span class="badge" style="background:#064e3b; color:#6ee7b7;">🟢 Online ${r.last_latency_ms ? `(${r.last_latency_ms}ms)` : ''}</span>`
+        ? `<span class="badge" style="background:#064e3b; color:#6ee7b7;">🟢 Online ${r.last_latency_ms ? `(${escapeHtml(r.last_latency_ms)}ms)` : ''}</span>`
         : `<span class="badge" style="background:#450a0a; color:#fca5a5;">🔴 Offline</span>`;
 
       const isFunnel = r.mode === 'funnel';
@@ -2042,39 +2106,42 @@ http://${tailscaleIp}:${PORT}/bambu`;
         : `<span class="badge" style="background:#064e3b; color:#6ee7b7; border:1px solid #059669; font-weight:600;">${t('badge_serve')}</span>`;
 
       const tailscaleHttpsUrl = tailscaleFqdn ? `https://${tailscaleFqdn}${r.path}` : `http://${tailscaleIp}:${PORT}${r.path}`;
+      const safeId = encodeURIComponent(r.id);
+      const safeUrl = encodeURI(tailscaleHttpsUrl);
+      const safeEncodedUrl = encodeURIComponent(tailscaleHttpsUrl);
 
       return `
-        <div class="route-card ${r.enabled ? '' : 'disabled'}" id="card-${r.id}">
+        <div class="route-card ${r.enabled ? '' : 'disabled'}" id="card-${safeId}">
           <div class="route-info">
             <div class="route-header-line">
-              <span class="route-name">${r.name}</span>
-              <span class="route-path-badge">${r.path}</span>
+              <span class="route-name">${escapeHtml(r.name)}</span>
+              <span class="route-path-badge">${escapeHtml(r.path)}</span>
               ${modeBadge}
               ${r.strip_prefix ? '<span class="badge" style="background:#1e293b; color:#cbd5e1;">Strip Prefix</span>' : ''}
               ${statusBadge}
             </div>
             <div class="route-target">
               <span>${t('host_port_lbl')}</span>
-              <code>${r.target_host}:${r.target_port}</code>
-              ${r.notes ? `<span style="color:#64748b;">• ${r.notes}</span>` : ''}
+              <code>${escapeHtml(r.target_host)}:${escapeHtml(r.target_port)}</code>
+              ${r.notes ? `<span style="color:#64748b;">• ${escapeHtml(r.notes)}</span>` : ''}
             </div>
             <div class="route-stats" style="flex-wrap: wrap; gap: 0.75rem; margin-top: 0.4rem;">
-              <span>🌐 <strong>${t('access_url_lbl')}</strong> <a href="${tailscaleHttpsUrl}" target="_blank" style="color:#38bdf8; font-weight:600; text-decoration:none;">${tailscaleHttpsUrl} ↗</a></span>
-              <button class="btn btn-secondary btn-sm" style="padding:0.15rem 0.5rem; font-size:0.75rem;" onclick="navigator.clipboard.writeText('${tailscaleHttpsUrl}').then(()=>showToast('${t('toast_copied')} ${tailscaleHttpsUrl}'))">${t('btn_copy_link')}</button>
-              <span style="color:#64748b;">(Hits: ${r.hits || 0})</span>
+              <span>🌐 <strong>${t('access_url_lbl')}</strong> <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" style="color:#38bdf8; font-weight:600; text-decoration:none;">${escapeHtml(tailscaleHttpsUrl)} ↗</a></span>
+              <button class="btn btn-secondary btn-sm" style="padding:0.15rem 0.5rem; font-size:0.75rem;" onclick="copyRouteLink('${safeEncodedUrl}')">${t('btn_copy_link')}</button>
+              <span style="color:#64748b;">(Hits: ${escapeHtml(r.hits || 0)})</span>
             </div>
           </div>
           <div class="route-actions">
             <label class="switch" title="Toggle">
-              <input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="toggleRoute('${r.id}')">
+              <input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="toggleRoute('${safeId}')">
               <span class="slider"></span>
             </label>
-            <button class="btn btn-secondary btn-sm" onclick="toggleRouteMode('${r.id}')" title="Serve ↔ Funnel">
+            <button class="btn btn-secondary btn-sm" onclick="toggleRouteMode('${safeId}')" title="Serve ↔ Funnel">
               ${isFunnel ? t('btn_to_serve') : t('btn_to_funnel')}
             </button>
-            <button class="btn btn-secondary btn-sm" onclick="pingRoute('${r.id}')">${t('btn_ping')}</button>
-            <button class="btn btn-secondary btn-sm" onclick='openEditModal(${JSON.stringify(r)})'>${t('btn_edit')}</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteRoute('${r.id}', '${r.name}')">${t('btn_delete')}</button>
+            <button class="btn btn-secondary btn-sm" onclick="pingRoute('${safeId}')">${t('btn_ping')}</button>
+            <button class="btn btn-secondary btn-sm" onclick="openEditModalById('${safeId}')">${t('btn_edit')}</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteRouteById('${safeId}')">${t('btn_delete')}</button>
           </div>
         </div>
       `;
@@ -2095,12 +2162,12 @@ http://${tailscaleIp}:${PORT}/bambu`;
 
       return `
         <tr>
-          <td style="color: #64748b; font-family: monospace;">${l.time}</td>
-          <td><strong>${l.method}</strong></td>
-          <td><code>${l.path}</code></td>
-          <td style="color: #94a3b8;">${l.target}</td>
-          <td><span style="font-weight:600; color:${statusColor}">${l.status}</span></td>
-          <td style="color: #64748b;">${l.latency_ms} ms</td>
+          <td style="color: #64748b; font-family: monospace;">${escapeHtml(l.time)}</td>
+          <td><strong>${escapeHtml(l.method)}</strong></td>
+          <td><code>${escapeHtml(l.path)}</code></td>
+          <td style="color: #94a3b8;">${escapeHtml(l.target)}</td>
+          <td><span style="font-weight:600; color:${statusColor}">${escapeHtml(l.status)}</span></td>
+          <td style="color: #64748b;">${escapeHtml(l.latency_ms)} ms</td>
         </tr>
       `;
     }).join('');
@@ -2110,7 +2177,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function refreshRoutes() {
     showToast(t('toast_pinging') || "Đang làm mới...");
     try {
-      const res = await fetch(`${API_BASE}/routes`);
+      const res = await apiFetch(`${API_BASE}/routes`);
       const data = await res.json().catch(() => ([]));
       currentRoutes = Array.isArray(data) ? data : (data.routes || []);
       renderRoutes(currentRoutes);
@@ -2124,7 +2191,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function syncFromTailscaleCli() {
     showToast(t('toast_syncing_cli') || "Đang quét các router mở từ lệnh Tailscale CLI...");
     try {
-      const res = await fetch(`${API_BASE}/routes/sync-tailscale`, { method: 'POST' });
+      const res = await apiFetch(`${API_BASE}/routes/sync-tailscale`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast("✅ " + (data.message || "Đã đồng bộ từ Tailscale CLI"));
@@ -2142,7 +2209,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   // Toggle Route
   async function toggleRoute(id) {
     try {
-      const res = await fetch(`${API_BASE}/routes/${id}/toggle`, { method: 'POST' });
+      const res = await apiFetch(`${API_BASE}/routes/${encodeURIComponent(id)}/toggle`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast(data.message || "Đã đổi trạng thái tuyến đường");
@@ -2161,7 +2228,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function pingRoute(id) {
     showToast(t('toast_pinging') || "Đang kiểm tra kết nối...");
     try {
-      const res = await fetch(`${API_BASE}/routes/${id}/ping`, { method: 'POST' });
+      const res = await apiFetch(`${API_BASE}/routes/${encodeURIComponent(id)}/ping`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.online || data.status === 'online') {
         showToast(`${t('toast_online') || "Trực tuyến"} ${data.latency_ms || 0} ms`);
@@ -2178,7 +2245,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function deleteRoute(id, name) {
     if (!confirm(`${t('toast_confirm_delete')} "${name}"?`)) return;
     try {
-      const res = await fetch(`${API_BASE}/routes/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`${API_BASE}/routes/${encodeURIComponent(id)}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast(data.message || t('toast_deleted') || "Đã xóa tuyến đường");
@@ -2212,7 +2279,8 @@ http://${tailscaleIp}:${PORT}/bambu`;
         : matchingRoutes.map(r => r.path);
       let tsBadge = '';
       if (tsRoutes.length > 0) {
-        tsBadge = `<div style="margin-top:4px;"><span class="badge" style="background:#581c87; color:#f3e8ff; border:1px solid #9333ea; font-size:0.75rem;">⚡ Route: ${tsRoutes.join(', ')}</span></div>`;
+        const escapedRoutes = tsRoutes.map(x => escapeHtml(x)).join(', ');
+        tsBadge = `<div style="margin-top:4px;"><span class="badge" style="background:#581c87; color:#f3e8ff; border:1px solid #9333ea; font-size:0.75rem;">⚡ Route: ${escapedRoutes}</span></div>`;
       }
 
       const configuredBadge = isConfigured 
@@ -2221,27 +2289,27 @@ http://${tailscaleIp}:${PORT}/bambu`;
 
       const btnAdd = isConfigured
         ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.6; cursor:not-allowed;">${t('btn_added')}</button>`
-        : `<button class="btn btn-primary btn-sm" onclick='prefillFromScan(${JSON.stringify(p)})'>${t('btn_add_to_router')}</button>`;
+        : `<button class="btn btn-primary btn-sm" onclick="prefillFromScanPort(${Number(p.port)})">${t('btn_add_to_router')}</button>`;
 
-      const procBadge = p.process && p.process !== '-' ? `<span class="badge" style="background:#1e3a5f; color:#93c5fd; font-weight:600; margin-left:6px;">⚙️ ${p.process}${p.pid ? ' ('+p.pid+')' : ''}</span>` : '';
+      const procBadge = p.process && p.process !== '-' ? `<span class="badge" style="background:#1e3a5f; color:#93c5fd; font-weight:600; margin-left:6px;">⚙️ ${escapeHtml(p.process)}${p.pid ? ' ('+escapeHtml(p.pid)+')' : ''}</span>` : '';
 
       return `
         <tr>
-          <td><strong style="color:#38bdf8; font-size:1.05rem;">${p.port}</strong></td>
+          <td><strong style="color:#38bdf8; font-size:1.05rem;">${escapeHtml(p.port)}</strong></td>
           <td>
             <div style="font-weight:500; color:#fff; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
-              <span>${p.service_name || p.service || 'TCP Port'}</span>
+              <span>${escapeHtml(p.service_name || p.service || 'TCP Port')}</span>
               ${procBadge}
             </div>
-            <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">Bind: ${p.ip || p.host || '127.0.0.1'}</div>
+            <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">Bind: ${escapeHtml(p.ip || p.host || '127.0.0.1')}</div>
           </td>
-          <td>${(p.docker_container || p.container) ? `<span style="color:#a5b4fc; font-weight:500;">🐳 ${p.docker_container || p.container}</span>` : `<span style="color:#64748b;">${t('host_local')}</span>`}</td>
+          <td>${(p.docker_container || p.container) ? `<span style="color:#a5b4fc; font-weight:500;">🐳 ${escapeHtml(p.docker_container || p.container)}</span>` : `<span style="color:#64748b;">${t('host_local')}</span>`}</td>
           <td>
             <div>${typeBadge}</div>
-            ${p.title ? `<div style="font-size:0.8rem; color:#cbd5e1; margin-top:2px;">"${p.title}"</div>` : ''}
-            ${p.server ? `<div style="font-size:0.75rem; color:#64748b;">Server: ${p.server}</div>` : ''}
+            ${p.title ? `<div style="font-size:0.8rem; color:#cbd5e1; margin-top:2px;">"${escapeHtml(p.title)}"</div>` : ''}
+            ${p.server ? `<div style="font-size:0.75rem; color:#64748b;">Server: ${escapeHtml(p.server)}</div>` : ''}
           </td>
-          <td style="color:#94a3b8;">${p.latency_ms ? `${p.latency_ms} ms` : '-'}</td>
+          <td style="color:#94a3b8;">${p.latency_ms ? `${escapeHtml(p.latency_ms)} ms` : '-'}</td>
           <td>${configuredBadge}${tsBadge}</td>
           <td style="text-align: right;">${btnAdd}</td>
         </tr>
@@ -2257,7 +2325,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
     </td></tr>`;
 
     try {
-      const res = await fetch(`${API_BASE}/scan`);
+      const res = await apiFetch(`${API_BASE}/scan`);
       const data = await res.json();
       currentScanPorts = data.ports || [];
       currentScanPorts.sort((a, b) => (a.port || 0) - (b.port || 0));
@@ -2324,9 +2392,15 @@ http://${tailscaleIp}:${PORT}/bambu`;
 
   // Toggle Route Mode (Serve ↔ Funnel)
   async function toggleRouteMode(id) {
+    const route = (currentRoutes || []).find(r => r.id === id);
+    if (route && route.mode !== 'funnel') {
+      if (!confirm("⚠️ CẢNH BÁO BẢO MẬT:\nBạn có chắc muốn chuyển tuyến đường này sang chế độ Funnel?\nKhi bật Funnel, dịch vụ sẽ mở công khai ra toàn bộ Internet.")) {
+        return;
+      }
+    }
     showToast(t('toast_switching_mode') || "Đang chuyển chế độ...");
     try {
-      const res = await fetch(`${API_BASE}/routes/${id}/toggle-mode`, { method: 'POST' });
+      const res = await apiFetch(`${API_BASE}/routes/${encodeURIComponent(id)}/toggle-mode`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
         showToast(data.message || "Đã chuyển đổi chế độ");
@@ -2374,13 +2448,13 @@ http://${tailscaleIp}:${PORT}/bambu`;
     try {
       let res;
       if (routeId) {
-        res = await fetch(`${API_BASE}/routes/${routeId}`, {
+        res = await apiFetch(`${API_BASE}/routes/${encodeURIComponent(routeId)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       } else {
-        res = await fetch(`${API_BASE}/routes`, {
+        res = await apiFetch(`${API_BASE}/routes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -2404,7 +2478,7 @@ http://${tailscaleIp}:${PORT}/bambu`;
   async function setupTailscaleServe() {
     showToast("Setting up Tailscale Serve...");
     try {
-      const res = await fetch(`${API_BASE}/tailscale/serve`, {
+      const res = await apiFetch(`${API_BASE}/tailscale/serve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ port: PORT })

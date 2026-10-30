@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -148,7 +149,7 @@ func (m *Manager) checkReloadLocked() {
 
 func (m *Manager) loadLocked() error {
 	dir := filepath.Dir(m.configPath)
-	_ = os.MkdirAll(dir, 0755)
+	_ = os.MkdirAll(dir, 0700)
 
 	fi, err := os.Stat(m.configPath)
 	if os.IsNotExist(err) {
@@ -196,7 +197,7 @@ func (m *Manager) loadLocked() error {
 
 func (m *Manager) saveLocked() error {
 	dir := filepath.Dir(m.configPath)
-	_ = os.MkdirAll(dir, 0755)
+	_ = os.MkdirAll(dir, 0700)
 
 	list := make([]*Route, 0, len(m.routes))
 	for _, r := range m.routes {
@@ -211,9 +212,32 @@ func (m *Manager) saveLocked() error {
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(m.configPath, data, 0644); err != nil {
+
+	// Atomic write: write to temp file then rename
+	tmpFile, err := os.CreateTemp(dir, ".routes-*.tmp")
+	if err != nil {
 		return err
 	}
+	tmpName := tmpFile.Name()
+	defer func() {
+		_ = os.Remove(tmpName)
+	}()
+
+	if _, err := tmpFile.Write(data); err != nil {
+		_ = tmpFile.Close()
+		return err
+	}
+	_ = tmpFile.Chmod(0600)
+	_ = tmpFile.Sync()
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+
+	if err := os.Rename(tmpName, m.configPath); err != nil {
+		return err
+	}
+	_ = os.Chmod(m.configPath, 0600)
+
 	if fi, err := os.Stat(m.configPath); err == nil {
 		m.lastMod = fi.ModTime()
 	}
@@ -270,28 +294,62 @@ func (m *Manager) Get(id string) (*Route, bool) {
 }
 
 func ValidatePath(p string) (string, error) {
-	p = strings.TrimSpace(p)
-	if !strings.HasPrefix(p, "/") {
-		p = "/" + p
+	raw := strings.TrimSpace(p)
+	if strings.Contains(raw, "..") || strings.Contains(raw, "//") {
+		return "", errors.New("đường dẫn không được chứa '..' hoặc '//'")
 	}
-	p = strings.TrimRight(p, "/")
-	if p == "" {
-		p = "/"
+	if !strings.HasPrefix(raw, "/") {
+		raw = "/" + raw
+	}
+	clean := path.Clean(raw)
+	if clean == "" || clean == "/" {
+		return "/", nil
 	}
 
-	if ReservedPaths[p] {
-		return "", fmt.Errorf("đường dẫn '%s' là đường dẫn hệ thống được bảo lưu", p)
+	// Check reserved paths and prefixes
+	if ReservedPaths[clean] || clean == "/api" || strings.HasPrefix(clean, "/api/") || clean == "/router" || strings.HasPrefix(clean, "/router/") {
+		return "", fmt.Errorf("đường dẫn '%s' là đường dẫn hệ thống được bảo lưu", clean)
 	}
 
 	validPattern := regexp.MustCompile(`^/[a-zA-Z0-9_\-\.\/]+$`)
-	if !validPattern.MatchString(p) {
+	if !validPattern.MatchString(clean) {
 		return "", errors.New("đường dẫn chứa ký tự không hợp lệ")
 	}
-	return p, nil
+	return clean, nil
+}
+
+func ValidateTargetHost(host string) (string, error) {
+	if strings.ContainsAny(host, "\r\n\x00") {
+		return "", errors.New("target_host chứa ký tự điều khiển không hợp lệ")
+	}
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return "127.0.0.1", nil
+	}
+	// Disallow control chars, @, /, ?, #, whitespace
+	if strings.ContainsAny(host, "@/?# \t\r\n") {
+		return "", errors.New("target_host chứa ký tự không hợp lệ (@, /, ?, #, khoảng trắng)")
+	}
+	// Check colons (IPv6 check)
+	if strings.Contains(host, ":") {
+		if !strings.HasPrefix(host, "[") && net.ParseIP(host) == nil {
+			return "", errors.New("target_host không được chứa cổng (vui lòng nhập cổng vào ô target_port)")
+		}
+	}
+	// Block Cloud Instance Metadata endpoints
+	if host == "169.254.169.254" || strings.HasPrefix(host, "169.254.") || host == "metadata.google.internal" || host == "instance-data" {
+		return "", errors.New("không thể chuyển tiếp tới địa chỉ Cloud Metadata")
+	}
+	return host, nil
 }
 
 func (m *Manager) Add(name, path, targetHost string, targetPort int, stripPrefix bool, mode, notes string) (*Route, error) {
 	normPath, err := ValidatePath(path)
+	if err != nil {
+		return nil, err
+	}
+
+	normHost, err := ValidateTargetHost(targetHost)
 	if err != nil {
 		return nil, err
 	}
@@ -301,10 +359,6 @@ func (m *Manager) Add(name, path, targetHost string, targetPort int, stripPrefix
 	}
 	if targetPort == 65534 {
 		return nil, errors.New("không thể đăng ký chính cổng Gateway (65534) làm cổng đích")
-	}
-
-	if targetHost == "" {
-		targetHost = "127.0.0.1"
 	}
 
 	m.mu.Lock()
@@ -330,7 +384,7 @@ func (m *Manager) Add(name, path, targetHost string, targetPort int, stripPrefix
 		ID:            routeID,
 		Name:          name,
 		Path:          normPath,
-		TargetHost:    targetHost,
+		TargetHost:    normHost,
 		TargetPort:    targetPort,
 		StripPrefix:   stripPrefix,
 		Enabled:       true,
@@ -344,7 +398,8 @@ func (m *Manager) Add(name, path, targetHost string, targetPort int, stripPrefix
 
 	m.routes[routeID] = r
 	_ = m.saveLocked()
-	return r, nil
+	cp := *r
+	return &cp, nil
 }
 
 func (m *Manager) Update(id string, updates map[string]interface{}) (*Route, error) {
@@ -379,7 +434,11 @@ func (m *Manager) Update(id string, updates map[string]interface{}) (*Route, err
 		r.TargetPort = iPort
 	}
 	if host, ok := updates["target_host"].(string); ok && host != "" {
-		r.TargetHost = host
+		normHost, err := ValidateTargetHost(host)
+		if err != nil {
+			return nil, err
+		}
+		r.TargetHost = normHost
 	}
 	if strip, ok := updates["strip_prefix"].(bool); ok {
 		r.StripPrefix = strip
@@ -397,7 +456,8 @@ func (m *Manager) Update(id string, updates map[string]interface{}) (*Route, err
 	}
 
 	_ = m.saveLocked()
-	return r, nil
+	cp := *r
+	return &cp, nil
 }
 
 func (m *Manager) Delete(id string) (*Route, error) {

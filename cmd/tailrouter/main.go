@@ -90,7 +90,7 @@ func main() {
 
 func printHelp() {
 	fmt.Print(Banner)
-	fmt.Println(`
+	fmt.Print(`
 Sử dụng: tailrouter [lệnh] [tùy chọn]
 
 Các lệnh có sẵn:
@@ -491,12 +491,18 @@ func runServe(args []string) {
 	ts := tailscale.NewClient()
 	sub := args[0]
 	switch sub {
-	case "router", "gateway":
+	case "router":
+		if err := ts.ConfigureServeRouter(gateway.DefaultPort); err != nil {
+			fmt.Printf("Lỗi: %v\n", err)
+			return
+		}
+		fmt.Println("✅ Đã bật Tailscale Serve cho TailRouter (/router)")
+	case "gateway":
 		if err := ts.ConfigureServeGateway(gateway.DefaultPort); err != nil {
 			fmt.Printf("Lỗi: %v\n", err)
 			return
 		}
-		fmt.Println("✅ Đã bật Tailscale Serve cho TailRouter")
+		fmt.Println("✅ Đã bật Tailscale Serve cho toàn bộ Gateway (/)")
 	case "reset":
 		if err := ts.ResetServe(); err != nil {
 			fmt.Printf("Lỗi: %v\n", err)
@@ -581,9 +587,14 @@ func runUninstall(args []string) {
 
 	// 4. Xóa cấu hình
 	fmt.Println("🗑️  Đang xóa cấu hình routes.json và thư mục dữ liệu...")
-	cfgDir := filepath.Dir(config.DefaultConfigPath())
-	if cfgDir != "" && cfgDir != "/" && cfgDir != "." {
-		_ = os.RemoveAll(cfgDir)
+	cfgFile := config.DefaultConfigPath()
+	if cfgFile != "" {
+		_ = os.Remove(cfgFile)
+	}
+	cfgDir := filepath.Dir(cfgFile)
+	baseDir := filepath.Base(cfgDir)
+	if baseDir == "tailrouter" || baseDir == ".tailrouter" {
+		_ = os.Remove(cfgDir) // an toàn, không đệ quy
 	}
 	home, _ := os.UserHomeDir()
 	if home != "" {

@@ -7,7 +7,7 @@ set -e
 # ==============================================================================
 
 REPO="giangsamne/TailRouter"
-RELEASE_TAG="${1:-v2.1.1}"
+RELEASE_TAG="${1:-v2.1.2}"
 BASE_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
 
 echo "=========================================================="
@@ -32,9 +32,9 @@ case "$OS" in
     echo "==> [2/4] Preparing macOS installation..."
     ARCHIVE_NAME="TailRouter-macOS.zip"
     DOWNLOAD_URL="${BASE_URL}/${ARCHIVE_NAME}"
-    TMP_DIR="/tmp/tailrouter_install_$$"
-
-    mkdir -p "$TMP_DIR"
+    TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tailrouter.XXXXXXXXXX")"
+    chmod 700 "$TMP_DIR"
+    trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
     echo "==> [3/4] Downloading $ARCHIVE_NAME from GitHub Releases..."
     curl -fSL --progress-bar "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE_NAME"
 
@@ -101,9 +101,9 @@ case "$OS" in
     echo "==> [2/4] Preparing Linux installation..."
     ARCHIVE_NAME="TailRouter-Linux.tar.gz"
     DOWNLOAD_URL="${BASE_URL}/${ARCHIVE_NAME}"
-    TMP_DIR="/tmp/tailrouter_install_$$"
-
-    mkdir -p "$TMP_DIR"
+    TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tailrouter.XXXXXXXXXX")"
+    chmod 700 "$TMP_DIR"
+    trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
     echo "==> [3/4] Downloading $ARCHIVE_NAME from GitHub Releases..."
     curl -fSL --progress-bar "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE_NAME"
 

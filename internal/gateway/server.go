@@ -1,8 +1,10 @@
 package gateway
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"net"
@@ -26,7 +28,7 @@ import (
 
 const (
 	DefaultPort = 65534
-	Version     = "2.1.1-go-native"
+	Version     = "2.1.2-go-native"
 	MaxLogSize  = 5 * 1024 * 1024 // 5MB max log file
 )
 
@@ -112,7 +114,7 @@ func (s *Server) setupLogger() {
 		_ = os.Rename(logPath, logPath+".1")
 	}
 
-	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		s.logger = log.New(os.Stdout, "[TailRouter] ", log.LstdFlags)
 		return
@@ -132,24 +134,28 @@ func (s *Server) Close() {
 }
 
 func (s *Server) Start() error {
-	addr := fmt.Sprintf(":%d", s.port)
-	s.logger.Printf("Khởi chạy TailRouter Native Engine trên cổng %d (Dual-Stack IPv4/IPv6)...", s.port)
+	bindHost := os.Getenv("TAILROUTER_BIND")
+	if bindHost == "" {
+		bindHost = "127.0.0.1"
+	}
+	addr := fmt.Sprintf("%s:%d", bindHost, s.port)
+	s.logger.Printf("Khởi chạy TailRouter Native Engine trên %s...", addr)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handleRoot)
 
 	s.httpServer = &http.Server{
-		Addr:         addr,
-		Handler:      s.corsMiddleware(mux),
-		ReadTimeout:  120 * time.Second,
-		WriteTimeout: 120 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		Addr:              addr,
+		Handler:           s.securityMiddleware(mux),
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       120 * time.Second,
+		WriteTimeout:      120 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
-	// Dual-stack listener
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		return fmt.Errorf("không thể mở cổng %d: %w", s.port, err)
+		return fmt.Errorf("không thể mở cổng %d trên %s: %w", s.port, bindHost, err)
 	}
 
 	s.logger.Printf("TailRouter Gateway sẵn sàng tại: http://localhost:%d/router", s.port)
@@ -160,22 +166,81 @@ func (s *Server) Start() error {
 	return s.httpServer.Serve(listener)
 }
 
-func (s *Server) corsMiddleware(next http.Handler) http.Handler {
+func (s *Server) securityMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-TailRouter-Hop")
+		// 1. Security Headers
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
+		// 2. DNS Rebinding Protection: Verify Host header
+		host := r.Host
+		if h, _, err := net.SplitHostPort(host); err == nil {
+			host = h
+		}
+		isLocal := host == "localhost" || host == "127.0.0.1" || host == "::1" || host == "0.0.0.0"
+		isTailscale := strings.HasSuffix(host, ".ts.net")
+		if !isLocal && !isTailscale {
+			if tsStat, err := s.tailscale.GetStatus(); err == nil && tsStat != nil {
+				for _, ip := range tsStat.IPs {
+					if host == ip {
+						isTailscale = true
+						break
+					}
+				}
+				if tsStat.FQDN != "" && (host == tsStat.FQDN || host == tsStat.NodeName) {
+					isTailscale = true
+				}
+			}
+		}
+		if !isLocal && !isTailscale {
+			http.Error(w, "400 Bad Request: Invalid or untrusted Host header", http.StatusBadRequest)
 			return
 		}
+
+		// 3. CSRF Protection for state-mutating API requests
+		if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/router/api/") {
+			if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodDelete {
+				clientHdr := r.Header.Get("X-TailRouter-Client")
+				requestedWith := r.Header.Get("X-Requested-With")
+				if clientHdr != "webui" && requestedWith != "XMLHttpRequest" {
+					origin := r.Header.Get("Origin")
+					if origin != "" {
+						originURL, err := url.Parse(origin)
+						if err != nil || (!strings.HasPrefix(originURL.Host, "localhost") && !strings.HasPrefix(originURL.Host, "127.0.0.1") && !strings.HasSuffix(originURL.Host, ".ts.net")) {
+							http.Error(w, "403 Forbidden: Cross-Origin Request Blocked", http.StatusForbidden)
+							return
+						}
+					} else {
+						http.Error(w, "403 Forbidden: Missing security header X-TailRouter-Client", http.StatusForbidden)
+						return
+					}
+				}
+			}
+
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	reqPath := r.URL.Path
+
+	// Security Check: Tailscale Funnel isolation
+	// If the request comes from public Internet Funnel, strictly deny access to admin dashboard and API
+	if r.Header.Get("Tailscale-Funnel-Request") != "" {
+		if reqPath == "/" || reqPath == "/router" || reqPath == "/router/" ||
+			strings.HasPrefix(reqPath, "/router/") || strings.HasPrefix(reqPath, "/api/") {
+			s.logger.Printf("⚠️  CHẶN TRUY CẬP: Funnel từ Internet công cộng cố truy cập bảng điều khiển quản trị: %s", reqPath)
+			http.Error(w, "403 Forbidden: Bảng điều khiển quản trị TailRouter không thể truy cập từ Internet công cộng qua Tailscale Funnel.", http.StatusForbidden)
+			return
+		}
+	}
 
 	// 1. Favicon
 	if reqPath == "/favicon.ico" || reqPath == "/favicon.svg" || reqPath == "/router/favicon.ico" || reqPath == "/router/favicon.svg" {
@@ -213,11 +278,18 @@ func (s *Server) serveWebDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' data:; connect-src 'self'; frame-ancestors 'none'")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(indexData)
 }
 
 func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
+	// Request Body Limit to protect against memory exhaustion (64KB)
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
+
 	path := strings.TrimPrefix(r.URL.Path, "/api")
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 
@@ -770,9 +842,14 @@ func (s *Server) Uninstall() error {
 
 	// 3. Delete all routes & config directory
 	s.routes.DeleteAll()
+	cfgFile := s.routes.GetConfigPath()
+	if cfgFile != "" {
+		_ = os.Remove(cfgFile)
+	}
 	cfgDir := s.routes.GetConfigDir()
-	if cfgDir != "" && cfgDir != "/" && cfgDir != "." {
-		_ = os.RemoveAll(cfgDir)
+	baseDir := filepath.Base(cfgDir)
+	if baseDir == "tailrouter" || baseDir == ".tailrouter" {
+		_ = os.Remove(cfgDir) // safe, non-recursive
 	}
 
 	home, _ := os.UserHomeDir()
@@ -852,7 +929,11 @@ func (s *Server) handleReverseProxy(w http.ResponseWriter, r *http.Request) {
 	hopStr := r.Header.Get("X-TailRouter-Hop")
 	hops := 0
 	if hopStr != "" {
-		hops, _ = strconv.Atoi(hopStr)
+		var err error
+		hops, err = strconv.Atoi(hopStr)
+		if err != nil || hops < 0 {
+			hops = 0
+		}
 	}
 	if hops >= 5 {
 		http.Error(w, "508 Loop Detected: Phát hiện vòng lặp chuyển tiếp proxy", http.StatusLoopDetected)
@@ -865,13 +946,21 @@ func (s *Server) handleReverseProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Strict Port Loop Protection
-	if route.TargetPort == s.port || (route.TargetHost == "127.0.0.1" && route.TargetPort == s.port) {
-		http.Error(w, "508 Loop Detected: Không được chuyển tiếp tới chính cổng Gateway 65534", http.StatusLoopDetected)
+	// Tailscale Funnel isolation check
+	isFunnel := r.Header.Get("Tailscale-Funnel-Request") != ""
+	if isFunnel && route.Mode != "funnel" {
+		s.logger.Printf("⚠️  CHẶN TRUY CẬP: Tuyến đường '%s' chỉ ở chế độ Serve (nội bộ Tailnet), chặn truy cập từ Internet công cộng", route.Path)
+		http.Error(w, "403 Forbidden: Tuyến đường này được cấu hình riêng tư (Tailscale Serve), không thể truy cập từ Internet công cộng.", http.StatusForbidden)
 		return
 	}
 
-	targetURL, err := url.Parse(fmt.Sprintf("http://%s:%d", route.TargetHost, route.TargetPort))
+	// 2. Strict Port Loop Protection
+	if route.TargetPort == s.port && (route.TargetHost == "127.0.0.1" || route.TargetHost == "localhost" || route.TargetHost == "::1") {
+		http.Error(w, "508 Loop Detected: Không được chuyển tiếp tới chính cổng Gateway", http.StatusLoopDetected)
+		return
+	}
+
+	targetURL, err := url.Parse(fmt.Sprintf("http://%s", net.JoinHostPort(route.TargetHost, strconv.Itoa(route.TargetPort))))
 	if err != nil {
 		http.Error(w, "Cấu hình URL đích không hợp lệ", http.StatusInternalServerError)
 		return
@@ -888,13 +977,22 @@ func (s *Server) handleReverseProxy(w http.ResponseWriter, r *http.Request) {
 
 		if route.StripPrefix {
 			req.URL.Path = remainderPath
+			req.URL.RawPath = ""
 		}
 		req.Host = fmt.Sprintf("%s:%d", route.TargetHost, route.TargetPort)
+
+		// Sanitize proxy identity headers
+		req.Header.Del("Tailscale-User-Login")
+		req.Header.Del("Tailscale-User-Name")
+		req.Header.Del("Tailscale-User-Profile-Pic")
+		req.Header.Del("X-Real-IP")
+
 		req.Header.Set("X-Forwarded-Host", r.Host)
-		req.Header.Set("X-Forwarded-Proto", "http")
-		if r.TLS != nil {
-			req.Header.Set("X-Forwarded-Proto", "https")
+		proto := "http"
+		if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+			proto = "https"
 		}
+		req.Header.Set("X-Forwarded-Proto", proto)
 		req.Header.Set("X-TailRouter-Hop", strconv.Itoa(hops+1))
 	}
 
@@ -912,6 +1010,7 @@ func (s *Server) handleReverseProxy(w http.ResponseWriter, r *http.Request) {
 			LatencyMs: time.Since(startReq).Milliseconds(),
 		})
 		rw.Header().Set("Content-Type", "text/html; charset=utf-8")
+		rw.Header().Set("X-Content-Type-Options", "nosniff")
 		rw.WriteHeader(http.StatusBadGateway)
 		fmt.Fprintf(rw, `<!DOCTYPE html>
 <html>
@@ -921,7 +1020,7 @@ func (s *Server) handleReverseProxy(w http.ResponseWriter, r *http.Request) {
 h1{color:#ef4444;margin:0 0 1rem;}p{color:#94a3b8;line-height:1.5;}</style></head>
 <body><div class="box"><h1>502 Bad Gateway</h1>
 <p>Dịch vụ đích <strong>%s:%d</strong> hiện không thể kết nối hoặc đã dừng hoạt động.</p>
-<p style="font-size:0.875rem;color:#64748b;">TailRouter Native Gateway</p></div></body></html>`, route.TargetHost, route.TargetPort)
+<p style="font-size:0.875rem;color:#64748b;">TailRouter Native Gateway</p></div></body></html>`, html.EscapeString(route.TargetHost), route.TargetPort)
 	}
 
 	proxy.ServeHTTP(sw, r)
@@ -945,6 +1044,23 @@ type statusWriter struct {
 func (w *statusWriter) WriteHeader(code int) {
 	w.statusCode = code
 	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *statusWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
+func (w *statusWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+func (w *statusWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, fmt.Errorf("http.Hijacker không được hỗ trợ")
 }
 
 func (s *Server) jsonResponse(w http.ResponseWriter, status int, data interface{}) {

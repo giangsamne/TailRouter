@@ -4,7 +4,7 @@
 
 **High-performance, zero-dependency bare-metal gateway & web dashboard for Tailscale Serve and Funnel.**
 
-[![Release](https://img.shields.io/badge/Release-v2.1.1-blue.svg?logo=github)](https://github.com/giangsamne/TailRouter/releases)
+[![Release](https://img.shields.io/badge/Release-v2.1.2-blue.svg?logo=github)](https://github.com/giangsamne/TailRouter/releases)
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8.svg?logo=go&logoColor=white)](https://golang.org)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg?logo=tailscale&logoColor=white)](https://tailscale.com)
@@ -22,13 +22,39 @@ Run a single command in your terminal or PowerShell — it automatically detects
 
 * **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.1/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.2/install.sh | bash
   ```
 
 * **🪟 Windows** (PowerShell):
   ```powershell
-  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.1/install.ps1 | iex
+  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.2/install.ps1 | iex
   ```
+
+---
+
+## 🛡️ What's New in v2.1.2 (Security Hardening Release)
+
+Phiên bản **v2.1.2** (Go Native) tập trung toàn diện vào **Bảo Mật Cấp Hệ Thống & Kiểm Soát Ranh Giới Mạng (Zero-Trust Security & Boundary Isolation)**:
+
+1. **🛡️ Giới Hạn Giao Diện Lắng Nghe Cổng Cục Bộ (Loopback Binding Only)**:
+   - Dịch vụ cổng `65534` chuyển từ lắng nghe toàn bộ giao diện (`0.0.0.0`) sang mặc định **chỉ lắng nghe cục bộ `127.0.0.1`** (hoặc tùy chỉnh qua biến `TAILROUTER_BIND`).
+   - Ngăn chặn hoàn toàn việc các thiết bị khác trong mạng LAN hoặc WiFi công cộng truy cập trái phép trực tiếp vào cổng 65534.
+2. **🌐 Phân Tách Tuyệt Đối Ranh Giới Tailscale Serve & Funnel**:
+   - Khi bật Funnel cho bất kỳ dịch vụ công cộng nào, bảng điều khiển quản trị `/router` và toàn bộ `/api/*` được bảo vệ tuyệt đối với quy tắc **Chặn Funnel Request (403 Forbidden)**.
+   - Các tuyến đường riêng tư (`Mode: serve`) tự động từ chối mọi yêu cầu đến từ Internet công cộng qua Funnel.
+3. **🔒 Miễn Nhiễm Tấn Công Web: Chặn Đứng CSRF, DNS Rebinding & CORS**:
+   - Xóa bỏ hoàn toàn cấu hình CORS wildcard `Access-Control-Allow-Origin: *`.
+   - Bắt buộc tiêu đề xác thực ứng dụng `X-TailRouter-Client: webui` trên mọi API thay đổi trạng thái (`POST`/`PUT`/`DELETE`), ngăn chặn mọi kịch bản drive-by request từ trang web độc hại.
+   - Thêm bộ lọc DNS Rebinding trên tiêu đề `Host` và bổ sung các header bảo vệ tiêu chuẩn: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`.
+4. **🧼 Khử Khuẩn DOM & Stored XSS Toàn Diện**:
+   - Khử trùng ký tự HTML (`escapeHtml`) đối với toàn bộ dữ liệu hiển thị từ xa (tên máy chủ quét, tiêu đề HTTP probe, nhật ký proxy, tên route, thông báo toast).
+5. **🛑 Cơ Chế Gỡ Cài Đặt An Toàn Tuyệt Đối (Safe Uninstall)**:
+   - Loại bỏ hoàn toàn lệnh xóa đệ quy không giới hạn `os.RemoveAll`. Cơ chế mới chỉ xóa đúng tệp `routes.json` và thư mục rỗng có tên được kiểm tra nghiêm ngặt `tailrouter`.
+6. **🔐 Chống SSRF & Đảm Bảo Tính Toàn Vẹn Cấu Hình**:
+   - Xác thực nghiêm ngặt `target_host`, cấm hoàn toàn các IP Cloud Instance Metadata (`169.254.169.254`, `metadata.google.internal`), ký tự điều khiển và scheme lồng ghép.
+   - Ghi tệp cấu hình nguyên tử (`atomic write` qua temp file + rename) và siết quyền `0600` cho cấu hình và tệp nhật ký log (`0700` cho thư mục cấu hình).
+7. **🧹 Dọn Dẹp An Toàn Cài Đặt & Git Repository**:
+   - Chuyển `install.sh` và `snapshot_tag.sh` sang thư mục tạm ngẫu nhiên an toàn (`mktemp -d` với quyền `0700` và bẫy tín hiệu `trap cleanup`).
 
 ---
 
