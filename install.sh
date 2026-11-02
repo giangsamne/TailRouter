@@ -7,7 +7,7 @@ set -e
 # ==============================================================================
 
 REPO="giangsamne/TailRouter"
-RELEASE_TAG="${1:-v2.1.2}"
+RELEASE_TAG="${1:-v2.2.0}"
 BASE_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
 
 echo "=========================================================="
@@ -30,22 +30,28 @@ fi
 case "$OS" in
   Darwin)
     echo "==> [2/4] Preparing macOS installation..."
-    ARCHIVE_NAME="TailRouter-macOS.zip"
+    ARCH_MAP="amd64"
+    if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+      ARCH_MAP="arm64"
+    fi
+    ARCHIVE_NAME="tailrouter-darwin-${ARCH_MAP}.tar.gz"
     DOWNLOAD_URL="${BASE_URL}/${ARCHIVE_NAME}"
     TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tailrouter.XXXXXXXXXX")"
     chmod 700 "$TMP_DIR"
     trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
     echo "==> [3/4] Downloading $ARCHIVE_NAME from GitHub Releases..."
-    curl -fSL --progress-bar "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE_NAME"
-
-    echo "==> [4/4] Extracting and installing binary..."
-    unzip -q -o "$TMP_DIR/$ARCHIVE_NAME" -d "$TMP_DIR"
-
-    BIN_NAME="tailrouter-arm64"
-    if [ "$ARCH" = "x86_64" ]; then
-      BIN_NAME="tailrouter-amd64"
+    if ! curl -fSL --progress-bar "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE_NAME" 2>/dev/null; then
+      ARCHIVE_NAME="TailRouter-macOS.zip"
+      DOWNLOAD_URL="${BASE_URL}/${ARCHIVE_NAME}"
+      curl -fSL --progress-bar "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE_NAME"
+      unzip -q -o "$TMP_DIR/$ARCHIVE_NAME" -d "$TMP_DIR"
+      BIN_NAME="tailrouter-${ARCH_MAP}"
+    else
+      tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$TMP_DIR"
+      BIN_NAME="tailrouter-darwin-${ARCH_MAP}"
     fi
 
+    echo "==> [4/4] Extracting and installing binary..."
     TARGET_BIN="/usr/local/bin/tailrouter"
     if [ -w "/usr/local/bin" ] || [ "$(id -u)" -eq 0 ]; then
       cp "$TMP_DIR/$BIN_NAME" "$TARGET_BIN"
@@ -99,22 +105,31 @@ case "$OS" in
 
   Linux)
     echo "==> [2/4] Preparing Linux installation..."
-    ARCHIVE_NAME="TailRouter-Linux.tar.gz"
+    ARCH_MAP="amd64"
+    if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+      ARCH_MAP="arm64"
+    fi
+    ARCHIVE_NAME="tailrouter-linux-${ARCH_MAP}.tar.gz"
     DOWNLOAD_URL="${BASE_URL}/${ARCHIVE_NAME}"
     TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tailrouter.XXXXXXXXXX")"
     chmod 700 "$TMP_DIR"
     trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
     echo "==> [3/4] Downloading $ARCHIVE_NAME from GitHub Releases..."
-    curl -fSL --progress-bar "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE_NAME"
+    if ! curl -fSL --progress-bar "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE_NAME" 2>/dev/null; then
+      ARCHIVE_NAME="TailRouter-Linux.tar.gz"
+      DOWNLOAD_URL="${BASE_URL}/${ARCHIVE_NAME}"
+      curl -fSL --progress-bar "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE_NAME"
+      tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$TMP_DIR"
+      BIN_NAME="tailrouter"
+      if [ "$ARCH_MAP" = "arm64" ]; then
+        BIN_NAME="tailrouter-arm64"
+      fi
+    else
+      tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$TMP_DIR"
+      BIN_NAME="tailrouter-linux-${ARCH_MAP}"
+    fi
 
     echo "==> [4/4] Extracting and installing binaries..."
-    tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$TMP_DIR"
-
-    # Determine binary architecture
-    BIN_NAME="tailrouter"
-    if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-      BIN_NAME="tailrouter-arm64"
-    fi
 
     # Determine install destination (prefer /usr/local/bin if writable/root, else ~/.local/bin)
     TARGET_BIN="/usr/local/bin/tailrouter"
@@ -144,13 +159,12 @@ case "$OS" in
     rm -rf "$TMP_DIR"
 
     echo "=========================================================="
-    echo "✅ TailRouter installed at: $TARGET_BIN"
+    echo "✅ TailRouter installed successfully at: $TARGET_BIN"
     echo "==> Setting up system service..."
     "$TARGET_BIN" service install 2>/dev/null || true
     sleep 1
 
-
-    # Fallback background daemon if service is not started (e.g. OpenRC / Alpine / non-systemd)
+    # Fallback background daemon if service is not started
     if ! curl -sf http://127.0.0.1:65534/api/status >/dev/null 2>&1; then
       echo "==> Starting TailRouter daemon in background..."
       nohup "$TARGET_BIN" run > "$HOME/.tailrouter.log" 2>&1 &
@@ -167,11 +181,11 @@ case "$OS" in
       echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
       echo "   (or: source ~/.profile)"
     fi
+    xdg-open "http://localhost:65534" 2>/dev/null || true
     ;;
 
   *)
     echo "❌ Unsupported operating system: $OS"
-    echo "For Windows, please run install.ps1 in PowerShell"
     exit 1
     ;;
 esac

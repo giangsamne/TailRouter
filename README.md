@@ -4,7 +4,7 @@
 
 **High-performance, zero-dependency bare-metal gateway & web dashboard for Tailscale Serve and Funnel.**
 
-[![Release](https://img.shields.io/badge/Release-v2.1.2-blue.svg?logo=github)](https://github.com/giangsamne/TailRouter/releases)
+[![Release](https://img.shields.io/badge/Release-v2.2.0-blue.svg?logo=github)](https://github.com/giangsamne/TailRouter/releases)
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8.svg?logo=go&logoColor=white)](https://golang.org)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg?logo=tailscale&logoColor=white)](https://tailscale.com)
@@ -22,13 +22,41 @@ Run a single command in your terminal or PowerShell — it automatically detects
 
 * **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.2/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.2.0/install.sh | bash
   ```
 
 * **🪟 Windows** (PowerShell):
   ```powershell
-  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.1.2/install.ps1 | iex
+  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.2.0/install.ps1 | iex
   ```
+
+---
+
+### 🚀 Pre-compiled Single-File Binaries & Archives
+
+Tải trực tiếp bản nhị phân đóng gói độc lập cho từng hệ điều hành và kiến trúc từ [GitHub Releases](https://github.com/giangsamne/TailRouter/releases):
+
+| Nền tảng (Platform) | Kiến trúc CPU (Architecture) | Tệp đóng gói (1-File Package) |
+| :--- | :--- | :--- |
+| **🐧 Linux** | AMD64 (x86_64 PC, VPS, Server) | [`tailrouter-linux-amd64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-linux-amd64.tar.gz) |
+| **🐧 Linux** | ARM64 (Raspberry Pi 4/5, Cloud ARM) | [`tailrouter-linux-arm64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-linux-arm64.tar.gz) |
+| **🍏 macOS** | Apple Silicon (M1 / M2 / M3 / M4) | [`tailrouter-darwin-arm64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-darwin-arm64.tar.gz) |
+| **🍏 macOS** | Intel (x86_64) | [`tailrouter-darwin-amd64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-darwin-amd64.tar.gz) |
+| **🪟 Windows** | AMD64 (x64) | [`tailrouter-windows-amd64.zip`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-windows-amd64.zip) |
+
+---
+
+## 📦 What's New in v2.2.0 (Single-File Standalone Packaging)
+
+Phiên bản **v2.2.0** chuẩn hóa toàn bộ kiến trúc đóng gói và phát hành thành **1 tệp nhị phân duy nhất (Single Standalone File)** tương tự phong cách dự án `GitWebUI`:
+
+1. **📦 Đóng Gói 1 Tệp Độc Lập Cho Từng Nền Tảng (Single-File Distribution)**:
+   - Thay vì nén chung nhiều kiến trúc vào một gói lớn, mỗi hệ điều hành / CPU giờ đây có đúng **1 tệp duy nhất** (`tailrouter-linux-amd64.tar.gz`, `tailrouter-linux-arm64.tar.gz`, `tailrouter-darwin-arm64.tar.gz`, v.v.).
+   - Bên trong mỗi gói giải nén ra duy nhất 1 file thực thi, tải về là chạy ngay không cần chọn lọc file thủ công.
+2. **⚡ Tối Giản Root Build (`main.go`)**:
+   - Đưa điểm khởi chạy `main.go` trực tiếp ra thư mục gốc. Người dùng có thể clone repo và chỉ cần gõ `go build` hoặc `go run main.go` là có ngay ứng dụng hoàn chỉnh.
+3. **🚀 Tối Ưu Tốc Độ Bộ Cài Tự Động (Smart 1-Line Installer)**:
+   - `install.sh` và `install.ps1` chỉ tải đúng tệp nhị phân tương thích với máy của người dùng, tiết kiệm hơn 60% băng thông tải về và hoàn tất cài đặt trong < 2 giây.
 
 ---
 
@@ -106,7 +134,7 @@ TailRouter provides dedicated platform branches with optimized guides, raw data,
 
 | Branch | Platform | Features | Direct Link |
 | :--- | :--- | :--- | :--- |
-| **`main`** | 🌐 Multi-Platform (Hub) | Go Native v2.1.1, multi-OS installers, release artifacts | [**View `main` branch 👉**](https://github.com/giangsamne/TailRouter/tree/main) |
+| **`main`** | 🌐 Multi-Platform (Hub) | Go Native v2.2.0, multi-OS installers, release artifacts | [**View `main` branch 👉**](https://github.com/giangsamne/TailRouter/tree/main) |
 | **`linux`** | 🐧 Linux | Raw data & Linux scripts, systemd & OpenRC (Alpine/Ubuntu/Arch) | [**View `linux` branch 👉**](https://github.com/giangsamne/TailRouter/tree/linux) |
 | **`windows`** | 🪟 Windows | Raw data & Windows scripts, PowerShell installer, Startup autostart | [**View `windows` branch 👉**](https://github.com/giangsamne/TailRouter/tree/windows) |
 | **`macos`** | 🍏 macOS | Raw data & macOS scripts, launchd agent, Apple Silicon & Intel | [**View `macos` branch 👉**](https://github.com/giangsamne/TailRouter/tree/macos) |
