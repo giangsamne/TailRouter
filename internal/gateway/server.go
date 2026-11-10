@@ -143,11 +143,14 @@ func (s *Server) Close() {
 
 func (s *Server) Start() error {
 	bindHost := os.Getenv("TAILROUTER_BIND")
-	if bindHost == "" {
-		bindHost = "127.0.0.1"
+	var addr string
+	if bindHost != "" {
+		addr = fmt.Sprintf("%s:%d", bindHost, s.port)
+		s.logger.Printf("Khởi chạy TailRouter Native Engine trên %s...", addr)
+	} else {
+		addr = fmt.Sprintf(":%d", s.port)
+		s.logger.Printf("Khởi chạy TailRouter Native Engine trên cổng %d (tất cả network interfaces)...", s.port)
 	}
-	addr := fmt.Sprintf("%s:%d", bindHost, s.port)
-	s.logger.Printf("Khởi chạy TailRouter Native Engine trên %s...", addr)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handleRoot)
@@ -188,6 +191,11 @@ func (s *Server) securityMiddleware(next http.Handler) http.Handler {
 		}
 		isLocal := host == "localhost" || host == "127.0.0.1" || host == "::1" || host == "0.0.0.0"
 		isTailscale := strings.HasSuffix(host, ".ts.net")
+		if !isLocal && !isTailscale {
+			if parsedIP := net.ParseIP(host); parsedIP != nil && (parsedIP.IsPrivate() || parsedIP.IsLoopback()) {
+				isLocal = true
+			}
+		}
 		if !isLocal && !isTailscale {
 			if tsStat, err := s.tailscale.GetStatus(); err == nil && tsStat != nil {
 				for _, ip := range tsStat.IPs {
