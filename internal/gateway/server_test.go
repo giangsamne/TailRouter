@@ -1,10 +1,13 @@
 package gateway
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -145,5 +148,107 @@ func TestFunnelIsolationOnPrivateRoutes(t *testing.T) {
 
 	if w.Code != http.StatusForbidden {
 		t.Errorf("Expected 403 Forbidden when Funnel accesses private serve route %s, got %d", route.Path, w.Code)
+	}
+}
+
+func TestPasswordProtectionAnd10MinuteSession(t *testing.T) {
+	srv, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	handler := srv.securityMiddleware(http.HandlerFunc(srv.handleRoot))
+
+	// 1. Enable password protection
+	if err := srv.auth.SetPassword("AdminMasterPass99"); err != nil {
+		t.Fatalf("SetPassword failed: %v", err)
+	}
+
+	// 2. Unauthenticated request to /api/status should return 401 Unauthorized
+	reqUnauth := newLocalRequest("GET", "/api/status")
+	wUnauth := httptest.NewRecorder()
+	handler.ServeHTTP(wUnauth, reqUnauth)
+
+	if wUnauth.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized without auth, got %d", wUnauth.Code)
+	}
+
+	// 3. Login with wrong password should fail
+	reqBadLogin := newLocalRequest("POST", "/api/auth/login")
+	reqBadLogin.Header.Set("X-TailRouter-Client", "webui")
+	reqBadLogin.Body = http.NoBody
+	wBadLogin := httptest.NewRecorder()
+	handler.ServeHTTP(wBadLogin, reqBadLogin)
+
+	if wBadLogin.Code != http.StatusBadRequest && wBadLogin.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 400 or 401 on bad login, got %d", wBadLogin.Code)
+	}
+
+	// 4. Login with correct password
+	reqLogin := newLocalRequest("POST", "/api/auth/login")
+	reqLogin.Header.Set("X-TailRouter-Client", "webui")
+	reqLogin.Header.Set("Content-Type", "application/json")
+	loginBody := `{"password":"AdminMasterPass99"}`
+	reqLogin.Body = io.NopCloser(strings.NewReader(loginBody))
+	wLogin := httptest.NewRecorder()
+	handler.ServeHTTP(wLogin, reqLogin)
+
+	if wLogin.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK on correct login, got %d: %s", wLogin.Code, wLogin.Body.String())
+	}
+
+	var loginResp struct {
+		Success          bool   `json:"success"`
+		Token            string `json:"token"`
+		RemainingSeconds int    `json:"remaining_seconds"`
+	}
+	if err := json.NewDecoder(wLogin.Body).Decode(&loginResp); err != nil {
+		t.Fatalf("Failed to parse login response: %v", err)
+	}
+	if !loginResp.Success || loginResp.Token == "" {
+		t.Fatalf("Expected login success with token, got: %+v", loginResp)
+	}
+	if loginResp.RemainingSeconds <= 590 || loginResp.RemainingSeconds > 600 {
+		t.Errorf("Expected remaining seconds ~600, got %d", loginResp.RemainingSeconds)
+	}
+
+	// 5. Authenticated request using X-TailRouter-Auth
+	reqAuth := newLocalRequest("GET", "/api/status")
+	reqAuth.Header.Set("X-TailRouter-Auth", loginResp.Token)
+	wAuth := httptest.NewRecorder()
+	handler.ServeHTTP(wAuth, reqAuth)
+
+	if wAuth.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK with valid session token, got %d", wAuth.Code)
+	}
+
+	// 6. Extend 10-minute session
+	reqExtend := newLocalRequest("POST", "/api/auth/extend")
+	reqExtend.Header.Set("X-TailRouter-Client", "webui")
+	reqExtend.Header.Set("X-TailRouter-Auth", loginResp.Token)
+	wExtend := httptest.NewRecorder()
+	handler.ServeHTTP(wExtend, reqExtend)
+
+	if wExtend.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK on extend session, got %d", wExtend.Code)
+	}
+
+	// 7. Logout revokes 10-minute session
+	reqLogout := newLocalRequest("POST", "/api/auth/logout")
+	reqLogout.Header.Set("X-TailRouter-Client", "webui")
+	reqLogout.Header.Set("X-TailRouter-Auth", loginResp.Token)
+	wLogout := httptest.NewRecorder()
+	handler.ServeHTTP(wLogout, reqLogout)
+
+	if wLogout.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK on logout, got %d", wLogout.Code)
+	}
+
+	// 8. Subsequent call with revoked token should fail with 401
+	reqPostLogout := newLocalRequest("GET", "/api/status")
+	reqPostLogout.Header.Set("X-TailRouter-Auth", loginResp.Token)
+	wPostLogout := httptest.NewRecorder()
+	handler.ServeHTTP(wPostLogout, reqPostLogout)
+
+	if wPostLogout.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized after logout, got %d", wPostLogout.Code)
 	}
 }

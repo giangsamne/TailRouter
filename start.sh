@@ -9,10 +9,9 @@ echo "=========================================================="
 
 # 1. Stop existing instances to avoid port 65534 conflict
 pkill -f "tailrouter" 2>/dev/null || killall tailrouter 2>/dev/null || true
-pkill -f "server.py" 2>/dev/null || true
 sleep 1
 
-# 2. Prefer native Go binary if present in directory
+# 2. Native Go binary execution
 if [ -x "$SCRIPT_DIR/tailrouter" ]; then
   exec "$SCRIPT_DIR/tailrouter" "$@"
 elif [ -x "$SCRIPT_DIR/dist/linux/tailrouter" ] && [ "$(uname -m)" = "x86_64" ]; then
@@ -23,16 +22,11 @@ elif [ -x "$HOME/.local/bin/tailrouter" ]; then
   exec "$HOME/.local/bin/tailrouter" "$@"
 elif command -v tailrouter >/dev/null 2>&1; then
   exec tailrouter "$@"
-# 3. Check Python engine
-elif [ -f "$SCRIPT_DIR/main/server.py" ] && command -v python3 >/dev/null 2>&1; then
-  cd "$SCRIPT_DIR/main" && exec python3 server.py "$@"
-elif [ -f "$SCRIPT_DIR/server.py" ] && command -v python3 >/dev/null 2>&1; then
-  exec python3 "$SCRIPT_DIR/server.py" "$@"
-# 4. If nothing is built/installed yet, run installer
+# 3. If nothing is built/installed yet, run installer
 elif [ -f "$SCRIPT_DIR/install.sh" ]; then
   echo "==> Setting up TailRouter via installer..."
   sh "$SCRIPT_DIR/install.sh"
 else
-  echo "❌ Could not find TailRouter binary or runtime."
+  echo "❌ Could not find TailRouter binary. Please run ./scripts/build_all.sh or install.sh"
   exit 1
 fi

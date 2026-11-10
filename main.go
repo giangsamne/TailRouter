@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/giangsamne/TailRouter/internal/auth"
 	"github.com/giangsamne/TailRouter/internal/browser"
 	"github.com/giangsamne/TailRouter/internal/config"
 	"github.com/giangsamne/TailRouter/internal/gateway"
@@ -27,7 +28,7 @@ import (
 )
 
 const Banner = `
-  ⚡ TailRouter Native Engine v2.2.0
+  ⚡ TailRouter Native Engine v2.3.0
   ==================================
   Zero-Dependency Bare-Metal Gateway
 `
@@ -66,6 +67,9 @@ func main() {
 
 	case "service":
 		runService(os.Args[2:])
+
+	case "password", "auth":
+		runPassword(os.Args[2:])
 
 	case "uninstall", "remove", "purge":
 		runUninstall(os.Args[2:])
@@ -107,6 +111,8 @@ Các lệnh có sẵn:
                               Cấu hình Tailscale Serve tự động
   service [install|uninstall|status]
                               Quản lý tự khởi động cùng hệ điều hành (systemd/launchd)
+  password [status|set|temp|clear]
+                              Quản lý mật khẩu bảo vệ & phiên đăng nhập 10 phút
   uninstall [-y]              Gỡ cài đặt và xóa sạch toàn bộ dữ liệu TailRouter khỏi máy
   version                     Xem thông tin phiên bản
   help                        Hiển thị trợ giúp này
@@ -542,6 +548,85 @@ func runService(args []string) {
 	}
 }
 
+func runPassword(args []string) {
+	cfgFile := config.DefaultConfigPath()
+	authPath := auth.DefaultAuthPath(cfgFile)
+	authMgr := auth.NewManager(authPath)
+
+	sub := "status"
+	if len(args) > 0 {
+		sub = strings.ToLower(args[0])
+	}
+
+	switch sub {
+	case "status":
+		st := authMgr.GetStatus("")
+		fmt.Print(Banner)
+		fmt.Println("🔐 TRẠNG THÁI BẢO MẬT & MẬT KHẨU:")
+		if !st.Enabled {
+			fmt.Println("   • Chế độ bảo mật: ĐANG TẮT (Dashboard mở tự do)")
+			fmt.Println("   • Để bật mật khẩu quản trị: tailrouter password set <mật_khẩu>")
+			fmt.Println("   • Hoặc tạo mã tạm thời 10 phút: tailrouter password temp")
+		} else {
+			fmt.Println("   • Chế độ bảo mật: ĐANG BẬT (Bảo vệ phiên 10 phút)")
+			if st.HasMasterPassword {
+				fmt.Println("   • Mật khẩu quản trị: Đã thiết lập (SHA-256 + Salt)")
+			} else {
+				fmt.Println("   • Mật khẩu quản trị: Chưa đặt")
+			}
+			if st.HasTempPassword {
+				fmt.Printf("   • Mật khẩu tạm thời 10 phút: Đang kích hoạt (Còn %d giây)\n", st.TempExpiresIn)
+			} else {
+				fmt.Println("   • Mật khẩu tạm thời: Chưa tạo hoặc đã hết hạn")
+			}
+		}
+
+	case "set":
+		if len(args) < 2 {
+			fmt.Println("❌ Lỗi: Vui lòng nhập mật khẩu muốn cài đặt.")
+			fmt.Println("   Cách dùng: tailrouter password set <mật_khẩu>")
+			os.Exit(1)
+		}
+		pass := args[1]
+		if err := authMgr.SetPassword(pass); err != nil {
+			fmt.Printf("❌ Lỗi: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Print(Banner)
+		fmt.Println("✅ ĐÃ THIẾT LẬP MẬT KHẨU QUẢN TRỊ THÀNH CÔNG!")
+		fmt.Println("🔒 Kể từ bây giờ, mọi truy cập vào Web Dashboard và API đều yêu cầu mật khẩu.")
+		fmt.Println("⏳ Mỗi phiên đăng nhập có hiệu lực bảo vệ tối đa 10 phút.")
+
+	case "temp", "otp":
+		otp, exp, err := authMgr.GenerateTempPassword()
+		if err != nil {
+			fmt.Printf("❌ Lỗi tạo mật khẩu tạm thời: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Print(Banner)
+		fmt.Println("🔑 MÃ TRUY CẬP TẠM THỜI (HIỆU LỰC 10 PHÚT):")
+		fmt.Println("   --------------------------------------")
+		fmt.Printf("   👉  %s\n", otp)
+		fmt.Println("   --------------------------------------")
+		fmt.Printf("   ⏳ Hết hạn vào lúc: %s (sau 10 phút)\n", exp.Local().Format("15:04:05"))
+		fmt.Println("   💡 Sử dụng mã này để đăng nhập ngay vào Web Dashboard hoặc truy cập API.")
+
+	case "clear", "disable", "remove":
+		if err := authMgr.ClearPassword(); err != nil {
+			fmt.Printf("❌ Lỗi gỡ bỏ mật khẩu: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Print(Banner)
+		fmt.Println("🔓 ĐÃ TẮT BẢO MẬT MẬT KHẨU THÀNH CÔNG!")
+		fmt.Println("✨ Dashboard và API hiện có thể truy cập tự do.")
+
+	default:
+		fmt.Printf("Lệnh password không hợp lệ: %s\n", sub)
+		fmt.Println("Sử dụng: tailrouter password [status | set <mật_khẩu> | temp | clear]")
+		os.Exit(1)
+	}
+}
+
 func runUninstall(args []string) {
 	force := false
 	for _, a := range args {
@@ -590,6 +675,7 @@ func runUninstall(args []string) {
 	cfgFile := config.DefaultConfigPath()
 	if cfgFile != "" {
 		_ = os.Remove(cfgFile)
+		_ = os.Remove(auth.DefaultAuthPath(cfgFile))
 	}
 	cfgDir := filepath.Dir(cfgFile)
 	baseDir := filepath.Base(cfgDir)

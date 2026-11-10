@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/giangsamne/TailRouter/internal/auth"
 	"github.com/giangsamne/TailRouter/internal/config"
 	"github.com/giangsamne/TailRouter/internal/scanner"
 	"github.com/giangsamne/TailRouter/internal/service"
@@ -28,7 +29,7 @@ import (
 
 const (
 	DefaultPort = 65534
-	Version     = "2.2.0"
+	Version     = "2.3.0"
 	MaxLogSize  = 5 * 1024 * 1024 // 5MB max log file
 )
 
@@ -44,6 +45,7 @@ type ProxyLog struct {
 type Server struct {
 	port       int
 	routes     *config.Manager
+	auth       *auth.Manager
 	scanner    *scanner.Scanner
 	tailscale  *tailscale.Client
 	service    *service.Manager
@@ -53,6 +55,10 @@ type Server struct {
 	mu         sync.Mutex
 	httpServer *http.Server
 	recentLogs []ProxyLog
+}
+
+func (s *Server) GetAuth() *auth.Manager {
+	return s.auth
 }
 
 func (s *Server) addLog(l ProxyLog) {
@@ -84,6 +90,7 @@ func NewServer(port int, configPath string) *Server {
 	}
 
 	routesMgr := config.NewManager(configPath)
+	authMgr := auth.NewManager(auth.DefaultAuthPath(routesMgr.GetConfigPath()))
 	scannerMgr := scanner.NewScanner()
 	tsClient := tailscale.NewClient()
 	svcMgr := service.NewManager()
@@ -91,6 +98,7 @@ func NewServer(port int, configPath string) *Server {
 	s := &Server{
 		port:      port,
 		routes:    routesMgr,
+		auth:      authMgr,
 		scanner:   scannerMgr,
 		tailscale: tsClient,
 		service:   svcMgr,
@@ -286,6 +294,19 @@ func (s *Server) serveWebDashboard(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(indexData)
 }
 
+func (s *Server) extractSessionToken(r *http.Request) string {
+	if token := r.Header.Get("X-TailRouter-Auth"); token != "" {
+		return strings.TrimSpace(token)
+	}
+	if authHdr := r.Header.Get("Authorization"); strings.HasPrefix(authHdr, "Bearer ") {
+		return strings.TrimSpace(strings.TrimPrefix(authHdr, "Bearer "))
+	}
+	if cookie, err := r.Cookie("tailrouter_session"); err == nil && cookie.Value != "" {
+		return strings.TrimSpace(cookie.Value)
+	}
+	return ""
+}
+
 func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
 	// Request Body Limit to protect against memory exhaustion (64KB)
 	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
@@ -298,7 +319,28 @@ func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := s.extractSessionToken(r)
+
+	// Password protection check (10-minute session duration)
+	if s.auth.IsEnabled() {
+		isPublicAuth := parts[0] == "auth" && len(parts) > 1 && (parts[1] == "status" || parts[1] == "login")
+		if !isPublicAuth {
+			valid, remaining := s.auth.ValidateSession(token)
+			if !valid || remaining <= 0 {
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				w.WriteHeader(http.StatusUnauthorized)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"error":         "Phiên đăng nhập đã hết hạn (10 phút) hoặc chưa xác thực mật khẩu.",
+					"auth_required": true,
+				})
+				return
+			}
+		}
+	}
+
 	switch parts[0] {
+	case "auth":
+		s.handleAPIAuth(w, r, parts[1:])
 	case "status":
 		s.handleAPIStatus(w, r)
 	case "routes":
@@ -329,6 +371,7 @@ func (s *Server) handleAPIStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	autoStatus := s.service.GetStatus()
 	routesList := s.routes.List()
+	token := s.extractSessionToken(r)
 
 	data := map[string]interface{}{
 		"status":         "online",
@@ -342,8 +385,195 @@ func (s *Server) handleAPIStatus(w http.ResponseWriter, r *http.Request) {
 		"tailscale":      tsStatus,
 		"autostart":      autoStatus,
 		"logs":           s.getLogs(),
+		"auth":           s.auth.GetStatus(token),
 	}
 	s.jsonResponse(w, http.StatusOK, data)
+}
+
+func (s *Server) handleAPIAuth(w http.ResponseWriter, r *http.Request, subParts []string) {
+	if len(subParts) == 0 {
+		subParts = []string{"status"}
+	}
+
+	token := s.extractSessionToken(r)
+
+	switch subParts[0] {
+	case "status":
+		status := s.auth.GetStatus(token)
+		s.jsonResponse(w, http.StatusOK, status)
+
+	case "login":
+		if r.Method != http.MethodPost {
+			s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Cần phương thức POST"})
+			return
+		}
+		var req struct {
+			Password string `json:"password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.jsonResponse(w, http.StatusBadRequest, map[string]interface{}{"error": "Dữ liệu JSON không hợp lệ"})
+			return
+		}
+
+		if s.auth.VerifyPassword(req.Password) {
+			sess := s.auth.CreateSession()
+			http.SetCookie(w, &http.Cookie{
+				Name:     "tailrouter_session",
+				Value:    sess.Token,
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteStrictMode,
+				MaxAge:   600, // 10 minutes
+			})
+			s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+				"success":           true,
+				"message":           "Đăng nhập thành công. Phiên làm việc có hiệu lực trong 10 phút.",
+				"token":             sess.Token,
+				"remaining_seconds": sess.RemainingSeconds,
+				"expires_at":        sess.ExpiresAt,
+			})
+			return
+		}
+
+		// Anti brute-force delay
+		time.Sleep(300 * time.Millisecond)
+		s.jsonResponse(w, http.StatusUnauthorized, map[string]interface{}{
+			"success": false,
+			"error":   "Mật khẩu không chính xác hoặc mã tạm thời 10 phút đã hết hạn",
+		})
+
+	case "logout":
+		if r.Method != http.MethodPost {
+			s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Cần phương thức POST"})
+			return
+		}
+		s.auth.RevokeSession(token)
+		http.SetCookie(w, &http.Cookie{
+			Name:     "tailrouter_session",
+			Value:    "",
+			Path:     "/",
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+			MaxAge:   -1,
+		})
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success": true,
+			"message": "Đã đăng xuất và khóa phiên làm việc",
+		})
+
+	case "extend":
+		if r.Method != http.MethodPost {
+			s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Cần phương thức POST"})
+			return
+		}
+		extended, err := s.auth.ExtendSession(token)
+		if err != nil {
+			s.jsonResponse(w, http.StatusUnauthorized, map[string]interface{}{
+				"success": false,
+				"error":   err.Error(),
+			})
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "tailrouter_session",
+			Value:    extended.Token,
+			Path:     "/",
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+			MaxAge:   600,
+		})
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success":           true,
+			"message":           "Đã gia hạn phiên làm việc thêm 10 phút",
+			"token":             extended.Token,
+			"remaining_seconds": extended.RemainingSeconds,
+			"expires_at":        extended.ExpiresAt,
+		})
+
+	case "set_password":
+		if r.Method != http.MethodPost {
+			s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Cần phương thức POST"})
+			return
+		}
+		var req struct {
+			Password string `json:"password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.jsonResponse(w, http.StatusBadRequest, map[string]interface{}{"error": "Dữ liệu JSON không hợp lệ"})
+			return
+		}
+		if err := s.auth.SetPassword(req.Password); err != nil {
+			s.jsonResponse(w, http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   err.Error(),
+			})
+			return
+		}
+		sess := s.auth.CreateSession()
+		http.SetCookie(w, &http.Cookie{
+			Name:     "tailrouter_session",
+			Value:    sess.Token,
+			Path:     "/",
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+			MaxAge:   600,
+		})
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success":           true,
+			"message":           "Đã thiết lập mật khẩu quản trị. Phiên làm việc có hiệu lực trong 10 phút.",
+			"token":             sess.Token,
+			"remaining_seconds": sess.RemainingSeconds,
+		})
+
+	case "temp_password":
+		if r.Method != http.MethodPost {
+			s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Cần phương thức POST"})
+			return
+		}
+		otp, exp, err := s.auth.GenerateTempPassword()
+		if err != nil {
+			s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   err.Error(),
+			})
+			return
+		}
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success":            true,
+			"otp":                otp,
+			"expires_at":         exp,
+			"expires_in_seconds": 600,
+			"message":            fmt.Sprintf("Mật khẩu tạm thời '%s' có hiệu lực trong 10 phút", otp),
+		})
+
+	case "disable":
+		if r.Method != http.MethodPost {
+			s.jsonResponse(w, http.StatusMethodNotAllowed, map[string]interface{}{"error": "Cần phương thức POST"})
+			return
+		}
+		if err := s.auth.ClearPassword(); err != nil {
+			s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   err.Error(),
+			})
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "tailrouter_session",
+			Value:    "",
+			Path:     "/",
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+			MaxAge:   -1,
+		})
+		s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success": true,
+			"message": "Đã tắt xác thực mật khẩu. Dashboard hiện có thể truy cập tự do.",
+		})
+
+	default:
+		s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{"error": "Auth endpoint không tồn tại"})
+	}
 }
 
 func (s *Server) handleAPILogs(w http.ResponseWriter, r *http.Request, subParts []string) {
@@ -845,6 +1075,9 @@ func (s *Server) Uninstall() error {
 	cfgFile := s.routes.GetConfigPath()
 	if cfgFile != "" {
 		_ = os.Remove(cfgFile)
+	}
+	if s.auth != nil {
+		_ = os.Remove(s.auth.GetConfigPath())
 	}
 	cfgDir := s.routes.GetConfigDir()
 	baseDir := filepath.Base(cfgDir)

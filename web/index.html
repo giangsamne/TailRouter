@@ -626,11 +626,17 @@
     <div class="brand">
       <div class="brand-icon">⚡</div>
       <div class="brand-title">
-        <h1>⚡ TailRouter <span class="port-badge">Port 65534</span> <span class="badge" id="app-version-badge" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 9999px; vertical-align: middle; margin-left: 6px;">v2.2.0</span></h1>
+        <h1>⚡ TailRouter <span class="port-badge">Port 65534</span> <span class="badge" id="app-version-badge" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 9999px; vertical-align: middle; margin-left: 6px;">v2.3.0</span></h1>
         <p id="sub-title" data-i18n="sub_title">Gateway điều phối cổng & định tuyến dịch vụ Homelab</p>
       </div>
     </div>
     <div class="header-actions">
+      <!-- Session Badge (10-Minute Countdown) -->
+      <div id="session-badge-wrapper" style="display: none; align-items: center; gap: 0.4rem; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.82rem;">
+        <span id="session-countdown-text" style="color: #38bdf8; font-weight: 600; font-family: monospace;">⏳ Phiên: 10:00</span>
+        <button onclick="extendCurrentSession()" title="Gia hạn thêm 10 phút" style="background: transparent; border: none; color: #38bdf8; cursor: pointer; padding: 0 4px; font-size: 0.9rem;">🔄</button>
+        <button onclick="logoutSession()" title="Khóa / Đăng xuất" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0 4px; font-size: 0.9rem;">🔒</button>
+      </div>
       <select id="lang-select" onchange="changeLanguage(this.value)" style="background:#182238; color:#fff; border:1px solid #2a3b5c; border-radius:8px; padding:0.4rem 0.6rem; font-size:0.85rem; cursor:pointer; outline:none;">
         <option value="vi">🇻🇳 Tiếng Việt</option>
         <option value="en">🇺🇸 English</option>
@@ -901,7 +907,56 @@ http://100.100.1.3:65534/bambu</pre>
       </div>
     </div>
 
-    <!-- 3. Danger Zone / Reset & Clean -->
+    <!-- 3. Security & Password Card (10-Minute Session) -->
+    <div class="stat-card" style="margin-bottom: 1.25rem; border-color: rgba(56, 189, 248, 0.3);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+          <div style="font-size: 2rem;">🔐</div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <strong style="font-size: 1.05rem; color: #fff;">Bảo Mật & Xác Thực Mật Khẩu (Phiên 10 Phút)</strong>
+              <span id="settings-auth-badge" class="badge" style="background: #1e293b; color: #94a3b8;">Đang kiểm tra...</span>
+            </div>
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0.35rem 0 0.5rem;">
+              Bảo vệ Web Dashboard và toàn bộ API cấu hình. Khi được bật, phiên làm việc sẽ tự động hết hạn sau 10 phút không thao tác.
+            </p>
+            <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 0.25rem;">
+              <span id="settings-auth-master-text">...</span>
+              <span id="settings-auth-temp-text">...</span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <button class="btn btn-danger btn-sm" id="btn-auth-disable" onclick="disablePasswordAction()" style="display: none;">
+            🔓 Tắt Bảo Mật Mật Khẩu
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+        <!-- Đặt mật khẩu mới -->
+        <div style="background: #0b0f19; border: 1px solid var(--border); border-radius: 8px; padding: 1rem;">
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: #38bdf8;">🔑 Thiết Lập Mật Khẩu Quản Trị</h4>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <input type="password" id="input-auth-master-password" class="form-input" placeholder="Mật khẩu mới (tối thiểu 4 ký tự)..." style="flex: 1; min-width: 180px;">
+            <button class="btn btn-primary btn-sm" onclick="saveNewPasswordAction()">💾 Lưu Mật Khẩu</button>
+          </div>
+          <span class="form-hint" style="display: block; margin-top: 0.4rem;">Mật khẩu được băm SHA-256 kèm chuỗi Salt ngẫu nhiên 16-byte, lưu quyền 0600.</span>
+        </div>
+
+        <!-- Cấp mã tạm thời 10 phút -->
+        <div style="background: #0b0f19; border: 1px solid var(--border); border-radius: 8px; padding: 1rem;">
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: #f59e0b;">⏳ Cấp Mã OTP Tạm Thời (10 Phút)</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+            Tạo mã truy cập nhanh dạng <code>TR-XXXXXX</code> tự hủy sau đúng 10 phút cho khách hoặc thiết bị tạm thời.
+          </p>
+          <button class="btn btn-secondary btn-sm" onclick="generateTempPasswordAction()">🔑 Tạo Mã Tạm Thời 10 Phút</button>
+          <div id="temp-otp-display-box" style="display: none; margin-top: 0.6rem; background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.85rem; color: #fcd34d;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Danger Zone / Reset & Clean -->
     <div class="stat-card" style="margin-bottom: 1.25rem; border-color: rgba(239, 68, 68, 0.35);">
       <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
         <div style="font-size: 2rem;">⚠️</div>
@@ -925,7 +980,7 @@ http://100.100.1.3:65534/bambu</pre>
       </div>
     </div>
 
-    <!-- 4. About & Repo Info -->
+    <!-- 5. About & Repo Info -->
     <div class="stat-card" style="margin-bottom: 1.25rem;">
       <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
         <div style="font-size: 2rem;">ℹ️</div>
@@ -935,7 +990,7 @@ http://100.100.1.3:65534/bambu</pre>
             <div>
               <div style="font-size: 0.8rem; color: var(--text-muted);" data-i18n="lbl_version">Phiên Bản Hiện Tại</div>
               <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem;">
-                <span id="settings-version-badge" class="badge" style="background:#0284c7; color:#fff; font-weight:700;">v2.2.0</span>
+                <span id="settings-version-badge" class="badge" style="background:#0284c7; color:#fff; font-weight:700;">v2.3.0</span>
                 <span style="font-size: 0.8rem; color: #94a3b8;" id="settings-engine-name">Native Bare-Metal Gateway</span>
               </div>
             </div>
@@ -1030,6 +1085,38 @@ http://100.100.1.3:65534/bambu</pre>
   </div>
 </div>
 
+<!-- MODAL XÁC THỰC MẬT KHẨU (10 PHÚT) -->
+<div class="modal-overlay" id="auth-modal" style="display: none; z-index: 3000; backdrop-filter: blur(8px);">
+  <div class="modal" style="max-width: 440px; border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 30px rgba(56, 189, 248, 0.15);">
+    <div class="modal-header" style="border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="font-size: 1.8rem; background: rgba(56, 189, 248, 0.15); width: 42px; height: 42px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">🔒</div>
+        <div>
+          <h3 style="font-size: 1.15rem; color: #fff;">Xác Thực Mật Khẩu</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Phiên làm việc có hiệu lực tối đa 10 phút</p>
+        </div>
+      </div>
+    </div>
+    <form id="auth-form" onsubmit="event.preventDefault(); submitLogin();">
+      <div class="modal-body" style="padding: 1.25rem 0;">
+        <div id="auth-login-error" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: #fca5a5; padding: 0.6rem 0.85rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 0.75rem;"></div>
+        <div class="form-group">
+          <label class="form-label">Mật Khẩu Quản Trị / Mã Tạm Thời</label>
+          <input type="password" class="form-input" id="auth-login-password" placeholder="Nhập mật khẩu hoặc mã TR-XXXXXX..." autocomplete="current-password" required style="font-size: 1rem; padding: 0.75rem;">
+          <span class="form-hint" style="color: #94a3b8; margin-top: 0.4rem; line-height: 1.4;">
+            💡 Nếu quên mật khẩu, chạy lệnh <code style="color:#38bdf8; background:#0b0f19; padding:2px 5px; border-radius:4px;">tailrouter password temp</code> trên máy thật để nhận mã OTP 10 phút.
+          </span>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 1rem 0 0; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button type="submit" class="btn btn-primary" id="btn-submit-login" style="width: 100%; justify-content: center; padding: 0.75rem; font-weight: 700;">
+          ⚡ Đăng Nhập (10 Phút)
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Toast Container -->
 <div class="toast-container" id="toast-container"></div>
 
@@ -1055,7 +1142,15 @@ http://100.100.1.3:65534/bambu</pre>
   async function apiFetch(url, options = {}) {
     options.headers = options.headers || {};
     options.headers['X-TailRouter-Client'] = 'webui';
-    return fetch(url, options);
+    const token = localStorage.getItem('tailrouter_token');
+    if (token) {
+      options.headers['X-TailRouter-Auth'] = token;
+    }
+    const res = await fetch(url, options);
+    if (res.status === 401 && !url.includes('/auth/login') && !url.includes('/auth/status')) {
+      openAuthModal("Phiên làm việc 10 phút đã hết hạn hoặc chưa đăng nhập.");
+    }
+    return res;
   }
 
   function copyOperatorCmd() {
@@ -1901,6 +1996,11 @@ http://${tailscaleIp}:${PORT}/bambu`;
         }
       }
 
+      // Security & Password status update
+      if (data.auth) {
+        updateAuthUI(data.auth);
+      }
+
       // Routes
       currentRoutes = routesList;
       renderRoutes(currentRoutes);
@@ -1913,6 +2013,303 @@ http://${tailscaleIp}:${PORT}/bambu`;
 
     } catch (e) {
       console.error("fetchStatus error", e);
+    }
+  }
+
+  // --- 10-Minute Password & Session Security ---
+  let sessionTimerInterval = null;
+  let sessionRemainingSec = 0;
+
+  function startSessionCountdown(seconds) {
+    sessionRemainingSec = seconds;
+    if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+
+    const badgeWrapper = document.getElementById('session-badge-wrapper');
+    const timerText = document.getElementById('session-countdown-text');
+    if (!badgeWrapper || !timerText) return;
+
+    if (seconds <= 0) {
+      badgeWrapper.style.display = 'none';
+      return;
+    }
+    badgeWrapper.style.display = 'inline-flex';
+
+    function renderTime() {
+      if (sessionRemainingSec <= 0) {
+        clearInterval(sessionTimerInterval);
+        timerText.textContent = '⏳ Hết phiên';
+        timerText.style.color = '#ef4444';
+        openAuthModal("Phiên làm việc 10 phút đã kết thúc. Vui lòng xác thực lại.");
+        return;
+      }
+      const m = Math.floor(sessionRemainingSec / 60);
+      const s = sessionRemainingSec % 60;
+      const pad = (n) => n < 10 ? '0' + n : n;
+      timerText.textContent = `⏳ Phiên: ${pad(m)}:${pad(s)}`;
+      if (sessionRemainingSec < 120) {
+        timerText.style.color = '#f59e0b';
+      } else {
+        timerText.style.color = '#38bdf8';
+      }
+      sessionRemainingSec--;
+    }
+
+    renderTime();
+    sessionTimerInterval = setInterval(renderTime, 1000);
+  }
+
+  function updateAuthUI(st) {
+    if (!st) return;
+    const badge = document.getElementById('settings-auth-badge');
+    const masterText = document.getElementById('settings-auth-master-text');
+    const tempText = document.getElementById('settings-auth-temp-text');
+    const btnDisable = document.getElementById('btn-auth-disable');
+    const badgeWrapper = document.getElementById('session-badge-wrapper');
+
+    if (st.enabled) {
+      if (badge) {
+        badge.style.background = '#064e3b';
+        badge.style.color = '#6ee7b7';
+        badge.textContent = '🔒 Đang bảo vệ (10 phút)';
+      }
+      if (btnDisable) btnDisable.style.display = 'inline-flex';
+      if (masterText) {
+        masterText.textContent = st.has_master_password ? '✅ Mật khẩu quản trị: Đã kích hoạt' : '⚠️ Mật khẩu quản trị: Chưa đặt';
+      }
+      if (tempText) {
+        if (st.has_temp_password) {
+          tempText.innerHTML = `🔑 Mã tạm thời: <strong style="color:#fcd34d;">${st.temp_password_masked || 'TR-***'}</strong> (còn ${Math.floor(st.temp_expires_in/60)}p${st.temp_expires_in%60}s)`;
+        } else {
+          tempText.textContent = '🔑 Mã tạm thời: Chưa tạo hoặc đã hết hạn';
+        }
+      }
+      if (st.authenticated && st.session_remaining_sec > 0) {
+        closeAuthModal();
+        startSessionCountdown(st.session_remaining_sec);
+      } else {
+        if (badgeWrapper) badgeWrapper.style.display = 'none';
+        if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+        openAuthModal();
+      }
+    } else {
+      if (badge) {
+        badge.style.background = '#1e293b';
+        badge.style.color = '#94a3b8';
+        badge.textContent = '🔓 Đang tắt (Mở tự do)';
+      }
+      if (btnDisable) btnDisable.style.display = 'none';
+      if (masterText) masterText.textContent = '🔓 Mật khẩu quản trị: Chưa đặt';
+      if (tempText) tempText.textContent = '🔑 Mã tạm thời: Chưa tạo';
+      if (badgeWrapper) badgeWrapper.style.display = 'none';
+      if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+      closeAuthModal();
+    }
+  }
+
+  function openAuthModal(errMsg = '') {
+    const modal = document.getElementById('auth-modal');
+    const errBox = document.getElementById('auth-login-error');
+    const input = document.getElementById('auth-login-password');
+    if (modal) {
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+      if (errBox) {
+        if (errMsg) {
+          errBox.textContent = errMsg;
+          errBox.style.display = 'block';
+        } else {
+          errBox.style.display = 'none';
+        }
+      }
+      if (input) {
+        setTimeout(() => input.focus(), 100);
+      }
+    }
+  }
+
+  function closeAuthModal() {
+    const modal = document.getElementById('auth-modal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+    const errBox = document.getElementById('auth-login-error');
+    if (errBox) errBox.style.display = 'none';
+    const input = document.getElementById('auth-login-password');
+    if (input) input.value = '';
+  }
+
+  async function submitLogin() {
+    const input = document.getElementById('auth-login-password');
+    const errBox = document.getElementById('auth-login-error');
+    const btn = document.getElementById('btn-submit-login');
+    const pass = input ? input.value.trim() : '';
+
+    if (!pass) return;
+
+    if (btn) btn.disabled = true;
+    if (errBox) errBox.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-TailRouter-Client': 'webui'
+        },
+        body: JSON.stringify({ password: pass })
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
+        if (data.token) {
+          localStorage.setItem('tailrouter_token', data.token);
+        }
+        closeAuthModal();
+        startSessionCountdown(data.remaining_seconds || 600);
+        showToast("✅ Đăng nhập thành công! Phiên 10 phút bắt đầu.");
+        fetchStatus();
+      } else {
+        if (errBox) {
+          errBox.textContent = data.error || "Mật khẩu không chính xác hoặc mã OTP 10 phút đã hết hạn.";
+          errBox.style.display = 'block';
+        }
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }
+    } catch (e) {
+      if (errBox) {
+        errBox.textContent = "Lỗi kết nối máy chủ: " + e;
+        errBox.style.display = 'block';
+      }
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function extendCurrentSession() {
+    try {
+      const res = await apiFetch(`${API_BASE}/auth/extend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        if (data.token) {
+          localStorage.setItem('tailrouter_token', data.token);
+        }
+        startSessionCountdown(data.remaining_seconds || 600);
+        showToast("🔄 Đã gia hạn phiên làm việc thêm 10 phút!");
+      } else {
+        showToast(data.error || "Phiên đã hết hạn, vui lòng đăng nhập lại", "error");
+        openAuthModal();
+      }
+    } catch (e) {
+      showToast("Lỗi gia hạn phiên: " + e, "error");
+    }
+  }
+
+  async function logoutSession() {
+    try {
+      await apiFetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (e) {}
+    localStorage.removeItem('tailrouter_token');
+    if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+    const badgeWrapper = document.getElementById('session-badge-wrapper');
+    if (badgeWrapper) badgeWrapper.style.display = 'none';
+    showToast("🔒 Đã khóa phiên làm việc.");
+    openAuthModal("Phiên làm việc đã bị khóa.");
+  }
+
+  async function saveNewPasswordAction() {
+    const input = document.getElementById('input-auth-master-password');
+    const pass = input ? input.value.trim() : '';
+    if (!pass || pass.length < 4) {
+      alert("Vui lòng nhập mật khẩu có ít nhất 4 ký tự.");
+      if (input) input.focus();
+      return;
+    }
+
+    try {
+      const res = await apiFetch(`${API_BASE}/auth/set_password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pass })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        if (data.token) {
+          localStorage.setItem('tailrouter_token', data.token);
+        }
+        if (input) input.value = '';
+        startSessionCountdown(data.remaining_seconds || 600);
+        showToast("✅ Đã thiết lập mật khẩu thành công! Phiên 10 phút được kích hoạt.");
+        fetchStatus();
+      } else {
+        alert(data.error || "Lỗi thiết lập mật khẩu.");
+      }
+    } catch (e) {
+      alert("Lỗi kết nối: " + e);
+    }
+  }
+
+  async function generateTempPasswordAction() {
+    try {
+      const res = await apiFetch(`${API_BASE}/auth/temp_password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        const box = document.getElementById('temp-otp-display-box');
+        if (box) {
+          box.style.display = 'block';
+          box.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+              <span>Mã truy cập 10 phút: <strong style="font-size: 1.1rem; color: #fff; letter-spacing: 1px;">${data.otp}</strong></span>
+              <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('${data.otp}').then(() => showToast('Đã copy ${data.otp}'))">📋 Sao chép</button>
+            </div>
+            <div style="font-size: 0.78rem; margin-top: 0.35rem; color: #cbd5e1;">Có hiệu lực trong 10 phút (hết hạn lúc ${new Date(data.expires_at).toLocaleTimeString()}).</div>
+          `;
+        }
+        showToast(`🔑 Đã tạo mã OTP 10 phút: ${data.otp}`);
+        fetchStatus();
+      } else {
+        alert(data.error || "Lỗi tạo mã tạm thời.");
+      }
+    } catch (e) {
+      alert("Lỗi kết nối: " + e);
+    }
+  }
+
+  async function disablePasswordAction() {
+    if (!confirm("⚠️ BẠN CÓ CHẮC CHẮN MUỐN TẮT BẢO VỆ MẬT KHẨU?\n\nSau khi tắt, bất kỳ ai truy cập IP Tailscale hoặc máy chủ sẽ vào thẳng Web Dashboard mà không cần mật khẩu.")) {
+      return;
+    }
+
+    try {
+      const res = await apiFetch(`${API_BASE}/auth/disable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        localStorage.removeItem('tailrouter_token');
+        if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+        const badgeWrapper = document.getElementById('session-badge-wrapper');
+        if (badgeWrapper) badgeWrapper.style.display = 'none';
+        showToast("🔓 Đã tắt mật khẩu bảo vệ thành công.");
+        fetchStatus();
+      } else {
+        alert(data.error || "Lỗi tắt mật khẩu.");
+      }
+    } catch (e) {
+      alert("Lỗi kết nối: " + e);
     }
   }
 

@@ -28,6 +28,9 @@ Thumbs.db
 
 # User configuration & active routes (do not commit personal homelab routes)
 config/routes.json
+config/auth.json
+auth.json
+*.auth-*.tmp
 config/*.tmp
 
 # Native Go Engine Binaries & Releases

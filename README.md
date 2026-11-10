@@ -4,7 +4,7 @@
 
 **High-performance, zero-dependency bare-metal gateway & web dashboard for Tailscale Serve and Funnel.**
 
-[![Release](https://img.shields.io/badge/Release-v2.2.0-blue.svg?logo=github)](https://github.com/giangsamne/TailRouter/releases)
+[![Release](https://img.shields.io/badge/Release-v2.3.0-blue.svg?logo=github)](https://github.com/giangsamne/TailRouter/releases)
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8.svg?logo=go&logoColor=white)](https://golang.org)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg?logo=tailscale&logoColor=white)](https://tailscale.com)
@@ -22,12 +22,12 @@ Run a single command in your terminal or PowerShell — it automatically detects
 
 * **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.2.0/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.3.0/install.sh | bash
   ```
 
 * **🪟 Windows** (PowerShell):
   ```powershell
-  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.2.0/install.ps1 | iex
+  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.3.0/install.ps1 | iex
   ```
 
 ---
@@ -38,11 +38,11 @@ Tải trực tiếp bản nhị phân đóng gói độc lập cho từng hệ �
 
 | Nền tảng (Platform) | Kiến trúc CPU (Architecture) | Tệp đóng gói (1-File Package) |
 | :--- | :--- | :--- |
-| **🐧 Linux** | AMD64 (x86_64 PC, VPS, Server) | [`tailrouter-linux-amd64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-linux-amd64.tar.gz) |
-| **🐧 Linux** | ARM64 (Raspberry Pi 4/5, Cloud ARM) | [`tailrouter-linux-arm64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-linux-arm64.tar.gz) |
-| **🍏 macOS** | Apple Silicon (M1 / M2 / M3 / M4) | [`tailrouter-darwin-arm64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-darwin-arm64.tar.gz) |
-| **🍏 macOS** | Intel (x86_64) | [`tailrouter-darwin-amd64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-darwin-amd64.tar.gz) |
-| **🪟 Windows** | AMD64 (x64) | [`tailrouter-windows-amd64.zip`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-windows-amd64.zip) |
+| **🐧 Linux** | AMD64 (x86_64 PC, VPS, Server) | [`tailrouter-linux-amd64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.3.0/tailrouter-linux-amd64.tar.gz) |
+| **🐧 Linux** | ARM64 (Raspberry Pi 4/5, Cloud ARM) | [`tailrouter-linux-arm64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.3.0/tailrouter-linux-arm64.tar.gz) |
+| **🍏 macOS** | Apple Silicon (M1 / M2 / M3 / M4) | [`tailrouter-darwin-arm64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.3.0/tailrouter-darwin-arm64.tar.gz) |
+| **🍏 macOS** | Intel (x86_64) | [`tailrouter-darwin-amd64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.3.0/tailrouter-darwin-amd64.tar.gz) |
+| **🪟 Windows** | AMD64 (x64) | [`tailrouter-windows-amd64.zip`](https://github.com/giangsamne/TailRouter/releases/download/v2.3.0/tailrouter-windows-amd64.zip) |
 
 ---
 
@@ -73,6 +73,10 @@ Tải trực tiếp bản nhị phân đóng gói độc lập cho từng hệ �
   - Survives updates, binary moves, and reboots seamlessly.
 - 🔄 **Native Boot Autostart**:
   - Supports `systemd` (Ubuntu, Debian, Fedora), `openrc` (Alpine Linux), `launchd` (macOS), and Windows Registry autostart via `tailrouter service install`.
+- 🔐 **10-Minute Password & Session Security (v2.3.0)**:
+  - Secure master password protected with SHA-256 + 16-byte random salt, stored in `auth.json` with strict `0600` file permissions.
+  - Generates 10-minute temporary emergency OTP passwords (`TR-XXXXXX`) via CLI (`tailrouter password temp`) or Settings tab.
+  - Strictly enforces 10-minute sessions (`tailrouter_session` HttpOnly SameSite=Strict cookie + `X-TailRouter-Auth` header). Real-time countdown badge (`⏳ Phiên: 10:00`) in header with 10-minute extend button and instant lock.
 - 💥 **Complete Clean Uninstall (One-Click / One-Command)**:
   - Both Web Dashboard and CLI support complete uninstallation: removes system services, resets Tailscale Serve, wipes configuration folders, removes logs, deletes the binary, and frees port 65534.
 
@@ -178,6 +182,12 @@ tailrouter service install    # Enable automatic start on boot (systemd/openrc/l
 tailrouter service status     # Check background service health
 tailrouter service uninstall  # Remove system service autostart
 
+# Password & 10-minute session security management
+tailrouter password status           # Check security & temporary OTP status
+tailrouter password set <password>   # Set master admin password
+tailrouter password temp             # Generate emergency 10-minute temporary OTP (TR-XXXXXX)
+tailrouter password clear            # Disable password protection
+
 # Complete app uninstallation & data wipe
 tailrouter uninstall [-y]     # Stop gateway, reset serve, remove autostart, wipe configs & remove binary
 ```
@@ -191,6 +201,13 @@ TailRouter exposes a high-performance REST API on port `65534`:
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/status` | Node status, Tailscale state, gateway uptime, autostart info. |
+| `GET` | `/api/auth/status` | Public status check (whether auth is enabled/authenticated/temp OTP active). |
+| `POST` | `/api/auth/login` | Public login verifying master password or 10-min OTP; issues 10-min session cookie & token. |
+| `POST` | `/api/auth/logout` | Revokes current session token and clears session cookie. |
+| `POST` | `/api/auth/extend` | Extends active session duration by another 10 minutes. |
+| `POST` | `/api/auth/set_password` | Configures new master password (requires session if auth enabled). |
+| `POST` | `/api/auth/temp_password` | Generates a 10-minute OTP temporary password. |
+| `POST` | `/api/auth/disable` | Disables password authentication. |
 | `GET` | `/api/routes` | List all configured routes with latency and hit counts. |
 | `POST` | `/api/routes` | Register a new reverse-proxy route. |
 | `GET` | `/api/routes/{id}` | Inspect details of a specific route. |
@@ -216,6 +233,7 @@ TailRouter/
 ├── cmd/
 │   └── tailrouter/           # Single-binary engine: Daemon + Embedded Web UI + CLI (Go)
 ├── internal/
+│   ├── auth/                 # 10-minute password & session manager (SHA-256+Salt, OTP, cookies)
 │   ├── gateway/              # Reverse proxy, REST API & embedded web server (5 tabs + settings)
 │   ├── scanner/              # Host TCP port discovery engine (sorted ascending)
 │   ├── config/               # JSON route persistence with standard system path resolution
