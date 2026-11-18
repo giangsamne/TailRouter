@@ -20,7 +20,7 @@ const demoMockScript = `<script>
     { id: "route_bambu", name: "Bambu 3D Printer Cam", path: "/bambu", target_host: "127.0.0.1", target_port: 8080, strip_prefix: true, enabled: true, mode: "serve", hits: 142, last_status: "online", last_latency_ms: 0.42, notes: "Bambu Lab A1 Timelapse & Proxy" },
     { id: "route_git", name: "GitAutoHub Backup", path: "/git", target_host: "127.0.0.1", target_port: 18090, strip_prefix: false, enabled: true, mode: "serve", hits: 89, last_status: "online", last_latency_ms: 0.31, notes: "Local Git WebUI" },
     { id: "route_ha", name: "Home Assistant", path: "/ha", target_host: "127.0.0.1", target_port: 8123, strip_prefix: false, enabled: true, mode: "funnel", hits: 315, last_status: "online", last_latency_ms: 0.55, notes: "Smart Home Control (Public Funnel)" },
-    { id: "system-tailrouter-gateway", name: "⚡ TailRouter Gateway", path: "/router", target_host: "127.0.0.1", target_port: 65534, strip_prefix: false, enabled: true, mode: "serve", hits: 24, last_status: "online", last_latency_ms: 0.12, notes: "Trang điều khiển TailRouter qua Tailscale Serve (/router)" }
+    { id: "system-tailrouter-gateway", name: "TailRouter Gateway", path: "/router", target_host: "127.0.0.1", target_port: 65534, strip_prefix: false, enabled: true, mode: "serve", hits: 24, last_status: "online", last_latency_ms: 0.12, notes: "Trang điều khiển TailRouter qua Tailscale Serve (/router)" }
   ];
   let mockLogs = [
     { time: "13:32:10", method: "GET", path: "/bambu/api/status", target: "127.0.0.1:8080", status: 200, latency_ms: 0.41, client_ip: "100.100.1.8" },
