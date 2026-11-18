@@ -439,6 +439,80 @@
 
     .app-content { padding: 1.5rem; }
 
+    .sim-dash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding-bottom: 1.15rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.15rem;
+    }
+
+    .sim-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .sim-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .sim-stat-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+    }
+
+    .sim-stat-lbl {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+    }
+
+    .sim-stat-val {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 0.2rem;
+    }
+
+    .sim-add-bar {
+      display: none;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      align-items: center;
+    }
+
+    .sim-input {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      padding: 0.4rem 0.65rem;
+      color: var(--text);
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .sim-input:focus { border-color: var(--accent); }
+
+    @media (max-width: 768px) {
+      .sim-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
     .app-toolbar {
       display: flex;
       align-items: center;
@@ -937,23 +1011,86 @@
         </div>
 
         <div class="app-content">
+          <!-- Authentic Dashboard Header -->
+          <div class="sim-dash-header">
+            <div class="sim-brand">
+              <svg width="30" height="30" viewBox="0 0 64 64" fill="none">
+                <rect x="2" y="2" width="60" height="60" rx="16" fill="#111113" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+                <circle cx="17" cy="17" r="4.5" fill="#fafafa"/><circle cx="32" cy="17" r="4.5" fill="#fafafa"/><circle cx="47" cy="17" r="4.5" fill="#fafafa"/>
+                <circle cx="17" cy="32" r="4.5" fill="#38bdf8"/><circle cx="32" cy="32" r="4.5" fill="#fafafa"/><circle cx="47" cy="32" r="4.5" fill="#27272a"/>
+                <circle cx="17" cy="47" r="4.5" fill="#38bdf8"/><circle cx="32" cy="47" r="4.5" fill="#27272a"/><circle cx="47" cy="47" r="4.5" fill="#38bdf8"/>
+              </svg>
+              <div>
+                <div style="display:flex; align-items:center; gap:0.45rem;">
+                  <strong style="font-size:1rem;">TailRouter</strong>
+                  <span class="pill pill-off mono" style="font-size:0.7rem;">Port 65534</span>
+                  <span class="pill pill-serve mono" style="font-size:0.7rem;">v2.2.0</span>
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-muted);" data-i18n="sim_sub">Gateway điều phối cổng &amp; định tuyến dịch vụ Homelab</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+              <span class="pill pill-online mono" style="font-size:0.74rem;">● homelab-node (100.100.1.3)</span>
+              <button class="btn btn-primary btn-sm" onclick="toggleAddBar()" data-i18n="add_sample">+ Thêm Router</button>
+            </div>
+          </div>
+
+          <!-- Inline Add Route Bar -->
+          <div class="sim-add-bar" id="sim-add-bar">
+            <input type="text" class="sim-input" id="new-r-name" placeholder="Tên (vd: Jellyfin)" style="flex:1; min-width:130px;">
+            <input type="text" class="sim-input mono" id="new-r-path" placeholder="/jellyfin" style="width:120px;">
+            <input type="number" class="sim-input mono" id="new-r-port" placeholder="8096" style="width:90px;">
+            <select class="sim-input" id="new-r-mode">
+              <option value="serve">Serve (Tailnet)</option>
+              <option value="funnel">Funnel (Public)</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="submitNewRoute()">Lưu</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleAddBar()">Hủy</button>
+          </div>
+
+          <!-- 4 Summary Stats Cards -->
+          <div class="sim-stats-grid">
+            <div class="sim-stat-card">
+              <div class="sim-stat-lbl" data-i18n="st_total">Tổng số Route</div>
+              <div class="sim-stat-val mono" id="sim-stat-total">3</div>
+            </div>
+            <div class="sim-stat-card">
+              <div class="sim-stat-lbl" data-i18n="st_active">Đang hoạt động</div>
+              <div class="sim-stat-val mono" style="color:var(--emerald);" id="sim-stat-active">3</div>
+            </div>
+            <div class="sim-stat-card">
+              <div class="sim-stat-lbl">Tailscale Node</div>
+              <div class="sim-stat-val mono" style="font-size:1rem; padding-top:0.25rem; color:var(--accent);">100.100.1.3</div>
+            </div>
+            <div class="sim-stat-card">
+              <div class="sim-stat-lbl">Memory RSS</div>
+              <div class="sim-stat-val mono">4.2 MB</div>
+            </div>
+          </div>
+
           <div class="app-toolbar">
-            <div class="tab-strip">
+            <div class="tab-strip" style="overflow-x:auto; max-width:100%;">
               <button class="tab-item active" id="dtab-routes" onclick="switchTab('routes')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 <span>Routes (<span id="route-count">3</span>)</span>
               </button>
               <button class="tab-item" id="dtab-scanner" onclick="switchTab('scanner')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <span>Auto-Scan</span>
               </button>
+              <button class="tab-item" id="dtab-serve" onclick="switchTab('serve')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span>Tailscale Serve</span>
+              </button>
+              <button class="tab-item" id="dtab-logs" onclick="switchTab('logs')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>Live Logs</span>
+              </button>
               <button class="tab-item" id="dtab-cli" onclick="switchTab('cli')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
                 <span>CLI</span>
               </button>
             </div>
-
-            <button class="btn btn-primary btn-sm" onclick="addSampleRoute()" data-i18n="add_sample">+ Thêm Route mẫu</button>
           </div>
 
           <!-- Routes -->
@@ -992,6 +1129,30 @@
             </div>
           </div>
 
+          <!-- Tailscale Serve -->
+          <div id="panel-serve" style="display:none;">
+            <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:1.15rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:0.85rem;">
+                <div>
+                  <strong style="font-size:0.95rem;">Tailscale Serve &amp; Funnel Status</strong>
+                  <div class="mono" style="font-size:0.78rem; color:var(--accent); margin-top:0.2rem;">https://homelab.tailnet.ts.net/router</div>
+                </div>
+                <span class="pill pill-online mono" id="sim-serve-pill">Serve Active (HTTPS 443)</span>
+              </div>
+              <div class="terminal-out mono" style="min-height:90px; font-size:0.78rem; color:var(--text-secondary);" id="sim-serve-dump"></div>
+            </div>
+          </div>
+
+          <!-- Live Logs -->
+          <div id="panel-logs" style="display:none;">
+            <div class="terminal-box">
+              <div class="terminal-out mono" style="min-height:150px; font-size:0.78rem;" id="sim-logs-out">[13:29:14] GET  /bambu        -> 127.0.0.1:8080   200 OK (0.38ms) [Tailnet]
+[13:29:18] GET  /git          -> 127.0.0.1:18090  200 OK (0.29ms) [Tailnet]
+[13:29:22] GET  /web          -> 127.0.0.1:49005  200 OK (0.44ms) [Funnel]
+[13:29:29] GET  /api/status   -> blocked          403 Forbidden   [Funnel Guard]</div>
+            </div>
+          </div>
+
           <!-- CLI -->
           <div id="panel-cli" style="display:none;">
             <div class="terminal-box">
@@ -1002,9 +1163,9 @@
                 <button class="cmd-pill mono" onclick="runCli('service')">tailrouter service install</button>
               </div>
               <div class="terminal-out mono" id="cli-out">$ tailrouter status
-🟢 TailRouter Gateway: Active (v2.2.0)
-   PID: 1838166 | Uptime: 4h 12m | Memory: 4.2 MB RSS
-   Dashboard: http://localhost:65534/router</div>
+TailRouter Gateway: Active (v2.2.0)
+PID: 1838166 | Uptime: 4h 12m | Memory: 4.2 MB RSS
+Dashboard: http://localhost:65534/router</div>
             </div>
           </div>
         </div>
@@ -1215,7 +1376,8 @@
       tf_ram: 'RAM thực tế', tf_boot: 'Khởi động', tf_dep: 'Dependencies',
       pg_title: 'Bảng điều khiển nhúng sẵn',
       pg_desc: 'Thao tác trực tiếp trên mô phỏng Dashboard cổng 65534: chuyển chế độ Serve/Funnel, quét cổng máy thật hoặc thử CLI.',
-      add_sample: '+ Thêm Route mẫu',
+      add_sample: '+ Thêm Router',
+      st_total: 'Tổng số Route', st_active: 'Đang hoạt động',
       th_svc: 'Dịch vụ', th_target: 'Đích', th_mode: 'Chế độ (Nhấp để đổi)', th_status: 'Trạng thái', th_act: 'Thao tác',
       th_proc: 'Tiến trình / Container', th_det: 'Dịch vụ nhận diện',
       bento_title: 'Kiến trúc tối giản, hiệu năng bare-metal',
@@ -1239,7 +1401,8 @@
       tf_ram: 'Memory RSS', tf_boot: 'Cold Start', tf_dep: 'Dependencies',
       pg_title: 'Embedded Control Surface',
       pg_desc: 'Interact with a live simulation of the port 65534 dashboard: flip Serve/Funnel modes, scan host ports, or test CLI commands.',
-      add_sample: '+ Add Sample Route',
+      add_sample: '+ Add Router',
+      st_total: 'Total Routes', st_active: 'Active Routes',
       th_svc: 'Service', th_target: 'Target', th_mode: 'Mode (Click to toggle)', th_status: 'Status', th_act: 'Actions',
       th_proc: 'Process / Container', th_det: 'Detected Service',
       bento_title: 'Minimal footprint, bare-metal speed',
@@ -1287,7 +1450,7 @@
   }
 
   function switchTab(tab) {
-    ['routes', 'scanner', 'cli'].forEach(t => {
+    ['routes', 'scanner', 'serve', 'logs', 'cli'].forEach(t => {
       document.getElementById('dtab-' + t).classList.toggle('active', t === tab);
       document.getElementById('panel-' + t).style.display = t === tab ? 'block' : 'none';
     });
@@ -1295,6 +1458,17 @@
 
   function renderRoutes() {
     document.getElementById('route-count').textContent = routes.length;
+    const elTot = document.getElementById('sim-stat-total');
+    const elAct = document.getElementById('sim-stat-active');
+    if (elTot) elTot.textContent = routes.length;
+    if (elAct) elAct.textContent = routes.filter(r => r.on).length;
+
+    const serveDump = document.getElementById('sim-serve-dump');
+    if (serveDump) {
+      serveDump.textContent = `https://homelab.tailnet.ts.net (tailnet + funnel)\n|-- /router   proxy http://127.0.0.1:65534\n` +
+        routes.filter(r => r.on).map(r => `|-- ${r.path.padEnd(10)} proxy http://127.0.0.1:${r.port} (${r.mode})`).join('\n');
+    }
+
     document.getElementById('routes-tbody').innerHTML = routes.map(r => `
       <tr>
         <td><strong>${r.name}</strong></td>
@@ -1318,6 +1492,30 @@
         </td>
       </tr>
     `).join('');
+  }
+
+  function toggleAddBar() {
+    const bar = document.getElementById('sim-add-bar');
+    const open = bar.style.display === 'flex';
+    bar.style.display = open ? 'none' : 'flex';
+    if (!open) document.getElementById('new-r-name').focus();
+  }
+
+  function submitNewRoute() {
+    const name = document.getElementById('new-r-name').value.trim() || 'My App';
+    let path = document.getElementById('new-r-path').value.trim() || '/app';
+    if (!path.startsWith('/')) path = '/' + path;
+    const port = parseInt(document.getElementById('new-r-port').value, 10) || 8096;
+    const mode = document.getElementById('new-r-mode').value || 'serve';
+    routes.push({ id: Date.now(), name, path, port, mode, on: true, ms: '0.35ms' });
+    document.getElementById('new-r-name').value = '';
+    document.getElementById('new-r-path').value = '';
+    document.getElementById('new-r-port').value = '';
+    document.getElementById('sim-add-bar').style.display = 'none';
+    switchTab('routes');
+    renderRoutes();
+    renderScan();
+    toast(`Added ${path} → :${port} (${mode})`);
   }
 
   function flipMode(id) {
