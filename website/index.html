@@ -8,7 +8,7 @@
   <meta property="og:title" content="TailRouter — Bare-Metal Gateway for Tailscale">
   <meta property="og:description" content="Expose homelab services over Tailscale Serve & Funnel in seconds. Single static Go binary, < 8 MB RAM.">
   <meta property="og:url" content="https://tailrouter.giang3dlab.io.vn">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'><rect x='0.75' y='0.75' width='30.5' height='30.5' rx='8' fill='%23111113' stroke='rgba(255,255,255,0.16)' stroke-width='1.5'/><circle cx='9.5' cy='16.5' r='1.6' fill='%233f3f46'/><circle cx='9.5' cy='22.5' r='1.6' fill='%233f3f46'/><path d='M9.5 9.5H22.5' stroke='%23fafafa' stroke-width='2.4' stroke-linecap='round'/><circle cx='9.5' cy='9.5' r='2.1' fill='%23fafafa'/><circle cx='22.5' cy='9.5' r='2.1' fill='%23fafafa'/><path d='M16 9.5V18.5C16 20.7091 17.7909 22.5 20 22.5H22.5' stroke='%2338bdf8' stroke-width='2.4' stroke-linecap='round'/><circle cx='16' cy='9.5' r='2.6' fill='%2338bdf8'/><circle cx='22.5' cy='22.5' r='2.1' fill='%2338bdf8'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'><rect x='2' y='2' width='60' height='60' rx='16' fill='%23121215' stroke='rgba(255,255,255,0.2)' stroke-width='2'/><rect x='14' y='17' width='11' height='8' rx='4' fill='%23fafafa'/><rect x='39' y='17' width='11' height='8' rx='4' fill='%23fafafa'/><rect x='28' y='17' width='8' height='30' rx='4' fill='%2338bdf8'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -775,16 +775,26 @@
   <div class="container nav-inner">
     <a href="#" class="brand">
       <div class="brand-icon">
-        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-          <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="8" fill="#111113" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
-          <circle cx="9.5" cy="16.5" r="1.6" fill="#3f3f46"/>
-          <circle cx="9.5" cy="22.5" r="1.6" fill="#3f3f46"/>
-          <path d="M9.5 9.5H22.5" stroke="#fafafa" stroke-width="2.4" stroke-linecap="round"/>
-          <circle cx="9.5" cy="9.5" r="2.1" fill="#fafafa"/>
-          <circle cx="22.5" cy="9.5" r="2.1" fill="#fafafa"/>
-          <path d="M16 9.5V18.5C16 20.7091 17.7909 22.5 20 22.5H22.5" stroke="#38bdf8" stroke-width="2.4" stroke-linecap="round"/>
-          <circle cx="16" cy="9.5" r="2.6" fill="#38bdf8"/>
-          <circle cx="22.5" cy="22.5" r="2.1" fill="#38bdf8"/>
+        <svg width="28" height="28" viewBox="0 0 64 64" fill="none">
+          <defs>
+            <linearGradient id="nav-bg" x1="32" y1="2" x2="32" y2="62" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#1c1c21"/>
+              <stop offset="100%" stop-color="#09090b"/>
+            </linearGradient>
+            <linearGradient id="nav-rim" x1="32" y1="2" x2="32" y2="62" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0.06"/>
+            </linearGradient>
+            <linearGradient id="nav-cyan" x1="32" y1="17" x2="32" y2="47" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#7dd3fc"/>
+              <stop offset="50%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#0284c7"/>
+            </linearGradient>
+          </defs>
+          <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#nav-bg)" stroke="url(#nav-rim)" stroke-width="1.5"/>
+          <rect x="14" y="17" width="11" height="8" rx="4" fill="#fafafa"/>
+          <rect x="39" y="17" width="11" height="8" rx="4" fill="#fafafa"/>
+          <rect x="28" y="17" width="8" height="30" rx="4" fill="url(#nav-cyan)"/>
         </svg>
       </div>
       <span>TailRouter</span>
