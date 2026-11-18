@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="8" fill="#111113" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+  <!-- Subtle Tailscale-inspired grid anchors -->
+  <circle cx="9.5" cy="16.5" r="1.6" fill="#3f3f46"/>
+  <circle cx="9.5" cy="22.5" r="1.6" fill="#3f3f46"/>
+  <!-- Primary T-bus crossbar -->
+  <path d="M9.5 9.5H22.5" stroke="#fafafa" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="9.5" cy="9.5" r="2.1" fill="#fafafa"/>
+  <circle cx="22.5" cy="9.5" r="2.1" fill="#fafafa"/>
+  <!-- Gateway routing stem -->
+  <path d="M16 9.5V18.5C16 20.7091 17.7909 22.5 20 22.5H22.5" stroke="#38bdf8" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="16" cy="9.5" r="2.6" fill="#38bdf8"/>
+  <circle cx="22.5" cy="22.5" r="2.1" fill="#38bdf8"/>
+</svg>

@@ -1,6 +1,8 @@
 <div align="center">
 
-# ⚡ TailRouter
+<img src="assets/logo.svg" alt="TailRouter Logo" width="84" height="84" />
+
+# TailRouter
 
 **High-performance, zero-dependency bare-metal gateway & web dashboard for Tailscale Serve and Funnel.**
 
