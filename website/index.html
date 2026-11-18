@@ -8,7 +8,7 @@
   <meta property="og:title" content="TailRouter — Bare-Metal Gateway for Tailscale">
   <meta property="og:description" content="Expose homelab services over Tailscale Serve & Funnel in seconds. Single static Go binary, < 8 MB RAM.">
   <meta property="og:url" content="https://tailrouter.giang3dlab.io.vn">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'><rect x='2' y='2' width='60' height='60' rx='16' fill='%23121215' stroke='rgba(255,255,255,0.2)' stroke-width='2'/><rect x='14' y='17' width='11' height='8' rx='4' fill='%23fafafa'/><rect x='39' y='17' width='11' height='8' rx='4' fill='%23fafafa'/><rect x='28' y='17' width='8' height='30' rx='4' fill='%2338bdf8'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'><rect x='2' y='2' width='60' height='60' rx='16' fill='%23121215' stroke='rgba(255,255,255,0.2)' stroke-width='2'/><path d='M14.5 17H36M22 17V47M22 32H31M22 47H33' stroke='%23fafafa' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/><path d='M32 21.5V47M32 21.5H42C46.2 21.5 49.5 24.3 49.5 28C49.5 31.7 46.2 34.5 42 34.5H32M40 34.5L49.5 47' stroke='%230d0d10' stroke-width='8.6' stroke-linecap='round' stroke-linejoin='round'/><path d='M32 21.5V47M32 21.5H42C46.2 21.5 49.5 24.3 49.5 28C49.5 31.7 46.2 34.5 42 34.5H32M40 34.5L49.5 47' stroke='%2338bdf8' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -785,16 +785,20 @@
               <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
               <stop offset="100%" stop-color="#ffffff" stop-opacity="0.06"/>
             </linearGradient>
-            <linearGradient id="nav-cyan" x1="32" y1="17" x2="32" y2="47" gradientUnits="userSpaceOnUse">
+            <linearGradient id="nav-silver" x1="14" y1="17" x2="36" y2="47" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="100%" stop-color="#a1a1aa"/>
+            </linearGradient>
+            <linearGradient id="nav-cyan" x1="32" y1="21" x2="50" y2="47" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stop-color="#7dd3fc"/>
               <stop offset="50%" stop-color="#38bdf8"/>
               <stop offset="100%" stop-color="#0284c7"/>
             </linearGradient>
           </defs>
           <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#nav-bg)" stroke="url(#nav-rim)" stroke-width="1.5"/>
-          <rect x="14" y="17" width="11" height="8" rx="4" fill="#fafafa"/>
-          <rect x="39" y="17" width="11" height="8" rx="4" fill="#fafafa"/>
-          <rect x="28" y="17" width="8" height="30" rx="4" fill="url(#nav-cyan)"/>
+          <path d="M14.5 17H36M22 17V47M22 32H31M22 47H33" stroke="url(#nav-silver)" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M32 21.5V47M32 21.5H42C46.2 21.5 49.5 24.3 49.5 28C49.5 31.7 46.2 34.5 42 34.5H32M40 34.5L49.5 47" stroke="#0d0d10" stroke-width="8.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M32 21.5V47M32 21.5H42C46.2 21.5 49.5 24.3 49.5 28C49.5 31.7 46.2 34.5 42 34.5H32M40 34.5L49.5 47" stroke="url(#nav-cyan)" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <span>TailRouter</span>
