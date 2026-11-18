@@ -4,29 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TailRouter (Port 65534) - Tailscale Gateway</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='m12 5 7 7-7 7'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'><rect x='2' y='2' width='60' height='60' rx='16' fill='%23111113' stroke='rgba(255,255,255,0.14)' stroke-width='2'/><circle cx='17' cy='17' r='4.5' fill='%23fafafa'/><circle cx='32' cy='17' r='4.5' fill='%23fafafa'/><circle cx='47' cy='17' r='4.5' fill='%23fafafa'/><circle cx='17' cy='32' r='4.5' fill='%2338bdf8'/><circle cx='32' cy='32' r='4.5' fill='%23fafafa'/><circle cx='47' cy='32' r='4.5' fill='%2327272a'/><circle cx='17' cy='47' r='4.5' fill='%2338bdf8'/><circle cx='32' cy='47' r='4.5' fill='%2327272a'/><circle cx='47' cy='47' r='4.5' fill='%2338bdf8'/></svg>">
   <style>
     :root {
-      --bg-primary: #0b0f19;
-      --bg-secondary: #111827;
-      --bg-card: #182238;
-      --bg-card-hover: #1f2d4a;
-      --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --border: #22304d;
-      --border-light: #2d3f66;
+      --bg-primary: #09090b;
+      --bg-secondary: #111113;
+      --bg-card: #18181b;
+      --bg-card-hover: #1f1f23;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-light: rgba(255, 255, 255, 0.16);
       --primary: #38bdf8;
-      --primary-hover: #0ea5e9;
-      --primary-glow: rgba(56, 189, 248, 0.15);
-      --success: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.15);
-      --warning: #f59e0b;
+      --primary-hover: #7dd3fc;
+      --primary-glow: rgba(56, 189, 248, 0.12);
+      --success: #34d399;
+      --success-glow: rgba(52, 211, 153, 0.12);
+      --warning: #fbbf24;
       --danger: #ef4444;
-      --funnel: #a855f7;
+      --funnel: #a78bfa;
       --radius: 12px;
       --radius-sm: 8px;
-      --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+      --shadow: 0 20px 44px -12px rgba(0, 0, 0, 0.65);
     }
 
     * {
@@ -67,39 +67,37 @@
     }
 
     .brand-icon {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, #0284c7, #38bdf8);
-      border-radius: var(--radius-sm);
+      width: 38px;
+      height: 38px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
-      box-shadow: 0 0 15px var(--primary-glow);
     }
 
     .brand-title h1 {
-      font-size: 1.4rem;
+      font-size: 1.25rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
 
     .brand-title p {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--text-secondary);
     }
 
     .port-badge {
-      background: #0284c7;
-      color: #fff;
-      font-size: 0.75rem;
-      padding: 0.15rem 0.5rem;
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-light);
+      font-size: 0.72rem;
+      padding: 0.12rem 0.5rem;
       border-radius: 9999px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      font-weight: 500;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.02em;
     }
 
     .header-actions {
@@ -154,13 +152,14 @@
     }
 
     .btn-primary {
-      background-color: var(--primary);
-      color: #0b0f19;
+      background-color: #fafafa;
+      color: #09090b;
+      font-weight: 600;
     }
 
     .btn-primary:hover {
-      background-color: var(--primary-hover);
-      box-shadow: 0 0 12px var(--primary-glow);
+      background-color: #e4e4e7;
+      transform: translateY(-1px);
     }
 
     .btn-secondary {
@@ -203,23 +202,27 @@
 
     /* Tabs */
     .tabs {
-      display: flex;
-      gap: 0.5rem;
-      border-bottom: 1px solid var(--border);
+      display: inline-flex;
+      gap: 0.25rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
       margin-bottom: 1.5rem;
       overflow-x: auto;
+      max-width: 100%;
     }
 
     .tab-btn {
       background: none;
       border: none;
       color: var(--text-secondary);
-      padding: 0.75rem 1.25rem;
-      font-size: 0.9rem;
-      font-weight: 600;
+      padding: 0.5rem 0.95rem;
+      font-size: 0.85rem;
+      font-weight: 500;
       cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
+      border-radius: 7px;
+      transition: all 0.15s;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -231,8 +234,9 @@
     }
 
     .tab-btn.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
     }
 
     /* Stats Cards */
@@ -337,14 +341,14 @@
     }
 
     .route-path-badge {
-      background: #0f172a;
-      border: 1px solid #334155;
+      background: #09090b;
+      border: 1px solid var(--border-light);
       color: #38bdf8;
       padding: 0.15rem 0.55rem;
       border-radius: 6px;
-      font-family: monospace;
-      font-size: 0.85rem;
-      font-weight: 600;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
+      font-weight: 500;
     }
 
     .badge {
@@ -369,11 +373,12 @@
     }
 
     .route-target code {
-      background: #0b0f19;
-      padding: 0.1rem 0.4rem;
-      border-radius: 4px;
-      color: #cbd5e1;
-      font-size: 0.85rem;
+      background: #09090b;
+      border: 1px solid var(--border);
+      padding: 0.12rem 0.45rem;
+      border-radius: 5px;
+      color: #d4d4d8;
+      font-size: 0.82rem;
     }
 
     .route-actions {
@@ -533,8 +538,8 @@
     }
 
     .form-input {
-      background: #0b0f19;
-      border: 1px solid var(--border);
+      background: #09090b;
+      border: 1px solid var(--border-light);
       border-radius: var(--radius-sm);
       padding: 0.6rem 0.85rem;
       color: var(--text-primary);
@@ -592,12 +597,12 @@
     }
 
     .code-block {
-      background: #0b0f19;
+      background: #09090b;
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 0.85rem;
-      font-family: monospace;
-      font-size: 0.85rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
       color: #38bdf8;
       overflow-x: auto;
       margin-top: 0.5rem;
@@ -624,14 +629,27 @@
   <!-- Header -->
   <header>
     <div class="brand">
-      <div class="brand-icon">⚡</div>
+      <div class="brand-icon">
+        <svg width="36" height="36" viewBox="0 0 64 64" fill="none">
+          <rect x="2" y="2" width="60" height="60" rx="16" fill="#111113" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+          <circle cx="17" cy="17" r="4.5" fill="#fafafa"/>
+          <circle cx="32" cy="17" r="4.5" fill="#fafafa"/>
+          <circle cx="47" cy="17" r="4.5" fill="#fafafa"/>
+          <circle cx="17" cy="32" r="4.5" fill="#38bdf8"/>
+          <circle cx="32" cy="32" r="4.5" fill="#fafafa"/>
+          <circle cx="47" cy="32" r="4.5" fill="#27272a"/>
+          <circle cx="17" cy="47" r="4.5" fill="#38bdf8"/>
+          <circle cx="32" cy="47" r="4.5" fill="#27272a"/>
+          <circle cx="47" cy="47" r="4.5" fill="#38bdf8"/>
+        </svg>
+      </div>
       <div class="brand-title">
-        <h1>⚡ TailRouter <span class="port-badge">Port 65534</span> <span class="badge" id="app-version-badge" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 9999px; vertical-align: middle; margin-left: 6px;">v2.2.0</span></h1>
+        <h1>TailRouter <span class="port-badge">Port 65534</span> <span class="badge" id="app-version-badge" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); font-size: 0.72rem; font-weight: 600; padding: 0.12rem 0.55rem; border-radius: 9999px; vertical-align: middle; margin-left: 4px; font-family: ui-monospace, monospace;">v2.2.0</span></h1>
         <p id="sub-title" data-i18n="sub_title">Gateway điều phối cổng & định tuyến dịch vụ Homelab</p>
       </div>
     </div>
     <div class="header-actions">
-      <select id="lang-select" onchange="changeLanguage(this.value)" style="background:#182238; color:#fff; border:1px solid #2a3b5c; border-radius:8px; padding:0.4rem 0.6rem; font-size:0.85rem; cursor:pointer; outline:none;">
+      <select id="lang-select" onchange="changeLanguage(this.value)" style="background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border-light); border-radius:8px; padding:0.4rem 0.6rem; font-size:0.84rem; cursor:pointer; outline:none;">
         <option value="vi">🇻🇳 Tiếng Việt</option>
         <option value="en">🇺🇸 English</option>
         <option value="zh">🇨🇳 中文</option>
