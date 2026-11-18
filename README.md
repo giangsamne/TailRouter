@@ -6,13 +6,18 @@
 
 **High-performance, zero-dependency bare-metal gateway & web dashboard for Tailscale Serve and Funnel.**
 
-[![Release](https://img.shields.io/badge/Release-v2.2.0-blue.svg?logo=github)](https://github.com/giangsamne/TailRouter/releases)
+[![Release](https://img.shields.io/badge/Release-v2.3.0-blue.svg?logo=github)](https://github.com/giangsamne/TailRouter/releases)
+[![Website](https://img.shields.io/badge/Website-tailrouter.giang3dlab.io.vn-09090b.svg?logo=googlechrome&logoColor=white)](https://tailrouter.giang3dlab.io.vn)
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8.svg?logo=go&logoColor=white)](https://golang.org)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-brightgreen.svg)](https://github.com/giangsamne/TailRouter)
 [![Tailscale](https://img.shields.io/badge/Tailscale-Serve%20%26%20Funnel-5056EC.svg?logo=tailscale&logoColor=white)](https://tailscale.com)
 [![Dependencies](https://img.shields.io/badge/dependencies-0%20(Pure%20Native%20Binaries)-success.svg)](https://github.com/giangsamne/TailRouter)
 [![Memory Footprint](https://img.shields.io/badge/RAM-%3C%208MB%20RSS-blueviolet.svg)](https://github.com/giangsamne/TailRouter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+<p style="margin-top: 10px;">
+  <a href="https://tailrouter.giang3dlab.io.vn"><strong>Live Website & Interactive 1:1 Dashboard Demo</strong></a>
+</p>
 
 </div>
 
@@ -24,12 +29,12 @@ Run a single command in your terminal or PowerShell — it automatically detects
 
 * **🐧 Linux & 🍏 macOS** (Terminal):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.2.0/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/giangsamne/TailRouter/v2.3.0/install.sh | bash
   ```
 
 * **🪟 Windows** (PowerShell):
   ```powershell
-  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.2.0/install.ps1 | iex
+  irm https://raw.githubusercontent.com/giangsamne/TailRouter/v2.3.0/install.ps1 | iex
   ```
 
 ---
@@ -40,11 +45,11 @@ Tải trực tiếp bản nhị phân đóng gói độc lập cho từng hệ �
 
 | Nền tảng (Platform) | Kiến trúc CPU (Architecture) | Tệp đóng gói (1-File Package) |
 | :--- | :--- | :--- |
-| **🐧 Linux** | AMD64 (x86_64 PC, VPS, Server) | [`tailrouter-linux-amd64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-linux-amd64.tar.gz) |
-| **🐧 Linux** | ARM64 (Raspberry Pi 4/5, Cloud ARM) | [`tailrouter-linux-arm64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-linux-arm64.tar.gz) |
-| **🍏 macOS** | Apple Silicon (M1 / M2 / M3 / M4) | [`tailrouter-darwin-arm64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-darwin-arm64.tar.gz) |
-| **🍏 macOS** | Intel (x86_64) | [`tailrouter-darwin-amd64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-darwin-amd64.tar.gz) |
-| **🪟 Windows** | AMD64 (x64) | [`tailrouter-windows-amd64.zip`](https://github.com/giangsamne/TailRouter/releases/download/v2.2.0/tailrouter-windows-amd64.zip) |
+| **🐧 Linux** | AMD64 (x86_64 PC, VPS, Server) | [`tailrouter-linux-amd64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.3.0/tailrouter-linux-amd64.tar.gz) |
+| **🐧 Linux** | ARM64 (Raspberry Pi 4/5, Cloud ARM) | [`tailrouter-linux-arm64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.3.0/tailrouter-linux-arm64.tar.gz) |
+| **🍏 macOS** | Apple Silicon (M1 / M2 / M3 / M4) | [`tailrouter-darwin-arm64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.3.0/tailrouter-darwin-arm64.tar.gz) |
+| **🍏 macOS** | Intel (x86_64) | [`tailrouter-darwin-amd64.tar.gz`](https://github.com/giangsamne/TailRouter/releases/download/v2.3.0/tailrouter-darwin-amd64.tar.gz) |
+| **🪟 Windows** | AMD64 (x64) | [`tailrouter-windows-amd64.zip`](https://github.com/giangsamne/TailRouter/releases/download/v2.3.0/tailrouter-windows-amd64.zip) |
 
 ---
 
@@ -62,10 +67,13 @@ Tải trực tiếp bản nhị phân đóng gói độc lập cho từng hệ �
   - **Serve**: Encrypted, authenticated access strictly within your private Tailnet (`https://<node-name>.ts.net/<path>`).
   - **Funnel**: Fully public HTTPS route accessible across the Internet without port forwarding or public IPv4.
   - Switch between Serve and Funnel in 1 click or via CLI!
-- 🖥️ **Embedded 5-Tab Web Dashboard**:
-  - Responsive dark-mode SPA embedded inside the binary via `embed.FS`.
-  - Accessible locally at `http://localhost:65534` (or `http://localhost:65534/router`) and over Tailnet at `https://<node-name>.ts.net/router`.
+- 🖥️ **Redesigned Zinc Obsidian Web Dashboard (v2.3.0)**:
+  - Clean, distraction-free dark-mode SPA (`#09090b` Zinc Obsidian palette, segmented tabs, crisp monochrome SVG iconography, zero decorative clutter) embedded inside the binary via `embed.FS`.
+  - Features the official dual-tone `3×3` `T·R` brand mark (`assets/logo.svg`).
+  - Accessible across your entire Homelab & Tailnet (`http://<tailscale-or-lan-ip>:65534/router`) and over MagicDNS HTTPS (`https://<node-name>.ts.net/router`).
   - Full multi-language support: Tiếng Việt, English, 中文, 日本語.
+- 🌐 **Interactive Landing Page & 1:1 Live Playground (`website/`)**:
+  - Dedicated self-hosted Go landing page (`website/server.go` + `website/index.html`) with a 1:1 interactive replica of the real Dashboard (`/demo-app`) backed by an in-browser mock API.
 - 🔍 **Host Port Discovery Scanner**:
   - Scans active TCP listening ports across the host system and Docker containers.
   - Automatically sorts detected ports in ascending numerical order (`22 -> 80 -> 443 -> ...`).
@@ -215,6 +223,8 @@ TailRouter exposes a high-performance REST API on port `65534`:
 
 ```text
 TailRouter/
+├── assets/
+│   └── logo.svg              # Official dual-tone 3x3 TR brand mark
 ├── cmd/
 │   └── tailrouter/           # Single-binary engine: Daemon + Embedded Web UI + CLI (Go)
 ├── internal/
@@ -226,12 +236,16 @@ TailRouter/
 │   └── browser/              # Cross-platform browser launcher
 ├── web/
 │   ├── embed.go              # Go binary asset packaging via embed.FS
-│   └── index.html            # Responsive SPA Web Dashboard (5 Tabs, i18n, Danger Zone)
+│   └── index.html            # Zinc Obsidian SPA Web Dashboard (5 Tabs, i18n, Danger Zone)
+├── website/
+│   ├── index.html            # Official TailRouter Landing Page (tailrouter.giang3dlab.io.vn)
+│   ├── demo.html             # 1:1 Web Dashboard replica for live interactive playground
+│   └── server.go             # Standalone Go static & mock-API server
 ├── scripts/
 │   ├── build_all.sh          # Multi-platform static compilation tool
 │   └── snapshot_tag.sh       # Release snapshot packaging tool
-├── install.sh                # 1-Line universal installer for Linux & macOS (v2.1.0)
-├── install.ps1               # 1-Line installer for Windows (PowerShell v2.1.0)
+├── install.sh                # 1-Line universal installer for Linux & macOS (v2.3.0)
+├── install.ps1               # 1-Line installer for Windows (PowerShell v2.3.0)
 ├── LICENSE                   # MIT License
 └── README.md                 # Project documentation & upgrade guides
 ```

@@ -28,7 +28,7 @@ import (
 
 const (
 	DefaultPort = 65534
-	Version     = "2.2.0"
+	Version     = "2.3.0"
 	MaxLogSize  = 5 * 1024 * 1024 // 5MB max log file
 )
 

@@ -1,10 +1,10 @@
-# ==============================================================================
+﻿# ==============================================================================
 # ⚡ TailRouter - Windows Smart Installer
 # Auto-downloads and installs TailRouter Native Engine, creates shortcut & autostart.
 # ==============================================================================
 
 param(
-    [string]$Tag = "v2.2.0"
+    [string]$Tag = "v2.3.0"
 )
 
 $ErrorActionPreference = "Stop"

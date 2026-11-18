@@ -53,7 +53,7 @@ const demoMockScript = `<script>
     if (path === "/api/status") {
       return jsonRes({
         status: "online",
-        version: "2.2.0",
+        version: "2.3.0",
         pid: 1838166,
         uptime_seconds: Math.floor((Date.now() - startTs) / 1000) + 14280,
         routes_count: mockRoutes.length,
